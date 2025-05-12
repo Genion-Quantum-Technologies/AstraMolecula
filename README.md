@@ -16,3 +16,5 @@ wget --content-disposition "https://ccsb.scripps.edu/adfr/download/1028/"
 chmod a+x ADFRsuite_Linux-x86_64_1.0_install
 ./ADFRsuite_Linux-x86_64_1.0_install
 
+# 添加用户执行权限
+chmod u+x vinademo.sh
