@@ -1,0 +1,1 @@
+Vina/ADFRsuite_Linux-x86_64_1.0_install filter=lfs diff=lfs merge=lfs -text

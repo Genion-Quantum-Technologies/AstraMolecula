@@ -1,0 +1,1 @@
+python /home/davis/projects/dockingVina/Vina/vina_workflow.py  --receptor /home/davis/projects/dockingVina/resource/protein_7UDP.pdbqt --input /home/davis/projects/dockingVina/resource/70.csv  --n_jobs 10
