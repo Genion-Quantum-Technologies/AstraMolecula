@@ -27,10 +27,13 @@ vina_root = f'/home/davis/projects/dockingVina/Vina'
 # env_root = f'/home/davis/.conda/envs/dockingVina'
 # 当前文件 /home/davis/projects/dockingVina/Vina/vina_workflow.py
 HERE = Path(__file__).resolve().parent        # .../Vina
-PROJECT_ROOT = HERE.parent                    # .../dockingVina
+PROJECT_ROOT = HERE.parent                       # .../dockingVina
+print(f"PROJECT_ROOT is {PROJECT_ROOT}")
+
 PYTHON_BIN = Path(sys.executable)
 env_root = str(PYTHON_BIN.parent)
 gypsumPath=f"{PROJECT_ROOT}/gypsum_dl/run_gypsum_dl.py"
+print(f"gypsumPath is {gypsumPath}")
 
 def print_var(var,note=''):
     print(f"{var}:  {eval(var)}   {note}")

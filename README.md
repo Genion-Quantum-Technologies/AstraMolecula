@@ -8,8 +8,11 @@ conda install -c conda-forge openmpi mpi4py
 
 git clone https://github.com/durrantlab/gypsum_dl.git
 # or
-git clone git@github.com:durrantlab/gypsum_dl.git
+git clone git@github.com:durrantlab/gypsum_dl.
+# move gypsum_dl folder under resource
 
+# 需要修改gypsum_dl/Start.py的源码
+# replace 'os.mkdir(params["output_folder"])' with os.makedirs(params["output_folder"], exist_ok=True)
 
 # 下载 and 安装ADFR
 wget --content-disposition "https://ccsb.scripps.edu/adfr/download/1028/"
