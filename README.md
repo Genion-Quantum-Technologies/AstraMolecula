@@ -8,7 +8,7 @@ conda install -c conda-forge openmpi mpi4py
 
 git clone https://github.com/durrantlab/gypsum_dl.git
 # or
-git clone git@github.com:durrantlab/gypsum_dl.
+git clone git@github.com:durrantlab/gypsum_dl.git
 # move gypsum_dl folder under resource
 
 # 需要修改gypsum_dl/Start.py的源码

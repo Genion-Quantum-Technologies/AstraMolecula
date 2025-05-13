@@ -32,6 +32,7 @@ print(f"PROJECT_ROOT is {PROJECT_ROOT}")
 
 PYTHON_BIN = Path(sys.executable)
 env_root = str(PYTHON_BIN.parent)
+print(f"env_root is {env_root}")
 gypsumPath=f"{PROJECT_ROOT}/gypsum_dl/run_gypsum_dl.py"
 print(f"gypsumPath is {gypsumPath}")
 
@@ -114,8 +115,8 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     dfSmi=pd.DataFrame(smiList,columns=['smiles','title'])
     dfSmi.to_csv(f'{dir}/input_prepared.smi',sep='\t',index=None,header=None)
     ''' covert smiles to 3d with babel ''' 
-    os.system(f"{env_root}/bin/obabel -ismi input_prepared.smi -osdf -O input_prepared.sdf --gen3d")
-    os.system(f"{env_root}/bin/mk_prepare_ligand.py -i input_prepared.sdf   --multimol_outdir  pdbqts")
+    os.system(f"{env_root}/obabel -ismi input_prepared.smi -osdf -O input_prepared.sdf --gen3d")
+    os.system(f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf   --multimol_outdir  pdbqts")
 
 @try_except_decorator  
 def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
