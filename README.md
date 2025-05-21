@@ -21,3 +21,9 @@ chmod a+x ADFRsuite_Linux-x86_64_1.0_install
 
 # 添加用户执行权限
 chmod u+x vinademo.sh
+
+conda install -c conda-forge uvicorn fastapi
+conda install -c conda-forge apsw
+pip install mmpdb
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+conda install seaborn
