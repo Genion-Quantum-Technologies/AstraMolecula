@@ -75,6 +75,9 @@ def fragmentize_molecule(smiles_string: str, max_ratio: float = 0.8) -> pd.DataF
         fragment_reader = open_fragdb(output_file)
         frag_list = []
         for record in fragment_reader:
+            if not hasattr(record, "fragments"):
+                print(f"Warning: record {record} has no 'fragments' attribute, skipping.")
+                continue
             # 打印或记录当前处理的 record 信息，可根据需要选择注释掉
             print(f"Processing record: {record.id}, {record.normalized_smiles}")
             for frag in record.fragments:
