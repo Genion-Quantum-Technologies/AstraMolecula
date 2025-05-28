@@ -22,7 +22,7 @@ from rdkit.Chem import AllChem
 import copy
 import random  
 import os
-
+import shutil
 vina_root = f'/home/davis/projects/dockingVina/Vina'
 # env_root = f'/home/davis/.conda/envs/dockingVina'
 # 当前文件 /home/davis/projects/dockingVina/Vina/vina_workflow.py
@@ -95,7 +95,6 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     try:
         supplier = Chem.SDMolSupplier(f"{dir}/gypsumFolder/gypsum_dl_success.sdf") 
     except:
-        
         sys.exit(1)
     molName_count={}
     smiList=[]
@@ -153,11 +152,38 @@ def combine_csv(file_paths):
     combined_df = pd.concat(dataframes, ignore_index=True)
     return combined_df
 
-class argNamespace:
-    ''' for test in jupyter notebook  '''
-    def __init__(self):  
-        self.input = f'{vina_root}/Test/input.csv'  # 'self'引用的是类实例自身  
-        self.receptor = f'{vina_root}/Test/8jzx.pdbqt'
+import shutil
+
+def clean_intermediate_files(work_dir):
+    paths_to_remove = [
+        f"{work_dir}/input.smi",
+        f"{work_dir}/input_prepared.smi",
+        f"{work_dir}/input_prepared.sdf",
+        f"{work_dir}/gypsumFolder",
+        f"{work_dir}/pdbqts",
+        f"{work_dir}/docked",
+    ]
+    
+    # 删除所有 *.sdf, *.pdbqt, *.csv（不包括 dockRes.csv 和 input.csv）
+    extra_patterns = [
+        f"{work_dir}/*.sdf",
+        f"{work_dir}/*.pdbqt",
+        f"{work_dir}/*-p*.csv",
+    ]
+
+    for path in paths_to_remove:
+        if os.path.isfile(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path, ignore_errors=True)
+    
+    for pattern in extra_patterns:
+        for f in glob(pattern):
+            if not f.endswith('dockRes.csv') and not f.endswith('input.csv'):
+                os.remove(f)
+    
+    print("✅ Intermediate files cleaned up.")
+
 
 def main(args):
     ''' change the work directory  '''
@@ -191,6 +217,7 @@ def main(args):
     dfRes = combine_csv(csv_paths)
     dfRes = dfRes.sort_values(by='score', ascending=True)
     dfRes.to_csv(f"{parent_path}/dockRes.csv", index=None)
+    clean_intermediate_files(parent_path)
 
 
 

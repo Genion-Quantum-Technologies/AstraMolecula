@@ -5,7 +5,7 @@ import json
 BASE_URL = "http://127.0.0.1:8000"
 
 # 示例 SMILES 字符串
-test_smiles = "CC(=O)Oc1ccccc1C(=O)O"
+test_smiles = "CC(=O)Nc1cc(-c2cc(F)cc(OC3CCN(C)C3)c2)nc(-n2nc(C)cc2C)n1"
 
 def test_fragmentize():
     print("Testing /fragmentize...")

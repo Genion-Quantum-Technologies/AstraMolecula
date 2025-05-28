@@ -313,7 +313,7 @@ dependencies:
       - filelock==3.13.1
       - fsspec==2024.6.1
       - iniconfig==2.1.0
-      - mmpdb==3.1.3
+      - mmpdb==2.1
       - mpmath==1.3.0
       - networkx==3.3
       - numpy==1.23.5

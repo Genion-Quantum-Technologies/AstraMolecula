@@ -1,8 +1,7 @@
 import pandas as pd
 import os
 from pathlib import Path
-# from mmpdblib.fragment_io import read_fragment_records
-from mmpdblib.fragment_db   import open_fragdb
+from mmpdblib.fragment_io import read_fragment_records
 from rdkit import Chem
 class Index_Dummy:
     """对 dummy 原子进行编号：变量和常量部分分别处理"""
@@ -72,12 +71,9 @@ def fragmentize_molecule(smiles_string: str, max_ratio: float = 0.8) -> pd.DataF
             raise Exception("mmpdb fragment 命令执行失败，请确保 mmpdb 工具安装并配置正确。")
 
         # 读取并处理碎片
-        fragment_reader = open_fragdb(output_file)
+        fragment_reader = read_fragment_records(output_file)
         frag_list = []
         for record in fragment_reader:
-            if not hasattr(record, "fragments"):
-                print(f"Warning: record {record} has no 'fragments' attribute, skipping.")
-                continue
             # 打印或记录当前处理的 record 信息，可根据需要选择注释掉
             print(f"Processing record: {record.id}, {record.normalized_smiles}")
             for frag in record.fragments:
