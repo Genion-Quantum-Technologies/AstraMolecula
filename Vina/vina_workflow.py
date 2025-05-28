@@ -91,7 +91,11 @@ def csv2gypSmi(inputCsv, dir='.'):
     return out_path
 
 def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='.'):
+    gypsum_output_dir = f"{dir}/gypsumFolder"
+    if not os.path.exists(gypsum_output_dir):
+        os.makedirs(gypsum_output_dir)  # 先手动创建，避免 Start.py 报错
     os.system(f"mpirun -n {num_processors} python -m mpi4py  {gypsumPath} --source {inputSmi}  --output_folder {dir}/gypsumFolder --min_ph {min_ph} --max_ph {max_ph} --pka_precision 1 --skip_optimize_geometry --2d_output_only --use_durrant_lab_filters")
+    print(" gypsum output folder:", f"{dir}/gypsumFolder")
     try:
         supplier = Chem.SDMolSupplier(f"{dir}/gypsumFolder/gypsum_dl_success.sdf") 
     except:
@@ -155,6 +159,12 @@ def combine_csv(file_paths):
 import shutil
 
 def clean_intermediate_files(work_dir):
+    keep_files = {
+        "70.csv",
+        "dockRes.csv",
+        "protein_7UDP.pdbqt"
+    }
+
     paths_to_remove = [
         f"{work_dir}/input.smi",
         f"{work_dir}/input_prepared.smi",
@@ -163,26 +173,28 @@ def clean_intermediate_files(work_dir):
         f"{work_dir}/pdbqts",
         f"{work_dir}/docked",
     ]
-    
-    # 删除所有 *.sdf, *.pdbqt, *.csv（不包括 dockRes.csv 和 input.csv）
+
     extra_patterns = [
         f"{work_dir}/*.sdf",
         f"{work_dir}/*.pdbqt",
-        f"{work_dir}/*-p*.csv",
+        f"{work_dir}/*.csv",
     ]
 
+    # 删除明确的文件或目录
     for path in paths_to_remove:
-        if os.path.isfile(path):
+        if os.path.isfile(path) and os.path.basename(path) not in keep_files:
             os.remove(path)
         elif os.path.isdir(path):
             shutil.rmtree(path, ignore_errors=True)
-    
+
+    # 使用模式匹配删除中间生成的文件
     for pattern in extra_patterns:
         for f in glob(pattern):
-            if not f.endswith('dockRes.csv') and not f.endswith('input.csv'):
+            if os.path.basename(f) not in keep_files:
                 os.remove(f)
-    
+
     print("✅ Intermediate files cleaned up.")
+
 
 
 def main(args):
