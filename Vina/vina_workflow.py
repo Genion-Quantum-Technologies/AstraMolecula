@@ -156,8 +156,6 @@ def combine_csv(file_paths):
     combined_df = pd.concat(dataframes, ignore_index=True)
     return combined_df
 
-import shutil
-
 def clean_intermediate_files(work_dir):
     keep_files = {
         "70.csv",
