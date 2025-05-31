@@ -23,11 +23,11 @@ from meeko import RDKitMolCreate
 from rdkit.Chem import AllChem
 import copy
 import random
-from concurrent.futures import ThreadPoolExecutor 
-# 该脚本在每次运行时，会生成一个随机的 UUID，
+from concurrent.futures import ThreadPoolExecutor
+
+# 脚本会在每次运行时，生成一个随机的 UUID，
 # 并在 resource 文件夹下创建一个以 UUID 命名的子目录，将所有中间文件/最终结果存放在其中。
 vina_root = f'/home/davis/projects/dockingVina/Vina'
-# 当前文件 /home/davis/projects/dockingVina/Vina/vina_workflow.py
 HERE = Path(__file__).resolve().parent        # .../Vina
 PROJECT_ROOT = HERE.parent                     # .../dockingVina
 print(f"PROJECT_ROOT is {PROJECT_ROOT}")
@@ -49,8 +49,6 @@ def try_except_decorator(func):
             return func(*args, **kwargs)
         except Exception as e:
             print(f"An error occurred: {e}")
-            # 你可以选择在这里返回某个默认值，或者重新抛出异常
-            # return None  # 或者 raise
     return wrapper
 
 @try_except_decorator
@@ -198,11 +196,12 @@ def clean_intermediate_files(work_dir):
 
     print("✅ Intermediate files cleaned up.")
 
+# ====================================================
+# 原有的 main(args) 保持不变，用于命令行调用
+# ====================================================
 def main(args):
-    ''' 
-    改动：
-    1. 先根据输入 CSV 所在目录（resource），生成一个随机 UUID 子文件夹 run_dir；
-    2. 把原始的 CSV 文件复制到 run_dir 下，后续所有中间结果都存放到 run_dir；
+    '''
+    通过 argparse.Namespace 获取参数并执行流程（兼容原先命令行逻辑）
     '''
     inputPath = Path(args.input).absolute()    # e.g. /home/davis/projects/dockingVina/resource/70.csv
     receptPath = Path(args.receptor).absolute() # e.g. /home/davis/projects/dockingVina/resource/protein_7UDP.pdbqt
@@ -261,7 +260,7 @@ def main(args):
     dfRes.to_csv(f"{parent_path}/dockRes.csv", index=None)
 
     ''' 5. 清理中间文件（只保留 keep_files） '''
-    # clean_intermediate_files(parent_path)
+    clean_intermediate_files(parent_path)
 
     print(f"✅ 本次运行的 UUID: {run_id}")
     print(f"📂 结果目录: {run_dir}")
@@ -282,6 +281,201 @@ def get_parser():
     args = parser.parse_args()
     return args
 
+# ================================================================
+# 全新函数：vina_docking，直接以 Python 参数形式调用，无需 Namespace
+# ================================================================
+def vina_docking(input_csv: str,
+                 receptor_pdbqt: str,
+                 min_ph: float = 6.0,
+                 max_ph: float = 8.0,
+                 n_jobs: int = 10) -> str:
+    """
+    直接在 Python 中调用本函数即可执行完整 docking 流程，并返回本次运行生成的目录(run_dir)。
+    参数：
+      - input_csv:       待对接 ligand 列表 CSV（要包含 smiles, title 列）
+      - receptor_pdbqt:  受体 PDBQT 文件路径（绝对路径）
+      - min_ph:          最小 pH（默认 6.0）
+      - max_ph:          最大 pH（默认 8.0）
+      - n_jobs:          并行进程数（默认 10）
+
+    返回：
+      - run_dir (str):   本次运行在 resource 目录下新建的随机 UUID 子目录，所有结果都在里面。
+    """
+
+    # ——— Step 1: 准备输入路径 & 运行目录 ———
+    inputPath = Path(input_csv).absolute()
+    receptPath = Path(receptor_pdbqt).absolute()
+
+    if not inputPath.exists():
+        raise FileNotFoundError(f"输入的 CSV 文件不存在: {inputPath}")
+    if not receptPath.exists():
+        raise FileNotFoundError(f"受体 PDBQT 文件不存在: {receptPath}")
+
+    # input_csv 所在的父目录，例如 /home/davis/projects/dockingVina/resource
+    orig_parent = inputPath.parent
+    # 生成随机 UUID，作为本次运行的子目录名
+    run_id = uuid.uuid4().hex
+    run_dir = orig_parent / run_id
+    os.makedirs(run_dir, exist_ok=True)
+
+    # 将原始的 CSV 复制到 run_dir 下
+    input_csv_name = inputPath.name
+    new_input = run_dir / input_csv_name
+    shutil.copy(inputPath, new_input)
+
+    # 切换工作目录到 run_dir
+    os.chdir(run_dir)
+
+    # 后续都使用 new_input 作为输入路径
+    inputPath = new_input
+    parent_path = str(run_dir)
+
+    # ——— Step 2: 检查 CSV 中是否含有 smiles/title 列 ———
+    dfInput = pd.read_csv(inputPath)
+    if 'smiles' not in dfInput.columns:
+        raise ValueError("输入的 CSV 必须包含 'smiles' 列。")
+    if 'title' not in dfInput.columns:
+        # 如果无 title，则批量自动添加
+        for idx, irow in dfInput.iterrows():
+            dfInput.loc[idx, 'title'] = f'ID_{idx}'
+
+    # ——— Step 3: 组装 ligand（CSV → .smi → .sdf → .pdbqt） ———
+    smi_path = csv2gypSmi(inputPath, dir=parent_path)
+    smi2pdbqt(smi_path,
+              min_ph=min_ph,
+              max_ph=max_ph,
+              num_processors=n_jobs,
+              dir=parent_path)
+
+    # ——— Step 4: 读取 receptor 同级目录下的 vina_box.json ———
+    box_json = receptPath.parent / "vina_box.json"
+    if not box_json.exists():
+        raise FileNotFoundError(f"未找到 {box_json}，请确认在受体文件同级目录下有 vina_box.json。")
+    with open(box_json, "r") as infile:
+        centerDict = json.load(infile)
+
+    # ——— Step 5: 并行调用 Vina 对所有 .pdbqt 做 docking ———
+    pdbqtList = glob(f"{parent_path}/pdbqts/*.pdbqt")
+    if len(pdbqtList) == 0:
+        raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
+    random.shuffle(pdbqtList)
+
+    vina_dock_p = partial(vina_dock,
+                          recpt=receptPath.as_posix(),
+                          center=centerDict['center'],
+                          dir=parent_path)
+    mapper(n_jobs)(vina_dock_p, pdbqtList)
+
+    # ——— Step 6: 合并所有单个 ligand 的 CSV，生成 dockRes.csv ———
+    csv_paths = glob(f"{parent_path}/docked/*.csv")
+    if len(csv_paths) == 0:
+        raise RuntimeError("未发现任何 docked/*.csv，说明 docking 或 pdbqt2sdf 步骤出错。")
+    dfRes = combine_csv(csv_paths)
+    dfRes = dfRes.sort_values(by='score', ascending=True)
+    dfRes.to_csv(f"{parent_path}/dockRes.csv", index=None)
+
+    # ——— Step 7: 清理中间文件（只保留 keep_files） ———
+    # clean_intermediate_files(parent_path)
+
+    # 最后返回本次运行的目录
+    return str(run_dir)
+
+def vina_docking_from_list(ligands: list,
+                           receptor_pdbqt: str,
+                           min_ph: float = 6.0,
+                           max_ph: float = 8.0,
+                           n_jobs: int = 10) -> str:
+    """
+    新增接口：直接传递 ligands 列表（如：[{"smiles":"C=CCNC…","title":"ID1"}, {...}, …]），
+    而不需要用户预先写 CSV。
+    内部会自动生成一次 CSV 放到 run_dir 下，后续流程和 vina_docking(input_csv, ...) 一样。
+    返回 run_dir（字符串）。
+    """
+
+    # 1. 使用 ligands 列表和 receptor_pdbqt 构建 run_dir
+    # receptor_pdbqt 是一个文件路径字符串，必须存在
+    inputPath_dummy = None  # 这里只用来占位，不做文件读取
+    receptPath = Path(receptor_pdbqt).absolute()
+    if not receptPath.exists():
+        raise FileNotFoundError(f"受体 PDBQT 文件不存在: {receptPath}")
+
+    # ligands 必须是 list of dict，且每个 dict 至少含 'smiles' 和 'title'
+    if not isinstance(ligands, list) or any(('smiles' not in mol or 'title' not in mol) for mol in ligands):
+        raise ValueError("ligands 参数必须是 list，且每个元素含 'smiles' 和 'title'。")
+
+    # 找到 ligands 所属“资源目录”，我们约定它是 receptor_pdbqt 所在目录的同级 resources
+    # 也可以直接用 receptor_pdbqt.parent 作为资源根
+    orig_parent = receptPath.parent   # e.g. /home/davis/projects/dockingVina/resource
+
+    # 2. 生成随机 UUID，并创建 run_dir
+    run_id = uuid.uuid4().hex
+    run_dir = orig_parent / run_id
+    os.makedirs(run_dir, exist_ok=True)
+
+    # 3. 在 run_dir 下写一次 CSV：文件名可以固定为 "input.csv"
+    csv_path = run_dir / "input.csv"
+    df_lig = pd.DataFrame(ligands)  # 直接把 list of dict 转成 DataFrame
+    # DataFrame 会自动按 {'smiles','title'} 两列写文件
+    df_lig.to_csv(csv_path, index=False)
+
+    # 4. 把当前 cwd 切换到 run_dir
+    os.chdir(run_dir)
+
+    # 已有： inputPath = csv_path
+    inputPath = csv_path
+    parent_path = str(run_dir)
+
+    # Step 2: 检查 CSV 中是否含有 smiles/title 列
+    dfInput = pd.read_csv(inputPath)
+    if 'smiles' not in dfInput.columns:
+        raise ValueError("输入的 CSV 必须包含 'smiles' 列。")
+    if 'title' not in dfInput.columns:
+        for idx, irow in dfInput.iterrows():
+            dfInput.loc[idx, 'title'] = f'ID_{idx}'
+
+    # Step 3: 组装 ligand（CSV → input.smi → input_prepared.sdf → .pdbqt）
+    smi_path = csv2gypSmi(inputPath, dir=parent_path)
+    smi2pdbqt(smi_path,
+              min_ph=min_ph,
+              max_ph=max_ph,
+              num_processors=n_jobs,
+              dir=parent_path)
+
+    # Step 4: 读取 receptor 同级目录下的 vina_box.json
+    box_json = receptPath.parent / "vina_box.json"
+    if not box_json.exists():
+        raise FileNotFoundError(f"未找到 {box_json}，请确认在受体文件同级目录下有 vina_box.json。")
+    with open(box_json, "r") as infile:
+        centerDict = json.load(infile)
+
+    # Step 5: 并行调用 Vina 对所有 .pdbqt 做 docking
+    pdbqtList = glob(f"{parent_path}/pdbqts/*.pdbqt")
+    if len(pdbqtList) == 0:
+        raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
+    random.shuffle(pdbqtList)
+
+    vina_dock_p = partial(vina_dock,
+                          recpt=receptPath.as_posix(),
+                          center=centerDict['center'],
+                          dir=parent_path)
+    mapper(n_jobs)(vina_dock_p, pdbqtList)
+
+    # Step 6: 合并所有单个 ligand 的 CSV，生成 dockRes.csv
+    csv_paths = glob(f"{parent_path}/docked/*.csv")
+    if len(csv_paths) == 0:
+        raise RuntimeError("未发现任何 docked/*.csv，说明 docking 或 pdbqt2sdf 步骤出错。")
+    dfRes = combine_csv(csv_paths)
+    dfRes = dfRes.sort_values(by='score', ascending=True)
+    dfRes.to_csv(f"{parent_path}/dockRes.csv", index=None)
+
+    # Step 7: 清理中间文件（只保留 keep_files）
+    # clean_intermediate_files(parent_path)
+
+    # 返回本次运行的 run_dir
+    return str(run_dir)
+# ============================================================
+# 保持原有的命令行入口：如果直接脚本调用，则走 argparse → main
+# ============================================================
 if __name__ == "__main__":
     args = get_parser()
     main(args)
