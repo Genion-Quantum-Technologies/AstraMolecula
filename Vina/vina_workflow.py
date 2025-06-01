@@ -391,7 +391,7 @@ def vina_docking_from_list(ligands: list,
     内部会自动生成一次 CSV 放到 run_dir 下，后续流程和 vina_docking(input_csv, ...) 一样。
     返回 run_dir（字符串）。
     """
-
+    orig_cwd = os.getcwd()
     # 1. 使用 ligands 列表和 receptor_pdbqt 构建 run_dir
     # receptor_pdbqt 是一个文件路径字符串，必须存在
     inputPath_dummy = None  # 这里只用来占位，不做文件读取
@@ -472,6 +472,7 @@ def vina_docking_from_list(ligands: list,
     # clean_intermediate_files(parent_path)
 
     # 返回本次运行的 run_dir
+    os.chdir(orig_cwd)
     return str(run_dir)
 # ============================================================
 # 保持原有的命令行入口：如果直接脚本调用，则走 argparse → main
