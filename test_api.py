@@ -97,5 +97,5 @@ def test_docking_api():
 if __name__ == "__main__":
     # test_fragmentize()
     # print("\n" + "="*50 + "\n")
-    # test_generate()
-    test_docking_api()
+    test_generate()
+    # test_docking_api()

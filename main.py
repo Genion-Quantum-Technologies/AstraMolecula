@@ -24,7 +24,12 @@ from dataset import Dataset
 from combine_mol import connect_constVar_try
 import sascorer
 import torch
-
+import sys
+import json
+ROOT = Path(__file__).resolve().parent
+VINA_DIR = ROOT / "Vina"
+if str(VINA_DIR) not in sys.path:
+    sys.path.insert(0, str(VINA_DIR))
 app = FastAPI()
 
 # ============================================
@@ -179,20 +184,57 @@ async def fragmentize(smiles: str = Query(..., description="SMILES string of the
         return FragmentResponse(fragments=fragments)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"发生错误: {str(e)}")
+
+
 @app.post("/generate", response_model=List[MoleculeOutput])
 async def generate_molecules(request: GenerateRequest):
-    start_time = time.time()  # 记录请求接受的时间
+    """
+    1. 先将请求参数保存到 jobs/<job_id>/input.json
+    2. 执行 run_generate_runner 生成结果
+    3. 将结果保存到 jobs/<job_id>/output.json
+    4. 返回结果给调用者
+    """
+    # （1）生成一个唯一的 job_id，并创建对应文件夹
     try:
-        # 调用 SMILES 生成逻辑
-        print("/generate请求开始时间:", start_time)
-        print("--------------/generate start---------------")
-        result = run_generate_runner(request.constSmiles, request.varSmiles, request.mainCls, request.minorCls, request.deltaValue, request.num)
-        end_time = time.time()  # 记录生成结束的时间
-        duration = end_time - start_time  # 计算用时
+        JOBS_DIR = ROOT / "jobs"
+        JOBS_DIR.mkdir(exist_ok=True)
 
-        print("/generate请求结束时间:", end_time)
-        print(f"请求处理用时: {duration:.2f}秒，本次处理分子数量为 {request.num}")
+        job_id = uuid.uuid4().hex
+        job_dir = JOBS_DIR / job_id
+        job_dir.mkdir()
+
+        # （2）将请求体内容保存到 job_dir/input.json
+        input_data = request.model_dump()
+        with open(job_dir / "input.json", "w", encoding="utf-8") as f_in:
+            json.dump(input_data, f_in, indent=2, ensure_ascii=False)
+
+        # （3）启动生成逻辑
+        start_time = time.time()
+        result = run_generate_runner(
+            request.constSmiles,
+            request.varSmiles,
+            request.mainCls,
+            request.minorCls,
+            request.deltaValue,
+            request.num
+        )
+        end_time = time.time()
+
+        # （4）将生成结果写入 job_dir/output.json
+        with open(job_dir / "output.json", "w", encoding="utf-8") as f_out:
+            json.dump(result, f_out, indent=2, ensure_ascii=False)
+
+        # （5）可以记录耗时
+        duration = end_time - start_time
+        # 你也可以将耗时写入一份 log.txt
+        with open(job_dir / "log.txt", "w", encoding="utf-8") as log_f:
+            log_f.write(f"Started at: {time.ctime(start_time)}\n")
+            log_f.write(f"Finished at: {time.ctime(end_time)}\n")
+            log_f.write(f"Duration: {duration:.2f} seconds\n")
+
+        # （6）把结果返回给调用者
         return result
+
     except Exception as e:
         # 捕获异常并记录详细的错误信息，包括堆栈追踪
         error_message = f"Error occurred: {str(e)}"
