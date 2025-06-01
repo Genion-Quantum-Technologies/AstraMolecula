@@ -196,7 +196,7 @@ async def generate_molecules(request: GenerateRequest):
     """
     # （1）生成一个唯一的 job_id，并创建对应文件夹
     try:
-        JOBS_DIR = ROOT / "jobs"
+        JOBS_DIR = ROOT / "jobs/generate"
         JOBS_DIR.mkdir(exist_ok=True)
 
         job_id = uuid.uuid4().hex
