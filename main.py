@@ -251,43 +251,52 @@ async def generate_molecules(request: GenerateRequest):
 @app.post("/docking")
 async def docking_endpoint(request: DockingRequest):
     """
-    接收 JSON：
-    {
-      "ligands": [
-         {"smiles": "...", "title": "..."},
-         ...
-      ],
-      "min_ph": 6.0,
-      "max_ph": 8.0,
-      "n_jobs": 10
-    }
-    直接调用 vina_docking_from_list，返回 run_id 和结果列表。
+    1. 创建 jobs/docking/<job_id>
+    2. 调用 vina_docking_from_list → 在 resource 下生成临时 run_dir
+    3. 将 run_dir 下所有内容“整体”移动到 jobs/docking/<job_id> 下
+    4. 从 jobs/docking/<job_id>/dockRes.csv 读取结果、返回
     """
     try:
-        # 1. 直接将 request.ligands 传给 vina_docking_from_list
+        # 1. 创建 jobs/docking/<job_id> 目录
+        JOBS_DOCK_DIR = ROOT / "jobs" / "docking"
+        JOBS_DOCK_DIR.mkdir(parents=True, exist_ok=True)
+
+        job_id = uuid.uuid4().hex
+        job_dir = JOBS_DOCK_DIR / job_id
+        job_dir.mkdir()
+
+        # 2. 调用 vina_docking_from_list，得到临时 run_dir（位于 resource/<uuid2>）
         receptor_path = str(Path("/home/davis/projects/dockingVina/resource") / "protein_7UDP.pdbqt")
+        lig_list = [lig.model_dump() for lig in request.ligands]
 
         run_dir = vina_docking_from_list(
-            ligands=[lig.dict() for lig in request.ligands],
+            ligands=lig_list,
             receptor_pdbqt=receptor_path,
             min_ph=request.min_ph,
             max_ph=request.max_ph,
             n_jobs=request.n_jobs
         )
-        # run_dir 示例： "/home/davis/projects/dockingVina/resource/<uuid>"
+        # run_dir ≈ /home/davis/projects/dockingVina/resource/<uuid2>
 
-        # 2. 读取 run_dir/dockRes.csv，把它转成 JSON
-        result_csv = Path(run_dir) / "dockRes.csv"
+        # 3. 把临时 run_dir 下的所有文件/文件夹移动到 job_dir
+        #    (比如 run_dir: /.../resource/123abc; job_dir: /.../jobs/docking/789def)
+        for item in Path(run_dir).iterdir():
+            # 将 resource/<uuid2>/dockRes.csv 等文件 或 子文件夹 移到 jobs/docking/<job_id>/
+            shutil.move(str(item), str(job_dir / item.name))
+        # 3b. 删除空的 run_dir（原 resource/<uuid2> 文件夹）
+        Path(run_dir).rmdir()
+
+        # 4. 读取最终结果
+        result_csv = job_dir / "dockRes.csv"
         if not result_csv.exists():
             raise HTTPException(status_code=500, detail="docking 过程中未生成 dockRes.csv")
 
         df_result = pd.read_csv(result_csv)
         json_result = df_result.to_dict(orient="records")
 
-        # 3. 返回 JSON
-        #    run_id 取 run_dir 的最后一段目录名
-        run_id = Path(run_dir).name
-        return JSONResponse(content={"run_id": run_id, "results": json_result})
+        return JSONResponse(content={"run_id": job_id, "results": json_result})
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"docking 失败: {str(e)}")
+        error_message = f"docking 失败: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
