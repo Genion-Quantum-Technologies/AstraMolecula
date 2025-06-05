@@ -26,7 +26,7 @@ import sascorer
 import torch
 import sys
 import json
-from tools  import DockingRequest, Fragment,FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
+from utils.tools  import DockingRequest, Fragment,FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
 ROOT = Path(__file__).resolve().parent
 VINA_DIR = ROOT / "Vina"
 if str(VINA_DIR) not in sys.path:

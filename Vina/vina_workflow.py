@@ -39,8 +39,6 @@ print(f"env_root is {env_root}")
 gypsumPath = f"{PROJECT_ROOT}/gypsum_dl/run_gypsum_dl.py"
 print(f"gypsumPath is {gypsumPath}")
 
-def print_var(var, note=''):
-    print(f"{var}:  {eval(var)}   {note}")
 
 def try_except_decorator(func):
     @functools.wraps(func)

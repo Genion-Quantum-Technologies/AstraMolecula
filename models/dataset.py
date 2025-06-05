@@ -15,7 +15,7 @@ from models.transformer.module.subsequent_mask import subsequent_mask
 from rdkit.Chem.SaltRemover import SaltRemover
 import random
 import rdkit.Chem as rkc
-from common.utils import Data_Type
+from utils.types import Data_Type
 
 class Dataset(tud.Dataset):
     """Custom PyTorch Dataset that takes a file containing
