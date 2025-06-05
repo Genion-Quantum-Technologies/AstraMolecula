@@ -8,8 +8,8 @@ from typing import List, Optional
 import io
 # 你的其他 imports 保持不变 … 
 from utils.generate import GenerateRunner
-from dataset import Dataset
-from combine_mol import connect_constVar_try
+from utils.dataset import Dataset
+from utils.combine_mol import connect_constVar_try
 import torch
 import utils.sascorer as sascorer
 # ============================================
@@ -86,11 +86,11 @@ def run_generate_runner(const_smiles, var_smiles, main_cls, minor_cls, delta_val
         'dev_no' :  0,
         'epoch' :  20,
         'model_choice' :  'transformer',
-        'model_path' :  './raw_pretrain_frag/checkpoint',
+        'model_path' :  './resource',
         'num_samples' :  50,
         'overwrite' :  True,
         'test_file_name' :  'test_cut',
-        'vocab_path' :  './'
+        'vocab_path' :  './resource'
     }
     opt = Options(**opt)
     runner = GenerateRunner(opt)
