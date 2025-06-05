@@ -7,11 +7,11 @@ from rdkit.Chem import Descriptors, QED, Draw
 from typing import List, Optional
 import io
 # 你的其他 imports 保持不变 … 
-from generate import GenerateRunner
+from utils.generate import GenerateRunner
 from dataset import Dataset
 from combine_mol import connect_constVar_try
 import torch
-import sascorer
+import utils.sascorer as sascorer
 # ============================================
 # 1. 为 docking 定义 Pydantic 模型
 # ============================================

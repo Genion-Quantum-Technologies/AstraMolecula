@@ -12,7 +12,7 @@ from io import BytesIO
 from PIL import Image
 import io
 from Vina.vina_workflow import vina_docking_from_list
-from fragment_processor import fragmentize_molecule
+from utils.fragment_processor import fragmentize_molecule
 import sys
 import json
 from utils.tools  import DockingRequest, FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
