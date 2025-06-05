@@ -1,32 +1,21 @@
 import time
-import os
 import uuid
 import shutil
 from pathlib import Path
-from typing import List, Optional
-
+from typing import List
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
 import pandas as pd
 from fastapi.responses import JSONResponse
-
 from rdkit import Chem
-from rdkit.Chem import Descriptors, QED, Draw
+from rdkit.Chem import Draw
 from io import BytesIO
 from PIL import Image
 import io
 from Vina.vina_workflow import vina_docking_from_list
-
-# 你的其他 imports 保持不变 … 
 from fragment_processor import fragmentize_molecule
-from generate import GenerateRunner
-from dataset import Dataset
-from combine_mol import connect_constVar_try
-import sascorer
-import torch
 import sys
 import json
-from utils.tools  import DockingRequest, Fragment,FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
+from utils.tools  import DockingRequest, FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
 ROOT = Path(__file__).resolve().parent
 VINA_DIR = ROOT / "Vina"
 if str(VINA_DIR) not in sys.path:
