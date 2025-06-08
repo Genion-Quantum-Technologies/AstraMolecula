@@ -1,5 +1,6 @@
 # dockingVina
-
+# 去掉 build-level 的 pin，只保留包名和主版本
+conda env export --no-builds > environment-portable.yml
 # 安装conda env
 conda env create -f environment.yaml
 conda activate dockingVina
