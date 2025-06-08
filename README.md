@@ -2,7 +2,7 @@
 # 去掉 build-level 的 pin，只保留包名和主版本
 conda env export --no-builds > environment-portable.yml
 # 安装conda env
-conda env create -f environment.yaml
+conda env create -f environment-portable.yml
 conda activate dockingVina
 # 安装
 conda install -c conda-forge openmpi mpi4py
@@ -28,3 +28,5 @@ conda install -c conda-forge apsw
 pip install mmpdb
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 conda install seaborn
+
+uvicorn main:app
