@@ -10,7 +10,6 @@ conda install -c conda-forge openmpi mpi4py
 git clone https://github.com/durrantlab/gypsum_dl.git
 # or
 git clone git@github.com:durrantlab/gypsum_dl.git
-# move gypsum_dl folder under resource
 
 # 需要修改gypsum_dl/Start.py的源码
 # replace 'os.mkdir(params["output_folder"])' with os.makedirs(params["output_folder"], exist_ok=True)
@@ -26,7 +25,17 @@ chmod u+x vinademo.sh
 conda install -c conda-forge uvicorn fastapi
 conda install -c conda-forge apsw
 pip install mmpdb
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 conda install seaborn
+
+# 在项目根目录下运行：
+pip install -e ./my_toolsets
+
+pip uninstall mmpdb -y
+pip install mmpdb==2.1
+pip uninstall torch
+conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
+pip install --upgrade pydantic
+
+
 
 uvicorn main:app

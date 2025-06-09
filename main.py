@@ -131,7 +131,7 @@ async def docking_endpoint(request: DockingRequest):
         job_dir.mkdir()
 
         # 2. 调用 vina_docking_from_list，得到临时 run_dir（位于 resource/<uuid2>）
-        receptor_path = str(Path("/home/davis/projects/dockingVina/resource") / "protein_7UDP.pdbqt")
+        receptor_path = str(ROOT / "resource" / "protein_7UDP.pdbqt")
         lig_list = [lig.model_dump() for lig in request.ligands]
 
         run_dir = vina_docking_from_list(
