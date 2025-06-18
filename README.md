@@ -35,7 +35,10 @@ pip install mmpdb==2.1
 pip uninstall torch
 conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install --upgrade pydantic
-
-
-
+pip install "meeko>=0.3.0"
+python -m pip install mmpdb
+pip install seaborn
+sudo apt-get install -y openmpi-bin
+conda install -c conda-forge mpi4py
+conda install numpy=1.23
 uvicorn main:app
