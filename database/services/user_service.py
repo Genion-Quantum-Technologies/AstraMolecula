@@ -19,6 +19,13 @@ class UserService:
         return bcrypt.checkpw(password.encode(), user.password_hash.encode())
 
     @staticmethod
+    def get_user(username: str) -> Optional[User]:
+        """
+        根据 username 返回 User 对象（或 None）
+        """
+        return UserRepository.get_by_username(username)
+
+    @staticmethod
     def list_users(limit: int = 100) -> List[User]:
         return UserRepository.list_all(limit)
 

@@ -1,5 +1,5 @@
+from database.db import get_connection
 from database.models.user import User
-from db import get_connection
 from typing import List, Optional
 
 class UserRepository:

@@ -44,6 +44,6 @@ conda install numpy=1.23
 
 uvicorn main:app
 
-
+pip install python-jose[cryptography]
 sudo apt install mysql-server
 pip install mysql-connector-python bcrypt

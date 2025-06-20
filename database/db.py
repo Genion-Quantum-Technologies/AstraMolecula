@@ -1,5 +1,6 @@
 from mysql.connector import pooling
-from config import DB_CONFIG
+
+from database.config import DB_CONFIG
 
 # 建立连接池，避免每次都新建连接
 pool = pooling.MySQLConnectionPool(

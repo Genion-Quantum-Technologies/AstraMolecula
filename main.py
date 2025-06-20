@@ -5,13 +5,16 @@ from pathlib import Path
 from typing import List
 from fastapi import FastAPI, HTTPException, Query
 import pandas as pd
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from rdkit import Chem
 from rdkit.Chem import Draw
 from io import BytesIO
 from PIL import Image
 import io
 from Vina.vina_workflow import vina_docking_from_list
+from requests.basic_request import UserCreateRequest, UserLoginRequest
+from database.services.user_service import UserService
+from security.auth import TokenResponse, create_access_token, get_current_user
 from utils.fragment_processor import fragmentize_molecule
 import sys
 import json
@@ -24,31 +27,65 @@ app = FastAPI()
 
 from fastapi import UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi import Depends, HTTPException
 
-@app.post("/upload_pdbqt")
-async def upload_pdbqt(files: List[UploadFile] = File(...)):
+@app.post("/login", response_model=TokenResponse)
+async def login_for_token(request: UserLoginRequest):
     """
-    接收用户上传的 .pdbqt 文件，保存到 uploads/ 目录。
+    登录接口：校验用户名/密码，成功后返回 JWT
+    """
+    if not UserService.authenticate(request.username, request.password):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+
+    # 载荷中放 sub = username，也可以放 user_id
+    access_token = create_access_token(
+        data={"sub": request.username}
+    )
+    return {"access_token": access_token}
+
+@app.post("/users", status_code=201)
+async def create_user(request: UserCreateRequest):
+    """
+    创建一个新用户。
     """
     try:
-        UPLOAD_DIR = ROOT / "uploads"
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-        saved_files = []
-
-        for file in files:
-            if not file.filename.endswith(".pdbqt"):
-                raise HTTPException(status_code=400, detail=f"不支持的文件类型: {file.filename}")
-
-            file_path = UPLOAD_DIR / file.filename
-            with open(file_path, "wb") as f:
-                f.write(await file.read())
-            saved_files.append(str(file_path.name))
-
-        return JSONResponse(content={"message": "上传成功", "saved_files": saved_files})
-
+        # 调用业务层做注册
+        UserService.register(
+            username=request.username,
+            password=request.password,
+            phone=request.phone,
+            email=request.email
+        )
+        return {"message": "User created successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+        # 你可以根据不同的异常类型返回不同的 status_code
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {e}")
+
+
+@app.post("/upload_pdbqt")
+async def upload_pdbqt(
+    files: List[UploadFile] = File(...),
+    current_user = Depends(get_current_user),       # ← 使用 token 校验
+):
+    """
+    只有拿到合法 Token（通过 /token 获得）的用户才能上传，
+    上传文件会保存到 uploads/{user_id}/ 目录下。
+    """
+    user_id = current_user.id
+    UPLOAD_DIR = ROOT / "uploads" / user_id
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    saved = []
+    for f in files:
+        if not f.filename.endswith(".pdbqt"):
+            raise HTTPException(status_code=400, detail=f"不支持的文件类型: {f.filename}")
+        dest = UPLOAD_DIR / f.filename
+        with open(dest, "wb") as fh:
+            fh.write(await f.read())
+        saved.append(dest.name)
+
+    return {"message": "上传成功", "user_id": user_id, "files": saved}
+
 
 # ============================================
 # 3. 已有的 /smiles2img, /fragmentize, /generate 接口 保持不变

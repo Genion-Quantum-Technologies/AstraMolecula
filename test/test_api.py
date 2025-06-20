@@ -7,6 +7,21 @@ BASE_URL = "http://127.0.0.1:8000"
 # 示例 SMILES 字符串
 test_smiles = "CC(=O)Nc1cc(-c2cc(F)cc(OC3CCN(C)C3)c2)nc(-n2nc(C)cc2C)n1"
 
+def test_login():
+    print("Testing /login …")
+    payload = {
+        "username": "bob",
+        "password": "Pa$$w0rd123"
+    }
+    headers = {"Content-Type": "application/json"}
+    resp = requests.post(f"{BASE_URL}/login", headers=headers, data=json.dumps(payload))
+    if resp.status_code == 200:
+        data = resp.json()
+        token = data.get("access_token")
+        print("✅ 登录成功，获得 token：", token)
+    else:
+        print(f"❌ 登录失败 [{resp.status_code}]:", resp.text)
+
 def test_fragmentize():
     print("Testing /fragmentize...")
     params = {"smiles": test_smiles}
@@ -94,8 +109,25 @@ def test_docking_api():
     except requests.exceptions.RequestException as e:
         print("Request failed:", str(e))
 
+def test_create_user():
+    print("Testing POST /users …")
+    payload = {
+        "username": "bob",
+        "password": "Pa$$w0rd123",
+        "phone": "13900001111",
+        "email": "bob@example.com"
+    }
+    headers = {"Content-Type": "application/json"}
+    resp = requests.post(f"{BASE_URL}/users", headers=headers, data=json.dumps(payload))
+    if resp.status_code == 201:
+        print("✅ 创建用户成功：", resp.json())
+    else:
+        print(f"❌ 创建用户失败 [{resp.status_code}]:\n", resp.text)
+
 if __name__ == "__main__":
     # test_fragmentize()
     # print("\n" + "="*50 + "\n")
-    test_generate()
+    # test_generate()
     # test_docking_api()
+    # test_create_user()
+    test_login()
