@@ -41,4 +41,9 @@ pip install seaborn
 sudo apt-get install -y openmpi-bin
 conda install -c conda-forge mpi4py
 conda install numpy=1.23
+
 uvicorn main:app
+
+
+sudo apt install mysql-server
+pip install mysql-connector-python bcrypt

@@ -21,6 +21,35 @@ VINA_DIR = ROOT / "Vina"
 if str(VINA_DIR) not in sys.path:
     sys.path.insert(0, str(VINA_DIR))
 app = FastAPI()
+
+from fastapi import UploadFile, File
+from fastapi.responses import JSONResponse
+
+@app.post("/upload_pdbqt")
+async def upload_pdbqt(files: List[UploadFile] = File(...)):
+    """
+    接收用户上传的 .pdbqt 文件，保存到 uploads/ 目录。
+    """
+    try:
+        UPLOAD_DIR = ROOT / "uploads"
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+        saved_files = []
+
+        for file in files:
+            if not file.filename.endswith(".pdbqt"):
+                raise HTTPException(status_code=400, detail=f"不支持的文件类型: {file.filename}")
+
+            file_path = UPLOAD_DIR / file.filename
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+            saved_files.append(str(file_path.name))
+
+        return JSONResponse(content={"message": "上传成功", "saved_files": saved_files})
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+
 # ============================================
 # 3. 已有的 /smiles2img, /fragmentize, /generate 接口 保持不变
 # ============================================

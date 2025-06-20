@@ -135,3 +135,34 @@ def run_generate_runner(const_smiles, var_smiles, main_cls, minor_cls, delta_val
                         "qed": descriptors['qed']
                     })
     return result
+
+
+def validate_pdbqt_format(pdbqt_text: str) -> List[str]:
+    """
+    验证 .pdbqt 文件内容是否符合 Vina 所需的基本格式。
+    返回错误信息列表，若为空则表示格式合格。
+    """
+    errors = []
+
+    # 检查关键结构关键词是否存在
+    required_keywords = ["ROOT", "ENDROOT", "TORSDOF"]
+    for keyword in required_keywords:
+        if keyword not in pdbqt_text:
+            errors.append(f"缺少关键字: {keyword}")
+
+    # 检查至少存在一个 ATOM 或 HETATM 行
+    if not any(line.startswith(("ATOM", "HETATM")) for line in pdbqt_text.splitlines()):
+        errors.append("缺少 ATOM 或 HETATM 行（原子坐标信息）")
+
+    # 检查是否存在坐标列（粗略判断是否包含 X Y Z 信息）
+    for line in pdbqt_text.splitlines():
+        if line.startswith(("ATOM", "HETATM")):
+            try:
+                float(line[30:38])  # X
+                float(line[38:46])  # Y
+                float(line[46:54])  # Z
+            except ValueError:
+                errors.append("存在无法解析的原子坐标行")
+                break
+
+    return errors
