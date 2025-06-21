@@ -440,7 +440,8 @@ def vina_docking_from_list(ligands: list,
               dir=parent_path)
 
     # Step 4: 读取 receptor 同级目录下的 vina_box.json
-    box_json = receptPath.parent / "vina_box.json"
+    DEFAULT_ROOT = Path(__file__).resolve().parent.parent  # Vina/ 下往上两级到项目根
+    box_json = DEFAULT_ROOT / "resource" / "vina_box.json"
     if not box_json.exists():
         raise FileNotFoundError(f"未找到 {box_json}，请确认在受体文件同级目录下有 vina_box.json。")
     with open(box_json, "r") as infile:

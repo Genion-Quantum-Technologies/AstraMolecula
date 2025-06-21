@@ -2,7 +2,7 @@ import time
 import uuid
 import shutil
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 import pandas as pd
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -190,27 +190,45 @@ async def generate_molecules(request: GenerateRequest):
 # ────────────────────────────────────────────────────────────────────
 #  修改后的 /docking 接口：直接传递 ligands 列表，不再手动写临时 CSV
 # ────────────────────────────────────────────────────────────────────
+
 @app.post("/docking")
-async def docking_endpoint(request: DockingRequest):
+async def docking_endpoint(
+    request: DockingRequest,
+    receptor_filename: Optional[str] = Query(
+        None,
+        description="用户在上传历史中已有的受体 pdbqt 文件名"
+    ),
+    current_user = Depends(get_current_user),
+):
     """
-    1. 创建 jobs/docking/<job_id>
-    2. 调用 vina_docking_from_list → 在 resource 下生成临时 run_dir
-    3. 将 run_dir 下所有内容“整体”移动到 jobs/docking/<job_id> 下
-    4. 从 jobs/docking/<job_id>/dockRes.csv 读取结果、返回
+    1. 校验 token，获取 current_user
+    2. 如果提供 receptor_filename，就去 user_uploads 表查同名记录并取 file_path；否则使用默认资源
+    3. 其余逻辑同之前
     """
     try:
-        # 1. 创建 jobs/docking/<job_id> 目录
+        # —— 1) 确定受体文件路径 —— #
+        if receptor_filename:
+            # 查用户上传记录
+            uploads = UploadService.list_by_user(current_user.id)
+            match = next((u for u in uploads if u.filename == receptor_filename), None)
+            if not match:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"受体文件 '{receptor_filename}' 不在你的上传记录中"
+                )
+            receptor_path = match.file_path
+        else:
+            receptor_path = str(ROOT / "resource" / "protein_7UDP.pdbqt")
+
+        # —— 2) 创建作业目录 —— #
         JOBS_DOCK_DIR = ROOT / "jobs" / "docking"
         JOBS_DOCK_DIR.mkdir(parents=True, exist_ok=True)
-
         job_id = uuid.uuid4().hex
         job_dir = JOBS_DOCK_DIR / job_id
         job_dir.mkdir()
 
-        # 2. 调用 vina_docking_from_list，得到临时 run_dir（位于 resource/<uuid2>）
-        receptor_path = str(ROOT / "resource" / "protein_7UDP.pdbqt")
+        # —— 3) 调用 Vina 计算 —— #
         lig_list = [lig.model_dump() for lig in request.ligands]
-
         run_dir = vina_docking_from_list(
             ligands=lig_list,
             receptor_pdbqt=receptor_path,
@@ -218,27 +236,24 @@ async def docking_endpoint(request: DockingRequest):
             max_ph=request.max_ph,
             n_jobs=request.n_jobs
         )
-        # run_dir ≈ /home/davis/projects/dockingVina/resource/<uuid2>
 
-        # 3. 把临时 run_dir 下的所有文件/文件夹移动到 job_dir
-        #    (比如 run_dir: /.../resource/123abc; job_dir: /.../jobs/docking/789def)
+        # —— 4) 移动结果 —— #
         for item in Path(run_dir).iterdir():
-            # 将 resource/<uuid2>/dockRes.csv 等文件 或 子文件夹 移到 jobs/docking/<job_id>/
             shutil.move(str(item), str(job_dir / item.name))
-        # 3b. 删除空的 run_dir（原 resource/<uuid2> 文件夹）
         Path(run_dir).rmdir()
 
-        # 4. 读取最终结果
+        # —— 5) 读取并返回结果 —— #
         result_csv = job_dir / "dockRes.csv"
         if not result_csv.exists():
             raise HTTPException(status_code=500, detail="docking 过程中未生成 dockRes.csv")
+        df = pd.read_csv(result_csv)
+        records = df.to_dict(orient="records")
+        return JSONResponse(content={"run_id": job_id, "results": records})
 
-        df_result = pd.read_csv(result_csv)
-        json_result = df_result.to_dict(orient="records")
-
-        return JSONResponse(content={"run_id": job_id, "results": json_result})
-
+    except HTTPException:
+        # 直接抛出的 HTTPException，交给 FastAPI 处理
+        raise
     except Exception as e:
-        error_message = f"docking 失败: {str(e)}"
-        print(error_message)
-        raise HTTPException(status_code=500, detail=error_message)
+        # 其他异常
+        print(f"docking 失败: {e}")
+        raise HTTPException(status_code=500, detail=f"docking 失败: {e}")
