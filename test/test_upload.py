@@ -2,7 +2,7 @@ import requests
 import json
 
 BASE_URL = "http://127.0.0.1:8000"
-USERNAME = "bo32131"
+USERNAME = "bob"
 PASSWORD = "Pa$$w0rd123"
 
 def get_token():
@@ -36,12 +36,32 @@ def test_upload_pdbqt():
         "Authorization": f"Bearer {token}"
     }
 
-    resp = requests.post(f"{BASE_URL}/upload_pdbqt", headers=headers, files=files, timeout=60)
+# 上传
+    resp = requests.post(
+        f"{BASE_URL}/upload_pdbqt",
+        headers=headers,
+        files=files,
+        timeout=60
+    )
     if resp.status_code == 200:
         print("✅ 上传成功，返回：")
         print(json.dumps(resp.json(), indent=2, ensure_ascii=False))
     else:
         print(f"❌ 上传失败 [{resp.status_code}]:", resp.text)
+        return
+
+    # 再调用 /users/me/uploads 验证记录
+    resp2 = requests.get(
+        f"{BASE_URL}/users/me/uploads",
+        headers=headers,
+        timeout=10
+    )
+    if resp2.status_code == 200:
+        uploads = resp2.json()
+        print("\n✅ 上传记录：")
+        print(json.dumps(uploads, indent=2, ensure_ascii=False))
+    else:
+        print(f"❌ 拉取上传记录失败 [{resp2.status_code}]:", resp2.text)
 
 if __name__ == "__main__":
     test_upload_pdbqt()

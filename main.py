@@ -12,6 +12,7 @@ from io import BytesIO
 from PIL import Image
 import io
 from Vina.vina_workflow import vina_docking_from_list
+from database.services.upload_service import UploadService
 from requests.basic_request import UserCreateRequest, UserLoginRequest
 from database.services.user_service import UserService
 from security.auth import TokenResponse, create_access_token, get_current_user
@@ -19,6 +20,7 @@ from utils.fragment_processor import fragmentize_molecule
 import sys
 import json
 from utils.tools  import DockingRequest, FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
+
 ROOT = Path(__file__).resolve().parent
 VINA_DIR = ROOT / "Vina"
 if str(VINA_DIR) not in sys.path:
@@ -61,6 +63,10 @@ async def create_user(request: UserCreateRequest):
         # 你可以根据不同的异常类型返回不同的 status_code
         raise HTTPException(status_code=500, detail=f"Failed to create user: {e}")
 
+@app.get("/users/me/uploads")
+async def list_my_uploads(current_user=Depends(get_current_user)):
+    uploads = UploadService.list_by_user(current_user.id)
+    return [u.__dict__ for u in uploads]
 
 @app.post("/upload_pdbqt")
 async def upload_pdbqt(
@@ -83,7 +89,12 @@ async def upload_pdbqt(
         with open(dest, "wb") as fh:
             fh.write(await f.read())
         saved.append(dest.name)
-
+        # —— 新增：把记录写入数据库 —— 
+        UploadService.record_upload(
+            user_id=current_user.id,
+            filename=dest.name,
+            file_path=str(dest)
+        )
     return {"message": "上传成功", "user_id": user_id, "files": saved}
 
 
