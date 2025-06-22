@@ -468,7 +468,7 @@ def vina_docking_from_list(ligands: list,
     dfRes.to_csv(f"{parent_path}/dockRes.csv", index=None)
 
     # Step 7: 清理中间文件（只保留 keep_files）
-    # clean_intermediate_files(parent_path)
+    clean_intermediate_files(parent_path)
 
     # 返回本次运行的 run_dir
     os.chdir(orig_cwd)
