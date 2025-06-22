@@ -5,7 +5,8 @@ from pathlib import Path
 BASE_URL = "http://127.0.0.1:8000"
 USERNAME = "bob"
 PASSWORD = "Pa$$w0rd123"
-
+# USERNAME = "TOM"
+# PASSWORD = "321312"
 def get_token() -> str:
     """先登录拿到 JWT"""
     payload = {"username": USERNAME, "password": PASSWORD}
@@ -34,7 +35,7 @@ def test_docking_with_uploaded_receptor():
     ]
 
     # 设置 query 参数指定之前上传的 user1.pdbqt
-    params = {"receptor_filename": "user1.pdbqt"}
+    params = {"receptor_filename": "user2.pdbqt"}
 
     headers = {
         "Authorization": f"Bearer {token}",

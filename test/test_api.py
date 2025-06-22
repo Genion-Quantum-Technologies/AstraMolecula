@@ -55,11 +55,17 @@ def test_generate():
 
 def test_create_user():
     print("Testing POST /users …")
+    # payload = {
+    #     "username": "bob",
+    #     "password": "Pa$$w0rd123",
+    #     "phone": "13900001111",
+    #     "email": "bob@example.com"
+    # }
     payload = {
-        "username": "bob",
-        "password": "Pa$$w0rd123",
-        "phone": "13900001111",
-        "email": "bob@example.com"
+        "username": "TOM",
+        "password": "321312",
+        "phone": "13922221111",
+        "email": "TOM@example.com"
     }
     headers = {"Content-Type": "application/json"}
     resp = requests.post(f"{BASE_URL}/users", headers=headers, data=json.dumps(payload))
@@ -72,5 +78,5 @@ if __name__ == "__main__":
     # test_fragmentize()
     # print("\n" + "="*50 + "\n")
     # test_generate()
-    # test_create_user()
-    test_login()
+    test_create_user()
+    # test_login()
