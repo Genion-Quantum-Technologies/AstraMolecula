@@ -59,10 +59,33 @@ def test_docking_with_uploaded_receptor():
 
     if resp.status_code == 200:
         result = resp.json()
-        print("✅ Docking 成功，run_id:", result.get("run_id"))
-        print("Results:")
-        for idx, row in enumerate(result.get("results", []), start=1):
-            print(f"  {idx}. title={row.get('title')}, score={row.get('score')}, file={row.get('file')}")
+        task_id = result.get("task_id")
+        print("✅ 任务已加入队列，task_id:", task_id)
+        if task_id:
+            res = requests.get(
+                f"{BASE_URL}/tasks/{task_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if res.ok:
+                status = res.json().get("status")
+                print("Task status:", status)
+                if status == "finished":
+                    down = requests.get(
+                        f"{BASE_URL}/tasks/{task_id}/download",
+                        headers={"Authorization": f"Bearer {token}"},
+                    )
+                    if down.ok:
+                        print("Download size:", len(down.content))
+                    else:
+                        print(
+                            f"❌ 下载结果失败 [{down.status_code}]",
+                            down.text,
+                        )
+            else:
+                print(
+                    f"❌ 查询任务失败 [{res.status_code}]",
+                    res.text,
+                )
     else:
         print(f"❌ Docking 失败 [{resp.status_code}]:", resp.text)
 

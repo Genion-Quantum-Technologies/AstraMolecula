@@ -47,3 +47,21 @@ class TaskRepository:
         finally:
             conn.close()
         return tasks
+
+    @staticmethod
+    def get(task_id: str) -> Optional[Task]:
+        sql = """
+        SELECT id, user_id, task_type, job_dir, status, created_at, finished_at
+          FROM tasks
+         WHERE id = %s
+        """
+        conn = get_connection()
+        try:
+            with conn.cursor(dictionary=True) as cur:
+                cur.execute(sql, (task_id,))
+                row = cur.fetchone()
+                if row:
+                    return Task(**row)
+        finally:
+            conn.close()
+        return None

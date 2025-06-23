@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from database.models.task import Task
 from database.repositorys.task_repository import TaskRepository
@@ -28,3 +28,7 @@ class TaskService:
     @staticmethod
     def fetch_pending(limit: int = 10) -> List[Task]:
         return TaskRepository.get_pending(limit)
+
+    @staticmethod
+    def get_task(task_id: str) -> Optional[Task]:
+        return TaskRepository.get(task_id)

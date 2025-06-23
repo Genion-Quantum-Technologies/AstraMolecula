@@ -7,6 +7,21 @@ BASE_URL = "http://127.0.0.1:8000"
 # 示例 SMILES 字符串
 test_smiles = "CC(=O)Nc1cc(-c2cc(F)cc(OC3CCN(C)C3)c2)nc(-n2nc(C)cc2C)n1"
 
+USERNAME = "bob"
+PASSWORD = "Pa$$w0rd123"
+
+def get_token() -> str:
+    payload = {"username": USERNAME, "password": PASSWORD}
+    resp = requests.post(
+        f"{BASE_URL}/login",
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(payload),
+    )
+    if resp.status_code == 200:
+        return resp.json().get("access_token", "")
+    print(f"❌ 登录失败 [{resp.status_code}]:", resp.text)
+    return ""
+
 def test_login():
     print("Testing /login …")
     payload = {
@@ -36,6 +51,9 @@ def test_fragmentize():
 
 def test_generate():
     print("Testing /generate...")
+    token = get_token()
+    if not token:
+        return
     payload = {
         "constSmiles": "c1ccccc1",       # 示例 constant fragment
         "varSmiles": "C=O",              # 示例 variable fragment
@@ -44,11 +62,42 @@ def test_generate():
         "deltaValue": "1.0",             # 示例 delta
         "num": 2                         # 生成的数量
     }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(f"{BASE_URL}/generate", headers=headers, data=json.dumps(payload))
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+    response = requests.post(
+        f"{BASE_URL}/generate", headers=headers, data=json.dumps(payload)
+    )
     if response.ok:
-        print("Generate response:")
-        print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+        data = response.json()
+        task_id = data.get("task_id")
+        print("✅ 任务已加入队列，task_id:", task_id)
+        if task_id:
+            res = requests.get(
+                f"{BASE_URL}/tasks/{task_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if res.ok:
+                status = res.json().get("status")
+                print("Task status:", status)
+                if status == "finished":
+                    down = requests.get(
+                        f"{BASE_URL}/tasks/{task_id}/download",
+                        headers={"Authorization": f"Bearer {token}"},
+                    )
+                    if down.ok:
+                        print("Download size:", len(down.content))
+                    else:
+                        print(
+                            f"❌ 下载结果失败 [{down.status_code}]",
+                            down.text,
+                        )
+            else:
+                print(
+                    f"❌ 查询任务失败 [{res.status_code}]",
+                    res.text,
+                )
     else:
         print("Error:", response.status_code, response.text)
 
@@ -77,6 +126,6 @@ def test_create_user():
 if __name__ == "__main__":
     # test_fragmentize()
     # print("\n" + "="*50 + "\n")
-    # test_generate()
-    test_create_user()
+    test_generate()
+    # test_create_user()
     # test_login()

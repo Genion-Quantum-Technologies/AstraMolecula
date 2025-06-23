@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import shutil
 from typing import Optional
@@ -8,6 +9,7 @@ import pandas as pd
 
 from Vina.vina_workflow import vina_docking_from_list
 from config import ROOT
+from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
 from security.auth import get_current_user
 from utils.tools import DockingRequest
@@ -51,28 +53,26 @@ async def docking_endpoint(
         job_dir = JOBS_DOCK_DIR / job_id
         job_dir.mkdir()
 
-        # —— 3) 调用 Vina 计算 —— #
-        lig_list = [lig.model_dump() for lig in request.ligands]
-        run_dir = vina_docking_from_list(
-            ligands=lig_list,
-            receptor_pdbqt=receptor_path,
-            min_ph=request.min_ph,
-            max_ph=request.max_ph,
-            n_jobs=request.n_jobs
+        # —— 3) 保存请求参数 —— #
+        params = {
+            "ligands": [lig.model_dump() for lig in request.ligands],
+            "receptor_pdbqt": receptor_path,
+            "min_ph": request.min_ph,
+            "max_ph": request.max_ph,
+            "n_jobs": request.n_jobs,
+        }
+        with open(job_dir / "input.json", "w", encoding="utf-8") as f:
+            json.dump(params, f, ensure_ascii=False, indent=2)
+
+        # —— 4) 创建任务 —— #
+        task_id = TaskService.create_task(
+            user_id=current_user.id,
+            task_type="docking",
+            job_dir=str(job_dir)
         )
 
-        # —— 4) 移动结果 —— #
-        for item in Path(run_dir).iterdir():
-            shutil.move(str(item), str(job_dir / item.name))
-        Path(run_dir).rmdir()
-
-        # —— 5) 读取并返回结果 —— #
-        result_csv = job_dir / "dockRes.csv"
-        if not result_csv.exists():
-            raise HTTPException(status_code=500, detail="docking 过程中未生成 dockRes.csv")
-        df = pd.read_csv(result_csv)
-        records = df.to_dict(orient="records")
-        return JSONResponse(content={"run_id": job_id, "results": records})
+        # —— 5) 返回 task_id —— #
+        return JSONResponse(content={"task_id": task_id})
 
     except HTTPException:
         # 直接抛出的 HTTPException，交给 FastAPI 处理

@@ -7,9 +7,11 @@ import uuid
 from fastapi.responses import StreamingResponse
 from rdkit import Chem
 from rdkit.Chem import Draw
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from config import ROOT
+from database.services.task_service import TaskService
+from security.auth import get_current_user
 from utils.fragment_processor import fragmentize_molecule
 from utils.tools import FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
 
@@ -42,13 +44,12 @@ async def fragmentize(smiles: str = Query(..., description="SMILES string of the
         raise HTTPException(status_code=500, detail=f"发生错误: {str(e)}")
 
 
-@router.post("/generate", response_model=List[MoleculeOutput])
-async def generate_molecules(request: GenerateRequest):
+@router.post("/generate")
+async def generate_molecules(request: GenerateRequest,current_user = Depends(get_current_user)):
     """
-    1. 先将请求参数保存到 jobs/<job_id>/input.json
-    2. 执行 run_generate_runner 生成结果
-    3. 将结果保存到 jobs/<job_id>/output.json
-    4. 返回结果给调用者
+    1. 将请求参数保存到 jobs/<job_id>/input.json
+    2. 创建一条待处理的 generate 任务记录
+    3. 由 task_worker 在后台读取任务并生成结果
     """
     # （1）生成一个唯一的 job_id，并创建对应文件夹
     try:
@@ -64,32 +65,14 @@ async def generate_molecules(request: GenerateRequest):
         with open(job_dir / "input.json", "w", encoding="utf-8") as f_in:
             json.dump(input_data, f_in, indent=2, ensure_ascii=False)
 
-        # （3）启动生成逻辑
-        start_time = time.time()
-        result = run_generate_runner(
-            request.constSmiles,
-            request.varSmiles,
-            request.mainCls,
-            request.minorCls,
-            request.deltaValue,
-            request.num
+        # （3）创建任务，供后台 worker 执行
+        task_id = TaskService.create_task(
+            user_id=current_user.id,
+            task_type="generate",
+            job_dir=str(job_dir)
         )
-        end_time = time.time()
-
-        # （4）将生成结果写入 job_dir/output.json
-        with open(job_dir / "output.json", "w", encoding="utf-8") as f_out:
-            json.dump(result, f_out, indent=2, ensure_ascii=False)
-
-        # （5）可以记录耗时
-        duration = end_time - start_time
-        # 你也可以将耗时写入一份 log.txt
-        with open(job_dir / "log.txt", "w", encoding="utf-8") as log_f:
-            log_f.write(f"Started at: {time.ctime(start_time)}\n")
-            log_f.write(f"Finished at: {time.ctime(end_time)}\n")
-            log_f.write(f"Duration: {duration:.2f} seconds\n")
-
-        # （6）把结果返回给调用者
-        return result
+        # （4）立即返回 task_id，让客户端稍后查询结果
+        return {"task_id": task_id}
 
     except Exception as e:
         # 捕获异常并记录详细的错误信息，包括堆栈追踪
