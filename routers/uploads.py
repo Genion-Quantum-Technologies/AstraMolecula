@@ -1,6 +1,6 @@
 
 from typing import List
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from config import ROOT
 from database.services.upload_service import UploadService
 from security.auth import get_current_user
@@ -8,19 +8,17 @@ from security.auth import get_current_user
 router = APIRouter(tags=["Uploads"])
 
 @router.get("/users/me/uploads")
-async def list_my_uploads(current_user=Depends(get_current_user)):
+async def list_my_uploads(request: Request):
+    current_user = request.state.user
     uploads = UploadService.list_by_user(current_user.id)
     return [u.__dict__ for u in uploads]
 
 @router.post("/upload_pdbqt")
 async def upload_pdbqt(
-    files: List[UploadFile] = File(...),
-    current_user = Depends(get_current_user),       # ← 使用 token 校验
+    request: Request,
+    files: List[UploadFile] = File(...)
 ):
-    """
-    只有拿到合法 Token（通过 /token 获得）的用户才能上传，
-    上传文件会保存到 uploads/{user_id}/ 目录下。
-    """
+    current_user = request.state.user
     user_id = current_user.id
     UPLOAD_DIR = ROOT / "uploads" / user_id
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -33,9 +31,8 @@ async def upload_pdbqt(
         with open(dest, "wb") as fh:
             fh.write(await f.read())
         saved.append(dest.name)
-        # —— 新增：把记录写入数据库 —— 
         UploadService.record_upload(
-            user_id=current_user.id,
+            user_id=user_id,
             filename=dest.name,
             file_path=str(dest)
         )

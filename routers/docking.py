@@ -1,40 +1,35 @@
 import json
 from pathlib import Path
 import shutil
-from typing import Optional
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Optional
+
+from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse
-import pandas as pd
 
 from Vina.vina_workflow import vina_docking_from_list
 from config import ROOT
 from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
-from security.auth import get_current_user
 from utils.tools import DockingRequest
-
 
 router = APIRouter(tags=["Smiles"])
 
 @router.post("/docking")
 async def docking_endpoint(
-    request: DockingRequest,
+    request: Request,
+    docking_request: DockingRequest,
     receptor_filename: Optional[str] = Query(
         None,
         description="用户在上传历史中已有的受体 pdbqt 文件名"
     ),
-    current_user = Depends(get_current_user),
 ):
-    """
-    1. 校验 token，获取 current_user
-    2. 如果提供 receptor_filename，就去 user_uploads 表查同名记录并取 file_path；否则使用默认资源
-    3. 其余逻辑同之前
-    """
+    # 从中间件注入的 state 中取出已验证的用户
+    current_user = request.state.user
+
     try:
         # —— 1) 确定受体文件路径 —— #
         if receptor_filename:
-            # 查用户上传记录
             uploads = UploadService.list_by_user(current_user.id)
             match = next((u for u in uploads if u.filename == receptor_filename), None)
             if not match:
@@ -55,11 +50,11 @@ async def docking_endpoint(
 
         # —— 3) 保存请求参数 —— #
         params = {
-            "ligands": [lig.model_dump() for lig in request.ligands],
+            "ligands": [lig.model_dump() for lig in docking_request.ligands],
             "receptor_pdbqt": receptor_path,
-            "min_ph": request.min_ph,
-            "max_ph": request.max_ph,
-            "n_jobs": request.n_jobs,
+            "min_ph": docking_request.min_ph,
+            "max_ph": docking_request.max_ph,
+            "n_jobs": docking_request.n_jobs,
         }
         with open(job_dir / "input.json", "w", encoding="utf-8") as f:
             json.dump(params, f, ensure_ascii=False, indent=2)

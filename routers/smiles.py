@@ -7,7 +7,7 @@ import uuid
 from fastapi.responses import StreamingResponse
 from rdkit import Chem
 from rdkit.Chem import Draw
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from config import ROOT
 from database.services.task_service import TaskService
@@ -43,25 +43,30 @@ async def fragmentize(smiles: str = Query(..., description="SMILES string of the
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"发生错误: {str(e)}")
 
-
 @router.post("/generate")
-async def generate_molecules(request: GenerateRequest,current_user = Depends(get_current_user)):
+async def generate_molecules(
+    request: Request,
+    generate_request: GenerateRequest
+):
     """
     1. 将请求参数保存到 jobs/<job_id>/input.json
     2. 创建一条待处理的 generate 任务记录
     3. 由 task_worker 在后台读取任务并生成结果
     """
-    # （1）生成一个唯一的 job_id，并创建对应文件夹
+    # 从中间件注入的 state 中取出已验证的用户
+    current_user = request.state.user
+
     try:
-        JOBS_DIR = ROOT / "jobs/generate"
-        JOBS_DIR.mkdir(exist_ok=True)
+        # （1）生成一个唯一的 job_id，并创建对应文件夹
+        JOBS_DIR = ROOT / "jobs" / "generate"
+        JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
         job_id = uuid.uuid4().hex
         job_dir = JOBS_DIR / job_id
         job_dir.mkdir()
 
         # （2）将请求体内容保存到 job_dir/input.json
-        input_data = request.model_dump()
+        input_data = generate_request.model_dump()
         with open(job_dir / "input.json", "w", encoding="utf-8") as f_in:
             json.dump(input_data, f_in, indent=2, ensure_ascii=False)
 
@@ -71,6 +76,7 @@ async def generate_molecules(request: GenerateRequest,current_user = Depends(get
             task_type="generate",
             job_dir=str(job_dir)
         )
+
         # （4）立即返回 task_id，让客户端稍后查询结果
         return {"task_id": task_id}
 
@@ -78,4 +84,4 @@ async def generate_molecules(request: GenerateRequest,current_user = Depends(get
         # 捕获异常并记录详细的错误信息，包括堆栈追踪
         error_message = f"Error occurred: {str(e)}"
         print(error_message)  # 打印到控制台，或者使用 logging 模块记录到日志文件
-        raise HTTPException(status_code=500, detail=f"Error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=error_message)
