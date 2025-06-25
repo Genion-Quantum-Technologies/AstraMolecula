@@ -4,8 +4,14 @@ from jose import JWTError, jwt
 from database.services.user_service import UserService
 from security.auth import ALGORITHM, SECRET_KEY
 
+# 你想要跳过验证的路径列表
+OPEN_PATHS = {
+    "/login",
+    "/signup",         
+}
+
 async def auth_middleware(request: Request, call_next):
-    if request.url.path.startswith("/login"):
+    if request.url.path in OPEN_PATHS:
         return await call_next(request)
 
     auth = request.headers.get("Authorization")

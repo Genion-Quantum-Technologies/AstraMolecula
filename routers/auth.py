@@ -20,8 +20,8 @@ async def login_for_token(request: UserLoginRequest):
     )
     return {"access_token": access_token}
 
-@router.post("/users", status_code=201)
-async def create_user(request: UserCreateRequest):
+@router.post("/signup", status_code=201)
+async def signup_user(request: UserCreateRequest):
     """
     创建一个新用户。
     """
