@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -27,3 +28,12 @@ class DockResponse(BaseModel):
     score: float
     smiles: str
     file: str
+
+class TaskResponse(BaseModel):
+    id: str
+    user_id: str
+    task_type: str
+    job_dir: str
+    status: str
+    created_at: datetime
+    finished_at: Optional[datetime]

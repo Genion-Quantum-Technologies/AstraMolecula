@@ -1,29 +1,16 @@
-from datetime import datetime
 import io
 from pathlib import Path
 import json
-from typing import List, Optional
+from typing import List
 import zipfile
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import  StreamingResponse
-from pydantic import BaseModel
-
 from database.services import TaskService
-from responses.basic_response import DockResponse, MoleculeResponse
+from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
-
-class TaskResponse(BaseModel):
-    id: str
-    user_id: str
-    task_type: str
-    job_dir: str
-    status: str
-    created_at: datetime
-    finished_at: Optional[datetime]
     
-
-@router.get("/list_user_tasks", response_model=List[TaskResponse])
+@router.get("/", response_model=List[TaskResponse])
 async def list_user_tasks(request: Request):
     """
     列出当前登录用户提交的所有任务。
