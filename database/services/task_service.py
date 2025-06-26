@@ -32,3 +32,10 @@ class TaskService:
     @staticmethod
     def get_task(task_id: str) -> Optional[Task]:
         return TaskRepository.get(task_id)
+
+    @staticmethod
+    def get_tasks_by_user(user_id: str) -> List[Task]:
+        """
+        返回指定用户的所有任务（按创建时间倒序，可根据需要调整排序或分页）。
+        """
+        return TaskRepository.get_by_user(user_id)

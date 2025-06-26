@@ -111,10 +111,10 @@ def test_create_user():
     #     "email": "bob@example.com"
     # }
     payload = {
-        "username": "TOM",
+        "username": "TOM2",
         "password": "321312",
         "phone": "13922221111",
-        "email": "TOM@example.com"
+        "email": "TOM2@example.com"
     }
     headers = {"Content-Type": "application/json"}
     resp = requests.post(f"{BASE_URL}/users", headers=headers, data=json.dumps(payload))

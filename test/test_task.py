@@ -18,7 +18,21 @@ def get_token() -> str:
     token = resp.json().get("access_token", "")
     print("✅ 登录成功，token:", token)
     return token
-
+def test_login():
+    print("Testing /login …")
+    payload = {
+        "username": "bob",
+        "password": "Pa$$w0rd123"
+    }
+    headers = {"Content-Type": "application/json"}
+    resp = requests.post(f"{BASE_URL}/login", headers=headers, data=json.dumps(payload))
+    if resp.status_code == 200:
+        data = resp.json()
+        token = data.get("access_token")
+        print("✅ 登录成功，获得 token：", token)
+    else:
+        print(f"❌ 登录失败 [{resp.status_code}]:", resp.text)
+        
 def check_result_with_id(task_id:str):
     print("Testing /docking with uploaded receptor 'user1.pdbqt' …")
     token = get_token()

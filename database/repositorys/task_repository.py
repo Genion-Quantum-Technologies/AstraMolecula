@@ -65,3 +65,25 @@ class TaskRepository:
         finally:
             conn.close()
         return None
+
+    @staticmethod
+    def get_by_user(user_id: str) -> List[Task]:
+        """
+        按 user_id 查询该用户提交的所有任务，按创建时间倒序返回。
+        """
+        sql = """
+        SELECT id, user_id, task_type, job_dir, status, created_at, finished_at
+          FROM tasks
+         WHERE user_id = %s
+      ORDER BY created_at DESC
+        """
+        conn = get_connection()
+        tasks: List[Task] = []
+        try:
+            with conn.cursor(dictionary=True) as cur:
+                cur.execute(sql, (user_id,))
+                for row in cur.fetchall():
+                    tasks.append(Task(**row))
+        finally:
+            conn.close()
+        return tasks

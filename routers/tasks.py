@@ -1,15 +1,27 @@
+from datetime import datetime
 import io
 from pathlib import Path
 import json
+from typing import List, Optional
 import zipfile
 import pandas as pd
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
 from database.services import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
+class TaskResponse(BaseModel):
+    id: str
+    user_id: str
+    task_type: str
+    job_dir: str
+    status: str
+    created_at: datetime
+    finished_at: Optional[datetime]
+    
 @router.get("/{task_id}")
 async def get_task_result(request: Request, task_id: str):
     # 从中间件注入的 state 中取出已验证的用户
@@ -40,7 +52,19 @@ async def get_task_result(request: Request, task_id: str):
 
     else:
         raise HTTPException(status_code=400, detail="unknown task type")
-    
+
+@router.get("/", response_model=List[TaskResponse])
+async def list_user_tasks(request: Request):
+    """
+    列出当前登录用户提交的所有任务。
+    """
+    current_user = request.state.user
+    tasks = TaskService.get_tasks_by_user(current_user.id)
+    # 如果想在没有任务时返回 404，可以加：
+    # if not tasks:
+    #     raise HTTPException(status_code=404, detail="no tasks found for this user")
+    return tasks
+
 @router.get("/{task_id}/download")
 async def download_task_files(request: Request, task_id: str):
     """Download result files of a finished task as a zip archive."""
