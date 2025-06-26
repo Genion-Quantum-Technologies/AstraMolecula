@@ -1,19 +1,16 @@
 import io
 import json
-import time
-from tkinter import Image
-from typing import List
+from PIL import Image
 import uuid
 from fastapi.responses import StreamingResponse
 from rdkit import Chem
 from rdkit.Chem import Draw
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from config import ROOT
 from database.services.task_service import TaskService
-from security.auth import get_current_user
 from utils.fragment_processor import fragmentize_molecule
-from utils.tools import FragmentResponse, GenerateRequest, MoleculeOutput, run_generate_runner
+from utils.tools import FragmentResponse, GenerateRequest
 
 router = APIRouter(tags=["Smiles"])
 
