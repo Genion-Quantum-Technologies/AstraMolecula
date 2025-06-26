@@ -55,12 +55,24 @@ def test_generate():
     if not token:
         return
     payload = {
-        "constSmiles": "c1ccccc1",       # 示例 constant fragment
-        "varSmiles": "C=O",              # 示例 variable fragment
-        "mainCls": "class1",             # 可根据你的模型设定填入有效类名
-        "minorCls": "subclassA",
-        "deltaValue": "1.0",             # 示例 delta
-        "num": 2                         # 生成的数量
+        "generateRequestList": [
+            {
+                "constSmiles": "c1ccccc1",
+                "varSmiles": "C=O",
+                "mainCls": "class1",
+                "minorCls": "subclassA",
+                "deltaValue": "1.0",
+                "num": 2
+            },
+            {
+                "constSmiles": "CCO",
+                "varSmiles": "N",
+                "mainCls": "class2",
+                "minorCls": "subclassB",
+                "deltaValue": "0.5",
+                "num": 3
+            }
+        ]
     }
     headers = {
         "Content-Type": "application/json",

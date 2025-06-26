@@ -69,9 +69,6 @@ async def docking_endpoint(
         # —— 5) 返回 task_id —— #
         return JSONResponse(content={"task_id": task_id})
 
-    except HTTPException:
-        # 直接抛出的 HTTPException，交给 FastAPI 处理
-        raise
     except Exception as e:
         # 其他异常
         print(f"docking 失败: {e}")

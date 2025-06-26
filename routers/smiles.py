@@ -9,8 +9,9 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from config import ROOT
 from database.services.task_service import TaskService
+from requests.basic_request import GenerateRequestList
 from utils.fragment_processor import fragmentize_molecule
-from utils.tools import FragmentResponse, GenerateRequest
+from utils.tools import FragmentResponse
 
 router = APIRouter(tags=["Smiles"])
 
@@ -43,7 +44,7 @@ async def fragmentize(smiles: str = Query(..., description="SMILES string of the
 @router.post("/generate")
 async def generate_molecules(
     request: Request,
-    generate_request: GenerateRequest
+    generate_requests: GenerateRequestList
 ):
     """
     1. 将请求参数保存到 jobs/<job_id>/input.json
@@ -63,7 +64,7 @@ async def generate_molecules(
         job_dir.mkdir()
 
         # （2）将请求体内容保存到 job_dir/input.json
-        input_data = generate_request.model_dump()
+        input_data = generate_requests.model_dump()
         with open(job_dir / "input.json", "w", encoding="utf-8") as f_in:
             json.dump(input_data, f_in, indent=2, ensure_ascii=False)
 

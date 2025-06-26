@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 
 class UserCreateRequest(BaseModel):
@@ -10,3 +10,14 @@ class UserCreateRequest(BaseModel):
 class UserLoginRequest(BaseModel):
     username: str
     password: str
+
+class GenerateRequest(BaseModel):
+    constSmiles: str
+    varSmiles: str
+    mainCls: str
+    minorCls: str
+    deltaValue: str
+    num: int
+
+class GenerateRequestList(BaseModel):
+    generateRequestList: List[GenerateRequest]

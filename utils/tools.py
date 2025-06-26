@@ -37,13 +37,6 @@ class Fragment(BaseModel):
 class FragmentResponse(BaseModel):
     fragments: List[Fragment]
 
-class GenerateRequest(BaseModel):
-    constSmiles: str
-    varSmiles: str
-    mainCls: str
-    minorCls: str
-    deltaValue: str
-    num: int
 
 class MoleculeOutput(BaseModel):
     smile: str

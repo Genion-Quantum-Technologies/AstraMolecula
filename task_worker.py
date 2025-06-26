@@ -15,16 +15,20 @@ def process_generate(task: Task):
     input_json = job_dir / "input.json"
     with open(input_json, "r", encoding="utf-8") as f:
         params = json.load(f)
-    result = run_generate_runner(
-        params["constSmiles"],
-        params["varSmiles"],
-        params["mainCls"],
-        params["minorCls"],
-        params["deltaValue"],
-        params["num"],
-    )
+    req_list = params.get("generateRequestList", [])
+    results = []
+    for req in req_list:
+        res = run_generate_runner(
+            req["constSmiles"],
+            req["varSmiles"],
+            req["mainCls"],
+            req["minorCls"],
+            req["deltaValue"],
+            req["num"],
+        )
+        results.extend(res)
     with open(job_dir / "output.json", "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
+        json.dump(results, f, ensure_ascii=False, indent=2)
 
 
 def process_docking(task: Task):
