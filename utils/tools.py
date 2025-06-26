@@ -12,39 +12,7 @@ from utils.dataset import Dataset
 from utils.combine_mol import connect_constVar_try
 import torch
 import utils.sascorer as sascorer
-# ============================================
-# 1. 为 docking 定义 Pydantic 模型
-# ============================================
-class DockingLigand(BaseModel):
-    smiles: str
-    title: str
 
-class DockingRequest(BaseModel):
-    ligands: List[DockingLigand]
-    min_ph: Optional[float] = 6.0
-    max_ph: Optional[float] = 8.0
-    n_jobs: Optional[int]   = 10
-
-# -------------- 你的其他模型定义（Fragment / GenerateRequest / MoleculeOutput）保持不变 --------------
-
-class Fragment(BaseModel):
-    variable_smiles: str
-    constant_smiles: str
-    record_id: str
-    normalized_smiles: str
-    attachment_order: int
-
-class FragmentResponse(BaseModel):
-    fragments: List[Fragment]
-
-
-class MoleculeOutput(BaseModel):
-    smile: str
-    molwt: float
-    tpsa: float
-    slogp: float
-    sa: float
-    qed: float
 
 class Options:
     def __init__(self, **entries):

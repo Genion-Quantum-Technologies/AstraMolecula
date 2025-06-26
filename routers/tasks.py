@@ -4,13 +4,12 @@ from pathlib import Path
 import json
 from typing import List, Optional
 import zipfile
-import pandas as pd
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import  StreamingResponse
 from pydantic import BaseModel
 
 from database.services import TaskService
-from utils.tools import MoleculeOutput
+from responses.basic_response import DockResponse, MoleculeResponse
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -23,38 +22,8 @@ class TaskResponse(BaseModel):
     created_at: datetime
     finished_at: Optional[datetime]
     
-@router.get("/{task_id}")
-async def get_task_result(request: Request, task_id: str):
-    # 从中间件注入的 state 中取出已验证的用户
-    current_user = request.state.user
 
-    task = TaskService.get_task(task_id)
-    if not task or task.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="task not found")
-    if task.status != "finished":
-        return {"status": task.status}
-
-    job_dir = Path(task.job_dir)
-    if task.task_type == "generate":
-        output = job_dir / "output.json"
-        if not output.exists():
-            raise HTTPException(status_code=500, detail="output not found")
-        with open(output, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return JSONResponse(content={"status": task.status, "result": data})
-
-    elif task.task_type == "docking":
-        csv_file = job_dir / "dockRes.csv"
-        if not csv_file.exists():
-            raise HTTPException(status_code=500, detail="result csv not found")
-        df = pd.read_csv(csv_file)
-        records = df.to_dict(orient="records")
-        return JSONResponse(content={"status": task.status, "results": records})
-
-    else:
-        raise HTTPException(status_code=400, detail="unknown task type")
-
-@router.get("/", response_model=List[TaskResponse])
+@router.get("/list_user_tasks", response_model=List[TaskResponse])
 async def list_user_tasks(request: Request):
     """
     列出当前登录用户提交的所有任务。
@@ -95,7 +64,7 @@ async def download_task_files(request: Request, task_id: str):
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
-@router.get("/{task_id}/molecules", response_model=List[MoleculeOutput])
+@router.get("/{task_id}/geneRes", response_model=List[MoleculeResponse])
 async def get_generated_molecules(request: Request, task_id: str):
     """
     获取单个 generate 任务的 output.json，并以 List[MoleculeOutput] 格式返回。
@@ -113,6 +82,29 @@ async def get_generated_molecules(request: Request, task_id: str):
     output_path = Path(task.job_dir) / "output.json"
     if not output_path.exists():
         raise HTTPException(status_code=500, detail="output not found")
+
+    # 读取并解析 output.json，假设它是 List[dict] 且每个 dict 都符合 MoleculeOutput 的字段
+    data = json.loads(output_path.read_text(encoding="utf-8"))
+    return data
+
+@router.get("/{task_id}/dockRes", response_model=List[DockResponse])
+async def get_generated_molecules(request: Request, task_id: str):
+    """
+    获取单个 generate 任务的 output.json，并以 List[MoleculeOutput] 格式返回。
+    """
+    current_user = request.state.user
+    task = TaskService.get_task(task_id)
+
+    if not task or task.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != "docking":
+        raise HTTPException(status_code=400, detail="task type is not docking")
+    if task.status != "finished":
+        raise HTTPException(status_code=400, detail="task not finished")
+
+    output_path = Path(task.job_dir) / "dockRes.json"
+    if not output_path.exists():
+        raise HTTPException(status_code=500, detail="dockRes not found")
 
     # 读取并解析 output.json，假设它是 List[dict] 且每个 dict 都符合 MoleculeOutput 的字段
     data = json.loads(output_path.read_text(encoding="utf-8"))

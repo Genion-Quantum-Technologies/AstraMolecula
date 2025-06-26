@@ -11,7 +11,7 @@ from Vina.vina_workflow import vina_docking_from_list
 from config import ROOT
 from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
-from utils.tools import DockingRequest
+from requests.basic_request import DockingRequest
 
 router = APIRouter(tags=["Smiles"])
 

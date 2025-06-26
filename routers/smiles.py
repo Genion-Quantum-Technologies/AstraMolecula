@@ -10,8 +10,8 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from config import ROOT
 from database.services.task_service import TaskService
 from requests.basic_request import GenerateRequestList
+from responses.basic_response import FragmentResponse
 from utils.fragment_processor import fragmentize_molecule
-from utils.tools import FragmentResponse
 
 router = APIRouter(tags=["Smiles"])
 

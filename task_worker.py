@@ -2,8 +2,6 @@ import json
 import shutil
 import time
 from pathlib import Path
-import pandas as pd
-
 from database.services import TaskService
 from database.models.task import Task
 from utils.tools import run_generate_runner
@@ -45,8 +43,6 @@ def process_docking(task: Task):
     for item in Path(run_dir).iterdir():
         shutil.move(str(item), str(job_dir / item.name))
     Path(run_dir).rmdir()
-    df = pd.read_csv(job_dir / "dockRes.csv")
-    df.to_csv(job_dir / "dockRes.csv", index=False)
 
 
 def main_loop():
