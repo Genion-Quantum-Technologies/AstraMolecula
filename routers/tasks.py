@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from database.services import TaskService
+from utils.tools import MoleculeOutput
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -93,3 +94,26 @@ async def download_task_files(request: Request, task_id: str):
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+@router.get("/{task_id}/molecules", response_model=List[MoleculeOutput])
+async def get_generated_molecules(request: Request, task_id: str):
+    """
+    获取单个 generate 任务的 output.json，并以 List[MoleculeOutput] 格式返回。
+    """
+    current_user = request.state.user
+    task = TaskService.get_task(task_id)
+
+    if not task or task.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != "generate":
+        raise HTTPException(status_code=400, detail="task type is not generate")
+    if task.status != "finished":
+        raise HTTPException(status_code=400, detail="task not finished")
+
+    output_path = Path(task.job_dir) / "output.json"
+    if not output_path.exists():
+        raise HTTPException(status_code=500, detail="output not found")
+
+    # 读取并解析 output.json，假设它是 List[dict] 且每个 dict 都符合 MoleculeOutput 的字段
+    data = json.loads(output_path.read_text(encoding="utf-8"))
+    return data
