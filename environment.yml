@@ -27,7 +27,6 @@ dependencies:
   - cffi==1.17.1
   - chardet==5.2.0
   - charset-normalizer==3.4.0
-  - collada2gltf==2.1.4
   - colorama==0.4.6
   - contourpy==1.3.0
   - cycler==0.12.1
@@ -116,7 +115,6 @@ dependencies:
   - libglvnd-glx-cos7-x86_64==1.0.1
   - libgomp==14.1.0
   - libgpg-error==1.50
-  - libholoplaycore==0.1.0_rc4
   - libiconv==1.17
   - libjpeg-turbo==3.0.0
   - liblapack==3.9.0
@@ -151,13 +149,10 @@ dependencies:
   - matplotlib-base==3.9.1
   - matplotlib==3.9.1
   - meeko==0.5.1
-  - mengine==1
   - mesa-libgl-cos7-x86_64==18.3.4
   - mesa-libglapi-cos7-x86_64==18.3.4
   - mmcif_pdbx==2.0.1
-  - mpeg_encode==1
   - mpg123==1.32.6
-  - mtz2ccp4_px==1.1
   - munkres==1.1.4
   - mysql-common==8.0.33
   - mysql-libs==8.0.33
@@ -184,9 +179,6 @@ dependencies:
   - pycparser==2.22
   - pygments==2.18.0
   - pykerberos==1.2.4
-  - pymol-bundle==3.1.3.1
-  - pymol-web-examples==2.4
-  - pymol==3.1.4.1
   - pyparsing==3.1.4
   - pyqt5-sip==12.12.2
   - pyqt==5.15.9
@@ -201,13 +193,11 @@ dependencies:
   - readline==8.2
   - reportlab==4.2.5
   - requests==2.32.3
-  - rigimol==1.5
   - rlpycairo==0.2.0
   - scipy==1.14.1
   - setuptools==75.1.0
   - sip==6.7.12
   - six==1.16.0
-  - slm_x509==2024.3
   - snappy==1.2.1
   - snowballstemmer==2.2.0
   - sphinx==8.1.0
@@ -232,7 +222,6 @@ dependencies:
   - unicodedata2==15.1.0
   - urllib3==2.2.3
   - vina==1.2.5
-  - vtk-m==1.8.0
   - wheel==0.44.0
   - xcb-util-image==0.4.0
   - xcb-util-keysyms==0.4.0
@@ -263,3 +252,15 @@ dependencies:
   - apsw
   - seaborn
   - numpy
+  - pip:
+      - collada2gltf==2.1.4
+      - libholoplaycore==0.1.0.rc4
+      - mengine
+      - mpeg_encode
+      - mtz2ccp4_px==1.1
+      - pymol-bundle==3.1.3.1
+      - pymol-web-examples==2.4
+      - pymol==3.1.4.1
+      - rigimol==1.5
+      - slm_x509==2024.3
+      - vtk-m==1.8.0
