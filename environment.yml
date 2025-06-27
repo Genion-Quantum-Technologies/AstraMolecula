@@ -1,5 +1,6 @@
 name: dockingVina
 channels:
+  - conda-forge
   - defaults
 dependencies:
   - _libgcc_mutex==0.1
@@ -22,7 +23,7 @@ dependencies:
   - cached-property==1.5.2
   - cached_property==1.5.2
   - cairo==1.18.0
-  - certifi=
+  - certifi
   - cffi==1.17.1
   - chardet==5.2.0
   - charset-normalizer==3.4.0

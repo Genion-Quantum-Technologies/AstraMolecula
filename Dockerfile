@@ -5,8 +5,8 @@ WORKDIR /app
 COPY environment.yml .
 COPY . /app
 
-RUN micromamba env create -f environment.yml && \
-    micromamba clean --all --yes
+RUN micromamba env create -f environment.yml --override-channels -c conda-forge -c defaults
+
 
 SHELL ["micromamba", "run", "-n", "dockingVina", "/bin/bash", "-c"]
 RUN pip install -e ./my_toolsets
