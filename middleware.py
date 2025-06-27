@@ -2,7 +2,7 @@ from fastapi import HTTPException, Request
 from jose import JWTError, jwt
 
 from database.services.user_service import UserService
-from security.auth import ALGORITHM, SECRET_KEY
+from security.auth import ALGORITHM, SECRET_KEY, SERVICE_API_KEYS
 
 # 你想要跳过验证的路径列表
 OPEN_PATHS = {
@@ -13,6 +13,13 @@ OPEN_PATHS = {
 async def auth_middleware(request: Request, call_next):
     if request.url.path in OPEN_PATHS:
         return await call_next(request)
+
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        if api_key in SERVICE_API_KEYS:
+            request.state.service = api_key
+            return await call_next(request)
+        raise HTTPException(401, "Invalid API key")
 
     auth = request.headers.get("Authorization")
     if not auth or not auth.startswith("Bearer "):
