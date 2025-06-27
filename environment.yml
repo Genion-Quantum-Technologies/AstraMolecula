@@ -253,7 +253,7 @@ dependencies:
   - seaborn
   - numpy
   - pip:
-      - collada2gltf==2.1.4
+      - collada2gltf
       - libholoplaycore==0.1.0.rc4
       - mengine
       - mpeg_encode
