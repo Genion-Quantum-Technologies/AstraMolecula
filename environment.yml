@@ -1,6 +1,5 @@
 name: dockingVina
 channels:
-  - schrodinger
   - conda-forge
   - defaults
 dependencies:
@@ -33,7 +32,6 @@ dependencies:
   - chardet
   - charset-normalizer
   - click
-  - collada2gltf
   - colorama
   - contourpy
   - cycler
@@ -131,7 +129,6 @@ dependencies:
   - libglvnd-glx-cos7-x86_64
   - libgomp
   - libgpg-error
-  - libholoplaycore
   - libhwloc
   - libiconv
   - libjpeg-turbo

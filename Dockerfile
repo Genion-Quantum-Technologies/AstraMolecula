@@ -7,7 +7,7 @@ WORKDIR /app
 COPY environment.yml ./
 
 # Create conda environment from YAML and clean cache
-RUN conda env create -f environment.yml --experimental=jlap
+RUN conda env create -f environment.yml
 
 # Ensure the environment is activated for subsequent RUN commands
 SHELL ["conda", "run", "-n", "dockingVina", "/bin/bash", "-c"]
