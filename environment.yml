@@ -252,8 +252,9 @@ dependencies:
   - apsw
   - seaborn
   - numpy
+  - collada2gltf
+  - libholoplaycore
   - pip:
-      - libholoplaycore
       - mengine
       - mpeg_encode
       - mtz2ccp4_px==1.1
