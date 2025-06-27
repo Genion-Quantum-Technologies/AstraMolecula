@@ -1,14 +1,22 @@
-FROM mambaorg/micromamba:latest
+FROM continuumio/anaconda3:latest
 
+# Set working directory
 WORKDIR /app
 
-COPY environment.yml .
+# Copy environment definition
+COPY environment.yml ./
+
+# Create conda environment from YAML and clean cache
+RUN conda env create -f environment.yml --experimental=jlap
+
+# Ensure the environment is activated for subsequent RUN commands
+SHELL ["conda", "run", "-n", "dockingVina", "/bin/bash", "-c"]
+
+# Copy application code
 COPY . /app
 
-RUN micromamba env create -f environment.yml
-
-
-SHELL ["micromamba", "run", "-n", "dockingVina", "/bin/bash", "-c"]
+# Install local editable packages
 RUN pip install -e ./my_toolsets
 
-CMD ["micromamba", "run", "-n", "dockingVina", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default command to run the FastAPI app inside the conda environment
+CMD ["conda", "run", "-n", "dockingVina", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
