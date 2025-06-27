@@ -1,22 +1,23 @@
 FROM continuumio/anaconda3:latest
 
-# Set working directory
 WORKDIR /app
 
-# Copy environment definition
 COPY environment.yml ./
-
-# Create conda environment from YAML and clean cache
-RUN conda env create -f environment.yml
-
-# Ensure the environment is activated for subsequent RUN commands
-SHELL ["conda", "run", "-n", "dockingVina", "/bin/bash", "-c"]
-
-# Copy application code
 COPY . /app
 
-# Install local editable packages
+# 禁用 pip 缓存
+ENV PIP_NO_CACHE_DIR=1
+
+# 创建环境并立刻清理所有缓存
+RUN conda env create -f environment.yml \
+    && conda clean --all --yes \
+    && rm -rf /root/.cache/pip
+
+# 切换到 dockingVina 环境
+SHELL ["conda", "run", "-n", "dockingVina", "/bin/bash", "-c"]
+
+# 安装本地可编辑包
 RUN pip install -e ./my_toolsets
 
-# Default command to run the FastAPI app inside the conda environment
+# 启动服务
 CMD ["conda", "run", "-n", "dockingVina", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
