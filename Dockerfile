@@ -2,7 +2,7 @@ FROM mambaorg/micromamba:latest
 
 WORKDIR /app
 
-COPY environment.yaml .
+COPY environment.yml .
 COPY . /app
 
 RUN micromamba env create -f environment.yml && \
