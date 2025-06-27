@@ -43,6 +43,9 @@ conda install -c conda-forge mpi4py
 conda install numpy=1.23
 
 uvicorn main:app
+# 开放给其它后台服务时，可以设置环境变量 SERVICE_API_KEYS
+# 以逗号分隔多组 key，并让服务在请求时携带 `X-API-Key` 头部
+export SERVICE_API_KEYS="service-key-1,service-key-2"
 # 后台任务
 # 应用启动时会自动在后台线程运行 `task_worker.main_loop` 以处理 pending 任务，
 # 也可以单独执行 `python task_worker.py` 以独立进程方式运行。
