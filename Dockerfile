@@ -5,7 +5,7 @@ WORKDIR /app
 COPY environment.yml .
 COPY . /app
 
-RUN micromamba env create -f environment.yml --override-channels -c conda-forge -c defaults
+RUN micromamba env create -f environment.yml
 
 
 SHELL ["micromamba", "run", "-n", "dockingVina", "/bin/bash", "-c"]
