@@ -1,9 +1,21 @@
-GRANT ALL PRIVILEGES ON project1.* 
-  TO 'vina_user'@'%' IDENTIFIED BY 'Aa7758258123';
+GRANT ALL PRIVILEGES ON project1.*  TO 'vina_user'@'%' IDENTIFIED BY 'Aa7758258123';
 
 #连接数据库
 mysql -u vina_user -p -h 127.0.0.1 project1
 Aa7758258123
+
+CREATE TABLE `users` (
+  `id` CHAR(36) NOT NULL,
+  `username` VARCHAR(255) NOT NULL UNIQUE,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `phone` VARCHAR(20) DEFAULT NULL,
+  `email` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE user_uploads (
   id CHAR(36)                NOT NULL PRIMARY KEY DEFAULT (UUID()),
