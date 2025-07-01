@@ -17,7 +17,7 @@ RUN conda env create -f environment.yml \
 SHELL ["conda", "run", "-n", "dockingVina", "/bin/bash", "-c"]
 
 # 安装本地可编辑包
-RUN conda install pytorch torchvision torchaudio -c pytorch
+RUN conda install -y pytorch torchvision torchaudio -c pytorch
 
 # 安装本地可编辑包
 RUN pip install -e ./my_toolsets
