@@ -297,9 +297,9 @@ dependencies:
   - zlib
   - zstandard
   - zstd
-  - rdkit=2024.03.5
+  - rdkit==2024.03.5
   - pip:
-      - mmpdb=2.1
+      - mmpdb==2.1
       - bcrypt
       - biopython
       - cryptography
