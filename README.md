@@ -25,14 +25,13 @@ chmod u+x vinademo.sh
 
 conda install -c conda-forge uvicorn fastapi
 conda install -c conda-forge apsw
+conda install -c conda-forge rdkit=2024.3.5
 pip install mmpdb
 <!-- conda install seaborn -->
 
 # 在项目根目录下运行：
 pip install -e ./my_toolsets
 
-pip uninstall mmpdb -y
-pip install mmpdb==2.1
 pip uninstall torch
 <!-- conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
  -->
@@ -40,7 +39,7 @@ pip uninstall torch
 
 pip install --upgrade pydantic
 pip install "meeko>=0.3.0"
-python -m pip install mmpdb
+python -m pip install mmpdb==2.1
 pip install seaborn
 sudo apt-get install -y openmpi-bin
 conda install -c conda-forge mpi4py

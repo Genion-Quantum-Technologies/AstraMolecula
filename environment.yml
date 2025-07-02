@@ -297,6 +297,8 @@ dependencies:
   - zlib
   - zstandard
   - zstd
+  - mmpdb=2.1
+  - rdkit=2024.03.5
   - pip:
       - bcrypt
       - biopython
@@ -306,7 +308,6 @@ dependencies:
       - filelock
       - fsspec
       - iniconfig
-      - mmpdb
       - mpmath
       - mysql-connector-python
       - networkx
@@ -318,7 +319,6 @@ dependencies:
       - pyasn1
       - pytest
       - python-jose
-      - rdkit
       - rsa
       - sympy
       - tqdm
