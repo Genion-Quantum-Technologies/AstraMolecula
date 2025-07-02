@@ -12,11 +12,15 @@ from database.services.task_service import TaskService
 from requests.basic_request import GenerateRequestList
 from responses.basic_response import FragmentResponse
 from utils.fragment_processor import fragmentize_molecule
+from utils.log import get_logger
+
+logger = get_logger("smiles_router", str(ROOT / "logs" / "api.log"), isMain=True)
 
 router = APIRouter(tags=["Smiles"])
 
 @router.get("/smiles2img")
 async def smiles2img(smiles: str = Query(..., description="SMILES string of the molecule")):
+    logger.info("Convert SMILES to image: %s", smiles)
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return {"error": "Invalid SMILES string"}
@@ -34,6 +38,7 @@ async def smiles2img(smiles: str = Query(..., description="SMILES string of the 
 
 @router.get("/fragmentize", response_model=FragmentResponse)
 async def fragmentize(smiles: str = Query(..., description="SMILES string of the molecule")):
+    logger.info("Fragmentize molecule: %s", smiles)
     try:
         fragment_df = fragmentize_molecule(smiles)
         fragments = fragment_df.to_dict(orient="records")
@@ -53,6 +58,7 @@ async def generate_molecules(
     """
     # 从中间件注入的 state 中取出已验证的用户
     current_user = request.state.user
+    logger.info("User %s submit generate task", current_user.username)
 
     try:
         # （1）生成一个唯一的 job_id，并创建对应文件夹
@@ -81,5 +87,5 @@ async def generate_molecules(
     except Exception as e:
         # 捕获异常并记录详细的错误信息，包括堆栈追踪
         error_message = f"Error occurred: {str(e)}"
-        print(error_message)  # 打印到控制台，或者使用 logging 模块记录到日志文件
+        logger.exception("Generate molecules failed: %s", error_message)
         raise HTTPException(status_code=500, detail=error_message)

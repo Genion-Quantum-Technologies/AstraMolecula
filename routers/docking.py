@@ -12,6 +12,9 @@ from config import ROOT
 from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
 from requests.basic_request import DockingRequest
+from utils.log import get_logger
+
+logger = get_logger("docking_router", str(ROOT / "logs" / "api.log"), isMain=True)
 
 router = APIRouter(tags=["Smiles"])
 
@@ -26,6 +29,7 @@ async def docking_endpoint(
 ):
     # 从中间件注入的 state 中取出已验证的用户
     current_user = request.state.user
+    logger.info("User %s submit docking task", current_user.username)
 
     try:
         # —— 1) 确定受体文件路径 —— #
@@ -70,6 +74,6 @@ async def docking_endpoint(
         return JSONResponse(content={"task_id": task_id})
 
     except Exception as e:
-        # 其他异常
-        print(f"docking 失败: {e}")
+        logger.exception("docking 失败: %s", e)
         raise HTTPException(status_code=500, detail=f"docking 失败: {e}")
+

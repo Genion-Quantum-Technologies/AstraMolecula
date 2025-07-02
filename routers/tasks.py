@@ -4,9 +4,13 @@ import json
 from typing import List
 import zipfile
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import  StreamingResponse
+from fastapi.responses import StreamingResponse
 from database.services import TaskService
 from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse
+from config import ROOT
+from utils.log import get_logger
+
+logger = get_logger("tasks_router", str(ROOT / "logs" / "tasks.log"), isMain=True)
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
     
@@ -16,6 +20,7 @@ async def list_user_tasks(request: Request):
     列出当前登录用户提交的所有任务。
     """
     current_user = request.state.user
+    logger.info("User %s listing tasks", current_user.username)
     tasks = TaskService.get_tasks_by_user(current_user.id)
     # 如果想在没有任务时返回 404，可以加：
     # if not tasks:
@@ -26,6 +31,7 @@ async def list_user_tasks(request: Request):
 async def download_task_files(request: Request, task_id: str):
     """Download result files of a finished task as a zip archive."""
     current_user = request.state.user
+    logger.info("User %s downloading files for task %s", current_user.username, task_id)
 
     task = TaskService.get_task(task_id)
     if not task or task.user_id != current_user.id:
@@ -57,6 +63,7 @@ async def get_generated_molecules(request: Request, task_id: str):
     获取单个 generate 任务的 output.json，并以 List[MoleculeOutput] 格式返回。
     """
     current_user = request.state.user
+    logger.info("User %s requesting generated molecules for task %s", current_user.username, task_id)
     task = TaskService.get_task(task_id)
 
     if not task or task.user_id != current_user.id:
@@ -74,12 +81,14 @@ async def get_generated_molecules(request: Request, task_id: str):
     data = json.loads(output_path.read_text(encoding="utf-8"))
     return data
 
+
 @router.get("/{task_id}/dockRes", response_model=List[DockResponse])
 async def get_generated_molecules(request: Request, task_id: str):
     """
     获取单个 generate 任务的 output.json，并以 List[MoleculeOutput] 格式返回。
     """
     current_user = request.state.user
+    logger.info("User %s requesting docking results for task %s", current_user.username, task_id)
     task = TaskService.get_task(task_id)
 
     if not task or task.user_id != current_user.id:
