@@ -1,4 +1,4 @@
-FROM continuumio/anaconda3:latest
+FROM continuumio/miniconda3:23.3.1
 
 WORKDIR /app
 
@@ -15,9 +15,6 @@ RUN conda env create -f environment.yml \
 
 # 切换到 dockingVina 环境
 SHELL ["conda", "run", "-n", "dockingVina", "/bin/bash", "-c"]
-
-# 安装本地可编辑包
-RUN conda install -y pytorch torchvision torchaudio -c pytorch
 
 # 安装本地可编辑包
 RUN pip install -e ./my_toolsets
