@@ -40,13 +40,17 @@ def process_docking(task: Task):
     job_dir = Path(task.job_dir)
     with open(job_dir / "input.json", "r", encoding="utf-8") as f:
         params = json.load(f)
-    run_dir = vina_docking_from_list(
-        ligands=params["ligands"],
-        receptor_pdbqt=params["receptor_pdbqt"],
-        min_ph=params.get("min_ph", 6.0),
-        max_ph=params.get("max_ph", 8.0),
-        n_jobs=params.get("n_jobs", 10),
-    )
+        run_dir = vina_docking_from_list(
+            ligands=params["ligands"],
+            receptor_pdbqt=params["receptor_pdbqt"],
+            min_ph=params.get("min_ph", 6.0),
+            max_ph=params.get("max_ph", 8.0),
+            n_jobs=params.get("n_jobs", 10),
+            center=params.get("center"),
+            box_size=params.get("box_size"),
+            exhaustiveness=params.get("exhaustiveness", 4),
+            n_poses=params.get("n_poses", 20),
+        )
     for item in Path(run_dir).iterdir():
         shutil.move(str(item), str(job_dir / item.name))
     Path(run_dir).rmdir()

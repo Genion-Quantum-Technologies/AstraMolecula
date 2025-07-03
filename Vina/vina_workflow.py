@@ -129,7 +129,8 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     os.system(f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts")
 
 @try_except_decorator
-def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
+def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20],
+              exhaustiveness=4, n_poses=20, dir='.'):
     ligPath = Path(lig)
     if os.path.exists(f'{dir}/docked/{ligPath.stem}.pdbqt'):
         print(f"Previous docking results will be used for {ligPath.stem}!")
@@ -140,10 +141,14 @@ def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
         v.compute_vina_maps(center=np.array(center, dtype=float), box_size=box_size)
 
         '''   Dock the ligand  '''
-        v.dock(exhaustiveness=4, n_poses=20)
+        v.dock(exhaustiveness=exhaustiveness, n_poses=n_poses)
         if not os.path.exists(f'{dir}/docked'):
             os.system(f"mkdir -p {dir}/docked")
-        v.write_poses(f'{dir}/docked/{ligPath.stem}.pdbqt', n_poses=5, overwrite=True)
+        v.write_poses(
+            f'{dir}/docked/{ligPath.stem}.pdbqt',
+            n_poses=min(5, n_poses),
+            overwrite=True
+        )
 
     if not os.path.exists(f"{dir}/docked/{ligPath.stem}-p0.csv"):
         pdbqt2sdf(f"{dir}/docked/{ligPath.stem}.pdbqt")
@@ -199,7 +204,11 @@ def vina_docking_from_list(ligands: list,
                            receptor_pdbqt: str,
                            min_ph: float = 6.0,
                            max_ph: float = 8.0,
-                           n_jobs: int = 10) -> str:
+                           n_jobs: int = 10,
+                           center: list | None = None,
+                           box_size: list | None = None,
+                           exhaustiveness: int = 4,
+                           n_poses: int = 20) -> str:
     """
     新增接口：直接传递 ligands 列表（如：[{"smiles":"C=CCNC…","title":"ID1"}, {...}, …]），
     而不需要用户预先写 CSV。
@@ -256,13 +265,22 @@ def vina_docking_from_list(ligands: list,
               num_processors=n_jobs,
               dir=parent_path)
 
-    # Step 4: 读取 receptor 同级目录下的 vina_box.json
-    DEFAULT_ROOT = Path(__file__).resolve().parent.parent  # Vina/ 下往上两级到项目根
-    box_json = DEFAULT_ROOT / "resource" / "vina_box.json"
-    if not box_json.exists():
-        raise FileNotFoundError(f"未找到 {box_json}，请确认在受体文件同级目录下有 vina_box.json。")
-    with open(box_json, "r") as infile:
-        centerDict = json.load(infile)
+    # Step 4: 读取或使用用户指定的 docking box 设置
+    if center is None:
+        DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+        box_json = DEFAULT_ROOT / "resource" / "vina_box.json"
+        if not box_json.exists():
+            raise FileNotFoundError(
+                f"未找到 {box_json}，请确认在受体文件同级目录下有 vina_box.json。"
+            )
+        with open(box_json, "r") as infile:
+            centerDict = json.load(infile)
+        center_val = centerDict["center"]
+    else:
+        center_val = center
+
+    if box_size is None:
+        box_size = [20, 20, 20]
 
     # Step 5: 并行调用 Vina 对所有 .pdbqt 做 docking
     pdbqtList = glob(f"{parent_path}/pdbqts/*.pdbqt")
@@ -270,10 +288,15 @@ def vina_docking_from_list(ligands: list,
         raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
     random.shuffle(pdbqtList)
 
-    vina_dock_p = partial(vina_dock,
-                          recpt=receptPath.as_posix(),
-                          center=centerDict['center'],
-                          dir=parent_path)
+    vina_dock_p = partial(
+        vina_dock,
+        recpt=receptPath.as_posix(),
+        center=center_val,
+        box_size=box_size,
+        exhaustiveness=exhaustiveness,
+        n_poses=n_poses,
+        dir=parent_path,
+    )
     mapper(n_jobs)(vina_dock_p, pdbqtList)
 
     # Step 6: 合并所有单个 ligand 的 CSV，生成 dockRes.csv
