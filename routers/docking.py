@@ -60,6 +60,12 @@ async def docking_endpoint(
             "max_ph": docking_request.max_ph,
             "n_jobs": docking_request.n_jobs,
         }
+        if docking_request.center is not None:
+            params["center"] = docking_request.center
+        if docking_request.box_size is not None:
+            params["box_size"] = docking_request.box_size
+        params["exhaustiveness"] = docking_request.exhaustiveness
+        params["n_poses"] = docking_request.n_poses
         with open(job_dir / "input.json", "w", encoding="utf-8") as f:
             json.dump(params, f, ensure_ascii=False, indent=2)
 
