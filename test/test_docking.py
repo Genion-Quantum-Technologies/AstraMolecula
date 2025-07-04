@@ -43,6 +43,7 @@ def test_docking_with_uploaded_receptor():
     }
 
     # 发起请求
+    # 新增接口支持设置 center、box_size、exhaustiveness、n_poses 等参数
     resp = requests.post(
         f"{BASE_URL}/docking",
         headers=headers,
@@ -50,11 +51,15 @@ def test_docking_with_uploaded_receptor():
         data=json.dumps({
             "ligands": ligands,
             # 可选：覆盖默认 pH 范围和线程数
-            # "min_ph": 6.0,
-            # "max_ph": 8.0,
-            # "n_jobs": 4
+            "min_ph": 6.0,
+            "max_ph": 8.0,
+            "n_jobs": 4,
+            "center": [61.1, 24.3, 17.1],
+            "box_size": [20, 20, 20],
+            "exhaustiveness": 8,
+            "n_poses": 10,
         }),
-        timeout=600
+        timeout=600,
     )
 
     if resp.status_code == 200:
