@@ -17,5 +17,9 @@ dependencies:
   - matplotlib
   - seaborn
   - rdkit=2024.3.5
+  - python-jose
+  - cryptography
+  - mysql-connector-python
+  - bcrypt
   - pip:
       - mmpdb==2.1
