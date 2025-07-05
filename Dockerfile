@@ -1,4 +1,15 @@
-FROM continuumio/miniconda3:latest
+FROM ubuntu:22.04
+
+# 安装基础依赖
+RUN apt-get update && apt-get install -y wget bzip2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 下载并安装 Miniconda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
+    && rm Miniconda3-latest-Linux-x86_64.sh
+
+ENV PATH=/opt/conda/bin:$PATH
 
 WORKDIR /app
 
