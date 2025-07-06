@@ -1,3 +1,9 @@
+mysql -u root
+
+ CREATE DATABASE project1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+ 
+
 GRANT ALL PRIVILEGES ON project1.*  TO 'vina_user'@'%' IDENTIFIED BY 'Aa7758258123';
 
 #连接数据库
