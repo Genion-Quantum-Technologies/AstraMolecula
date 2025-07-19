@@ -1,2 +1,0 @@
-title,pose,score,smiles,file
-my_ligand-1,0,-12.333,O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1)c1ccc(-c2ccccc2)cc1,my_ligand-1-p0.sdf
