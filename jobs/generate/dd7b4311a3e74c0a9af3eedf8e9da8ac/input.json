@@ -1,0 +1,12 @@
+{
+  "generateRequestList": [
+    {
+      "constSmiles": "CN1C=NC2=C1C",
+      "varSmiles": "C1=CC=CC=C1",
+      "mainCls": "excretion",
+      "minorCls": "half_life_obach",
+      "deltaValue": "-10.5",
+      "num": 10
+    }
+  ]
+}

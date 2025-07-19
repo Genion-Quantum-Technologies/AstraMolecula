@@ -146,7 +146,8 @@ def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
         v.write_poses(f'{dir}/docked/{ligPath.stem}.pdbqt', n_poses=5, overwrite=True)
 
     if not os.path.exists(f"{dir}/docked/{ligPath.stem}-p0.csv"):
-        pdbqt2sdf(f"{dir}/docked/{ligPath.stem}.pdbqt")
+        pdbqt2sdf(f"{dir}/docked/{ligPath.stem}.pdbqt")  # 重新启用生成SDF和CSV
+        pass
 
 def read_csv(file_path):
     return pd.read_csv(file_path)
@@ -170,7 +171,6 @@ def clean_intermediate_files(work_dir):
         f"{work_dir}/input_prepared.sdf",
         f"{work_dir}/gypsumFolder",
         f"{work_dir}/pdbqts",
-        f"{work_dir}/docked",
     ]
 
     extra_patterns = [
@@ -199,7 +199,7 @@ def vina_docking_from_list(ligands: list,
                            receptor_pdbqt: str,
                            min_ph: float = 6.0,
                            max_ph: float = 8.0,
-                           n_jobs: int = 10) -> str:
+                           n_jobs: int = 8) -> str:
     """
     新增接口：直接传递 ligands 列表（如：[{"smiles":"C=CCNC…","title":"ID1"}, {...}, …]），
     而不需要用户预先写 CSV。
@@ -282,6 +282,10 @@ def vina_docking_from_list(ligands: list,
         raise RuntimeError("未发现任何 docked/*.csv，说明 docking 或 pdbqt2sdf 步骤出错。")
     dfRes = combine_csv(csv_paths)
     dfRes = dfRes.sort_values(by='score', ascending=True)
+    
+    # 为每个结果添加protein路径信息
+    dfRes['protein_path'] = str(receptPath)
+    
     dfRes.to_json(f"{parent_path}/dockRes.json", orient="records", force_ascii=False, indent=2)
 
     # Step 7: 清理中间文件（只保留 keep_files）

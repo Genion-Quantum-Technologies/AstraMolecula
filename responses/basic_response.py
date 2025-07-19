@@ -28,6 +28,7 @@ class DockResponse(BaseModel):
     score: float
     smiles: str
     file: str
+    protein_path: Optional[str] = None  # 添加protein路径字段
 
 class TaskResponse(BaseModel):
     id: str

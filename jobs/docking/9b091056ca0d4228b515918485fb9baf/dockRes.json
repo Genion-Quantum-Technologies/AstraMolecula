@@ -1,0 +1,23 @@
+[
+  {
+    "title":"ligand_1-2",
+    "pose":0,
+    "score":-10.109,
+    "smiles":"COCCN(Cc1nc2ccccc2c(=O)[nH]1)C(=O)c1oc2ccc(F)cc2c1C",
+    "file":"ligand_1-2-p0.sdf"
+  },
+  {
+    "title":"ligand_1-3",
+    "pose":0,
+    "score":-9.732,
+    "smiles":"COCCN(Cc1nc(O)c2ccccc2[nH+]1)C(=O)c1oc2ccc(F)cc2c1C",
+    "file":"ligand_1-3-p0.sdf"
+  },
+  {
+    "title":"ligand_1-1",
+    "pose":0,
+    "score":-9.512,
+    "smiles":"COCCN(Cc1nc(O)c2ccccc2n1)C(=O)c1oc2ccc(F)cc2c1C",
+    "file":"ligand_1-1-p0.sdf"
+  }
+]

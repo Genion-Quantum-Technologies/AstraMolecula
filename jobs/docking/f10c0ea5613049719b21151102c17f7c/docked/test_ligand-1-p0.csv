@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+test_ligand-1,0,-11.514,O=C([N-]c1ccc([O-])c(NS(=O)(=O)c2ccc(F)cc2)c1)c1ccc(-c2ccccc2)cc1,test_ligand-1-p0.sdf

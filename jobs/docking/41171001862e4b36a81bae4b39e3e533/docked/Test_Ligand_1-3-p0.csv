@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+Test_Ligand_1-3,0,-6.519,C=CCNC(=O)c1ccc([O-])cc1,Test_Ligand_1-3-p0.sdf

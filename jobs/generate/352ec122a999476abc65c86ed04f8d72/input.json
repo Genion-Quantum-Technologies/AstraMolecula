@@ -1,0 +1,20 @@
+{
+  "generateRequestList": [
+    {
+      "constSmiles": "[*:1]c1ccccc1OC(C)=O",
+      "varSmiles": "[*:1]C(=O)O",
+      "mainCls": "absorption",
+      "minorCls": "Tmax",
+      "deltaValue": "0-1",
+      "num": 5
+    },
+    {
+      "constSmiles": "[*:1]C(=O)Oc1ccccc1C(=O)O",
+      "varSmiles": "[*:1]C",
+      "mainCls": "absorption",
+      "minorCls": "Tmax",
+      "deltaValue": "0-1",
+      "num": 5
+    }
+  ]
+}

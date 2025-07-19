@@ -1,0 +1,28 @@
+{
+  "generateRequestList": [
+    {
+      "constSmiles": "[*:1]C(=O)Nc1cc(-c2cc(F)cc(OC3CCN(C)C3)c2)nc(-n2nc(C)cc2C)n1",
+      "varSmiles": "[*:1]C",
+      "mainCls": "metabolism",
+      "minorCls": "Drug metabolism",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 3
+    },
+    {
+      "constSmiles": "[*:1]Oc1cc(F)cc(-c2cc(NC(C)=O)nc(-n3nc(C)cc3C)n2)c1",
+      "varSmiles": "[*:1]C1CCN(C)C1",
+      "mainCls": "metabolism",
+      "minorCls": "Drug metabolism",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 3
+    },
+    {
+      "constSmiles": "[*:1]c1cc(F)cc(-c2cc(NC(C)=O)nc(-n3nc(C)cc3C)n2)c1",
+      "varSmiles": "[*:1]OC1CCN(C)C1",
+      "mainCls": "metabolism",
+      "minorCls": "Drug metabolism",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 3
+    }
+  ]
+}

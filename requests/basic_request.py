@@ -33,4 +33,4 @@ class DockingRequest(BaseModel):
     ligands: List[DockingLigand]
     min_ph: Optional[float] = 6.0
     max_ph: Optional[float] = 8.0
-    n_jobs: Optional[int]   = 10
+    n_jobs: Optional[int]   = 8

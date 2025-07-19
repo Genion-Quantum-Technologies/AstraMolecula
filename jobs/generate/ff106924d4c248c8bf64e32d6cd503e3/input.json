@@ -1,0 +1,12 @@
+{
+  "generateRequestList": [
+    {
+      "constSmiles": "[*:1]CCOc1ccc2nc(-c3ccc(OCc4cccnc4)cc3)ccc2c1",
+      "varSmiles": "[*:1]F",
+      "mainCls": "absorption",
+      "minorCls": "Drug uptake",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 1
+    }
+  ]
+}

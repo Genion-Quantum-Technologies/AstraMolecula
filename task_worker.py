@@ -45,7 +45,7 @@ def process_docking(task: Task):
         receptor_pdbqt=params["receptor_pdbqt"],
         min_ph=params.get("min_ph", 6.0),
         max_ph=params.get("max_ph", 8.0),
-        n_jobs=params.get("n_jobs", 10),
+        n_jobs=params.get("n_jobs", 8),
     )
     for item in Path(run_dir).iterdir():
         shutil.move(str(item), str(job_dir / item.name))

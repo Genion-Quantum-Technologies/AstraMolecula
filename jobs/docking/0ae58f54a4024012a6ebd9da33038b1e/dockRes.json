@@ -1,0 +1,18 @@
+[
+  {
+    "title":"ligand_1-1",
+    "pose":0,
+    "score":-10.221,
+    "smiles":"CC(C)c1cccc([NH2+]c2cc(Nc3cccc(C(F)(F)F)c3)nc[nH+]2)c1",
+    "file":"ligand_1-1-p0.sdf",
+    "protein_path":"\/Users\/youngwild\/Dev\/jingyuan\/dockingVina\/uploads\/8bccfd71-cbce-4732-98f9-7859433a1427\/protein_7UDP.pdbqt"
+  },
+  {
+    "title":"ligand_1-2",
+    "pose":0,
+    "score":-10.111,
+    "smiles":"CC(C)c1cccc(Nc2cc(Nc3cccc(C(F)(F)F)c3)[nH+]c[nH+]2)c1",
+    "file":"ligand_1-2-p0.sdf",
+    "protein_path":"\/Users\/youngwild\/Dev\/jingyuan\/dockingVina\/uploads\/8bccfd71-cbce-4732-98f9-7859433a1427\/protein_7UDP.pdbqt"
+  }
+]

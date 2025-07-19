@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+ligand_2-5,0,-9.973,COc1cc(N2CCC(N3CCN(C)CC3)CC2)c(C)cc1/N=c1\[nH]c(/[NH+]=c2/ccc3ncc[nH]c-3c2P(C)(C)=O)c(Br)c[nH+]1,ligand_2-5-p0.sdf

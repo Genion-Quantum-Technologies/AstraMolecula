@@ -1,0 +1,224 @@
+{
+	"info": {
+		"_postman_id": "docking-vina-test",
+		"name": "Docking Vina API Tests",
+		"description": "分子对接接口测试集合",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "分子对接测试",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer YOUR_TOKEN_HERE",
+						"description": "替换为实际的认证token"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"ligands\": [\n    {\n      \"smiles\": \"C=CCNC(=O)c1ccc(O)cc1\",\n      \"title\": \"Test_Ligand_1\"\n    },\n    {\n      \"smiles\": \"CC(C)CC1=CC=C(C=C1)C(C)C(=O)O\",\n      \"title\": \"Test_Ligand_2\"\n    },\n    {\n      \"smiles\": \"CC1=C(C(=CC=C1)C(=O)O)CC2=CC=C(C=C2)CC3C(=O)NC(=O)S3\",\n      \"title\": \"Test_Ligand_3\"\n    }\n  ],\n  \"min_ph\": 6.0,\n  \"max_ph\": 8.0,\n  \"n_jobs\": 4\n}"
+				},
+				"url": {
+					"raw": "http://3.133.131.124:8000/docking?receptor_filename=protein_7UDP.pdbqt",
+					"protocol": "http",
+					"host": [
+						"3.133.131.124"
+					],
+					"port": "8000",
+					"path": [
+						"docking"
+					],
+					"query": [
+						{
+							"key": "receptor_filename",
+							"value": "protein_7UDP.pdbqt",
+							"description": "受体文件名"
+						}
+					]
+				},
+				"description": "使用默认受体文件进行分子对接测试"
+			},
+			"response": []
+		},
+		{
+			"name": "分子对接测试 - 自定义pH",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer YOUR_TOKEN_HERE",
+						"description": "替换为实际的认证token"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"ligands\": [\n    {\n      \"smiles\": \"C1=CC=C(C=C1)C2=CC=CC=C2\",\n      \"title\": \"Biphenyl\"\n    },\n    {\n      \"smiles\": \"CC(C)(C)OC(=O)N[C@@H](CC1=CC=CC=C1)C(=O)O\",\n      \"title\": \"Phenylalanine\"\n    }\n  ],\n  \"min_ph\": 5.0,\n  \"max_ph\": 9.0,\n  \"n_jobs\": 8\n}"
+				},
+				"url": {
+					"raw": "http://3.133.131.124:8000/docking?receptor_filename=protein_7UDP.pdbqt",
+					"protocol": "http",
+					"host": [
+						"3.133.131.124"
+					],
+					"port": "8000",
+					"path": [
+						"docking"
+					],
+					"query": [
+						{
+							"key": "receptor_filename",
+							"value": "protein_7UDP.pdbqt"
+						}
+					]
+				},
+				"description": "使用自定义pH范围进行分子对接测试"
+			},
+			"response": []
+		},
+		{
+			"name": "分子对接测试 - 单个配体",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer YOUR_TOKEN_HERE"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"ligands\": [\n    {\n      \"smiles\": \"CC(C)CC1=CC=C(C=C1)C(C)C(=O)O\",\n      \"title\": \"Ibuprofen\"\n    }\n  ],\n  \"min_ph\": 6.0,\n  \"max_ph\": 8.0,\n  \"n_jobs\": 2\n}"
+				},
+				"url": {
+					"raw": "http://3.133.131.124:8000/docking?receptor_filename=protein_7UDP.pdbqt",
+					"protocol": "http",
+					"host": [
+						"3.133.131.124"
+					],
+					"port": "8000",
+					"path": [
+						"docking"
+					],
+					"query": [
+						{
+							"key": "receptor_filename",
+							"value": "protein_7UDP.pdbqt"
+						}
+					]
+				},
+				"description": "测试单个配体的分子对接"
+			},
+			"response": []
+		},
+		{
+			"name": "分子对接测试 - 多个配体",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer YOUR_TOKEN_HERE"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"ligands\": [\n    {\n      \"smiles\": \"C1=CC=C(C=C1)C2=CC=CC=C2\",\n      \"title\": \"Biphenyl\"\n    },\n    {\n      \"smiles\": \"CC(C)(C)OC(=O)N[C@@H](CC1=CC=CC=C1)C(=O)O\",\n      \"title\": \"Phenylalanine\"\n    },\n    {\n      \"smiles\": \"CC(C)CC1=CC=C(C=C1)C(C)C(=O)O\",\n      \"title\": \"Ibuprofen\"\n    },\n    {\n      \"smiles\": \"C=CCNC(=O)c1ccc(O)cc1\",\n      \"title\": \"Test_Ligand_1\"\n    },\n    {\n      \"smiles\": \"CC1=C(C(=CC=C1)C(=O)O)CC2=CC=C(C=C2)CC3C(=O)NC(=O)S3\",\n      \"title\": \"Test_Ligand_3\"\n    }\n  ],\n  \"min_ph\": 6.0,\n  \"max_ph\": 8.0,\n  \"n_jobs\": 6\n}"
+				},
+				"url": {
+					"raw": "http://3.133.131.124:8000/docking?receptor_filename=protein_7UDP.pdbqt",
+					"protocol": "http",
+					"host": [
+						"3.133.131.124"
+					],
+					"port": "8000",
+					"path": [
+						"docking"
+					],
+					"query": [
+						{
+							"key": "receptor_filename",
+							"value": "protein_7UDP.pdbqt"
+						}
+					]
+				},
+				"description": "测试多个配体的批量分子对接"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// 预请求脚本 - 可以在这里添加动态token获取逻辑",
+					"console.log('开始请求:', pm.request.url);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// 测试脚本",
+					"pm.test(\"状态码是 200\", function () {",
+					"    pm.response.to.have.status(200);",
+					"});",
+					"",
+					"pm.test(\"响应包含 task_id\", function () {",
+					"    var jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.have.property('task_id');",
+					"    pm.expect(jsonData.task_id).to.be.a('string');",
+					"});",
+					"",
+					"pm.test(\"响应时间小于 5 秒\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// 保存task_id到环境变量",
+					"if (pm.response.code === 200) {",
+					"    var jsonData = pm.response.json();",
+					"    if (jsonData.task_id) {",
+					"        pm.environment.set(\"last_task_id\", jsonData.task_id);",
+					"        console.log('任务ID已保存:', jsonData.task_id);",
+					"    }",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://3.133.131.124:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "YOUR_TOKEN_HERE",
+			"type": "string"
+		}
+	]
+} 

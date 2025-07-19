@@ -1,0 +1,28 @@
+{
+  "generateRequestList": [
+    {
+      "constSmiles": "[*:1]c1ccc(S(=O)(=O)Nc2cc(NC(=O)c3ccc(-c4ccccc4)cc3)ccc2O)cc1",
+      "varSmiles": "[*:1]F",
+      "mainCls": "activity",
+      "minorCls": "IC50",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 6
+    },
+    {
+      "constSmiles": "[*:3]O.[*:1]c1ccc(F)cc1.[*:2]c1ccccc1",
+      "varSmiles": "[*:1]c1ccc(C(=O)Nc2ccc([*:2])c(NS([*:3])(=O)=O)c2)cc1",
+      "mainCls": "activity",
+      "minorCls": "IC50",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 6
+    },
+    {
+      "constSmiles": "[*:3]F.[*:2]O.[*:1]c1ccc(-c2ccccc2)cc1",
+      "varSmiles": "[*:1]C(=O)Nc1ccc([*:2])c(NS(=O)(=O)c2ccc([*:3])cc2)c1",
+      "mainCls": "activity",
+      "minorCls": "IC50",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 6
+    }
+  ]
+}

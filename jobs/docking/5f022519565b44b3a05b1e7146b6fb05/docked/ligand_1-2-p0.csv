@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+ligand_1-2,0,-10.223,CC(C)c1cccc(Nc2cc([NH2+]c3cccc(C(F)(F)F)c3)nc[nH+]2)c1,ligand_1-2-p0.sdf

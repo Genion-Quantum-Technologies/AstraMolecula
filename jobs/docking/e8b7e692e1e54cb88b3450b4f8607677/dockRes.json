@@ -1,0 +1,26 @@
+[
+  {
+    "title":"ligand_1-1",
+    "pose":0,
+    "score":-12.339,
+    "smiles":"O=C(Nc1ccc(O)c([N-]S(=O)(=O)c2ccc(F)cc2)c1)c1ccc(-c2ccccc2)cc1",
+    "file":"ligand_1-1-p0.sdf",
+    "protein_path":"\/Users\/youngwild\/Dev\/jingyuan\/dockingVina\/uploads\/8bccfd71-cbce-4732-98f9-7859433a1427\/protein_7UDP.pdbqt"
+  },
+  {
+    "title":"ligand_1-3",
+    "pose":0,
+    "score":-12.088,
+    "smiles":"O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1)c1ccc(-c2ccccc2)cc1",
+    "file":"ligand_1-3-p0.sdf",
+    "protein_path":"\/Users\/youngwild\/Dev\/jingyuan\/dockingVina\/uploads\/8bccfd71-cbce-4732-98f9-7859433a1427\/protein_7UDP.pdbqt"
+  },
+  {
+    "title":"ligand_1-2",
+    "pose":0,
+    "score":-11.683,
+    "smiles":"O=C(Nc1ccc([O-])c([N-]S(=O)(=O)c2ccc(F)cc2)c1)c1ccc(-c2ccccc2)cc1",
+    "file":"ligand_1-2-p0.sdf",
+    "protein_path":"\/Users\/youngwild\/Dev\/jingyuan\/dockingVina\/uploads\/8bccfd71-cbce-4732-98f9-7859433a1427\/protein_7UDP.pdbqt"
+  }
+]

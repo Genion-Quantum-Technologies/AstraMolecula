@@ -1,0 +1,20 @@
+{
+  "ligands": [
+    {
+      "smiles": "CC(C)c1cccc(Nc2cc(Nc3cccc(C(F)(F)F)c3)ncn2)c1",
+      "title": "ligand_1"
+    },
+    {
+      "smiles": "CC1=CC(=C(C=C1N2CCC(CC2)N3CCN(CC3)C)OC)NC4=NC=C(C(=N4)NC5=C(C6=NC=CN=C6C=C5)P(=O)(C)C)Br",
+      "title": "ligand_2"
+    },
+    {
+      "smiles": "COC1=C(C=C2C(=C1)C(=NC=N2)NC3=CC=C(C=C3)OCC4=CC=CC=C4)OC",
+      "title": "ligand_3"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/protein_7UDP.pdbqt",
+  "min_ph": 5.0,
+  "max_ph": 10.0,
+  "n_jobs": 1
+}

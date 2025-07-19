@@ -1,0 +1,42 @@
+[
+  {
+    "smile": "C[N+](C)(C)CCOC=O.c1ccccc1",
+    "molwt": 210.3,
+    "tpsa": 26.3,
+    "slogp": 1.6,
+    "sa": 2.6,
+    "qed": 0.4
+  },
+  {
+    "smile": "Cl.c1ccccc1",
+    "molwt": 114.6,
+    "tpsa": 0.0,
+    "slogp": 2.1,
+    "sa": 1.0,
+    "qed": 0.5
+  },
+  {
+    "smile": "CCO.c1ccccc1",
+    "molwt": 124.2,
+    "tpsa": 20.2,
+    "slogp": 1.7,
+    "sa": 1.1,
+    "qed": 0.6
+  },
+  {
+    "smile": "CCO.NCC1CCCCC1",
+    "molwt": 159.3,
+    "tpsa": 46.2,
+    "slogp": 1.5,
+    "sa": 2.3,
+    "qed": 0.6
+  },
+  {
+    "smile": "CCO.[H][H]",
+    "molwt": 48.1,
+    "tpsa": 20.2,
+    "slogp": 0.2,
+    "sa": 4.5,
+    "qed": 0.4
+  }
+]

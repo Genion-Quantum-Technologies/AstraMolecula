@@ -1,0 +1,12 @@
+{
+  "ligands": [
+    {
+      "smiles": "COCCN(CC1=NC2=C(C=CC=C2)C(=O)N1)C(=O)C3=C(C)C4=C(O3)C=CC(F)=C4",
+      "title": "ligand_1"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/protein_7UDP.pdbqt",
+  "min_ph": 6.0,
+  "max_ph": 8.0,
+  "n_jobs": 8
+}

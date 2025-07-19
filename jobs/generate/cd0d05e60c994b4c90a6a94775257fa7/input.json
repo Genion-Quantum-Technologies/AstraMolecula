@@ -1,0 +1,12 @@
+{
+  "generateRequestList": [
+    {
+      "constSmiles": "CN1C=NC2=C1C",
+      "varSmiles": "C1=CC=CC=C1",
+      "mainCls": "distribution",
+      "minorCls": "vdss_lombardo",
+      "deltaValue": "(-inf, -10.5]",
+      "num": 10
+    }
+  ]
+}

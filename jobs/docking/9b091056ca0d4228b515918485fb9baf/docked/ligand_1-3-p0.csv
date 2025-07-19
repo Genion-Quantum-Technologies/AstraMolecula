@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+ligand_1-3,0,-9.732,COCCN(Cc1nc(O)c2ccccc2[nH+]1)C(=O)c1oc2ccc(F)cc2c1C,ligand_1-3-p0.sdf

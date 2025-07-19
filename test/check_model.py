@@ -19,4 +19,4 @@ def check_model(path):
         print("包含的键:", list(checkpoint.keys()))
 
 
-check_model("/home/davis/projects/dockingVina/resource/model_20.pt")
+check_model("/Users/youngwild/Dev/jingyuan/dockingVina/resource/model_20.pt")

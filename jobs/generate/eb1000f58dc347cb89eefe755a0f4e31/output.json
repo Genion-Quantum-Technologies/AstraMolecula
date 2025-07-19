@@ -1,0 +1,82 @@
+[
+  {
+    "smile": "CC(C)(C)c1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1",
+    "molwt": 323.4,
+    "tpsa": 66.4,
+    "slogp": 3.6,
+    "sa": 2.3,
+    "qed": 0.8
+  },
+  {
+    "smile": "O=S(=O)(Nc1ccccc1O)c1ccc(F)cc1",
+    "molwt": 267.3,
+    "tpsa": 66.4,
+    "slogp": 2.3,
+    "sa": 2.0,
+    "qed": 0.8
+  },
+  {
+    "smile": "Nc1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1",
+    "molwt": 282.3,
+    "tpsa": 92.4,
+    "slogp": 1.9,
+    "sa": 2.3,
+    "qed": 0.5
+  },
+  {
+    "smile": "Cc1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1",
+    "molwt": 281.3,
+    "tpsa": 66.4,
+    "slogp": 2.6,
+    "sa": 2.1,
+    "qed": 0.8
+  },
+  {
+    "smile": "CC(C)c1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1",
+    "molwt": 309.4,
+    "tpsa": 66.4,
+    "slogp": 3.5,
+    "sa": 2.3,
+    "qed": 0.9
+  },
+  {
+    "smile": "O=C(Nc1ccc([N+](=O)[O-])cc1)c1ccc(-c2ccccc2)cc1",
+    "molwt": 318.3,
+    "tpsa": 72.2,
+    "slogp": 4.5,
+    "sa": 1.8,
+    "qed": 0.6
+  },
+  {
+    "smile": "O=C(O)c1cccc(NC(=O)c2ccc(-c3ccccc3)cc2)c1",
+    "molwt": 317.3,
+    "tpsa": 66.4,
+    "slogp": 4.3,
+    "sa": 1.7,
+    "qed": 0.8
+  },
+  {
+    "smile": "O=C(Nc1ccccc1)c1ccc(-c2ccccc2)cc1",
+    "molwt": 273.3,
+    "tpsa": 29.1,
+    "slogp": 4.6,
+    "sa": 1.4,
+    "qed": 0.7
+  },
+  {
+    "smile": "O=C(Nc1ccccc1Cl)c1ccc(-c2ccccc2)cc1",
+    "molwt": 307.8,
+    "tpsa": 29.1,
+    "slogp": 5.3,
+    "sa": 1.6,
+    "qed": 0.7
+  },
+  {
+    "smile": "O=C(Nc1ccccc1C(=O)O)c1ccc(-c2ccccc2)cc1",
+    "molwt": 317.3,
+    "tpsa": 66.4,
+    "slogp": 4.3,
+    "sa": 1.7,
+    "qed": 0.8
+  }
+]
