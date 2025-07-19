@@ -7,4 +7,5 @@
 /Vina/ADFRsuite_Linux-x86_64_1.0_install
 /Vina/pocket_detection.py
 **/__pycache__/
-*.py[cod]gypsum_dl/
+/gypsum_dl/
+
