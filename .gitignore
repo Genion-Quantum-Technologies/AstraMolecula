@@ -8,4 +8,6 @@
 /Vina/pocket_detection.py
 **/__pycache__/
 /gypsum_dl/
-
+/uploads/
+/resource/model_20.pt
+/logs

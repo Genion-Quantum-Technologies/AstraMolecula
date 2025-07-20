@@ -99,7 +99,7 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     gypsum_output_dir = f"{dir}/gypsumFolder"
     if not os.path.exists(gypsum_output_dir):
         os.makedirs(gypsum_output_dir)  # 先手动创建，避免 Start.py 报错
-    os.system(f"mpirun -n {num_processors} python -m mpi4py "
+    os.system(f"mpirun -n {num_processors} python3 -m mpi4py "
               f"{gypsumPath} --source {inputSmi} --output_folder {dir}/gypsumFolder "
               f"--min_ph {min_ph} --max_ph {max_ph} --pka_precision 1 "
               f"--skip_optimize_geometry --2d_output_only --use_durrant_lab_filters")

@@ -4,15 +4,15 @@ from typing import List, Optional
 
 class UserRepository:
     @staticmethod
-    def create(username: str, password_hash: str, phone: str = None, email: str = None) -> None:
+    def create(uuid: str, username: str, password_hash: str, phone: str = None, email: str = None) -> None:
         sql = """
-        INSERT INTO users (username, password_hash, phone, email)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO users (id, username, password_hash, phone, email)
+        VALUES (%s, %s, %s, %s, %s)
         """
         conn = get_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(sql, (username, password_hash, phone, email))
+                cur.execute(sql, (uuid, username, password_hash, phone, email))
             conn.commit()
         finally:
             conn.close()
