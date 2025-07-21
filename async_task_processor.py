@@ -413,14 +413,34 @@ def main_loop():
             
             for task in pending_tasks:
                 logger.info(f"Processing pending task {task.id}")
-                # 使用全局任务处理器异步处理任务
-                asyncio.run(task_processor.process_task(task))
+                # 在新线程中处理任务，避免阻塞主循环
+                import threading
+                thread = threading.Thread(
+                    target=_process_task_sync, 
+                    args=(task,), 
+                    daemon=True
+                )
+                thread.start()
                 
         except Exception as e:
             logger.error(f"Error in main loop: {e}")
             
         # 等待5秒后继续检查
         time.sleep(5)
+
+
+def _process_task_sync(task):
+    """同步处理任务的包装函数"""
+    try:
+        # 在新的事件循环中运行异步任务
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(task_processor.process_task(task))
+        finally:
+            loop.close()
+    except Exception as e:
+        logger.error(f"Error processing task {task.id}: {e}")
 
 
 # 全局任务处理器实例

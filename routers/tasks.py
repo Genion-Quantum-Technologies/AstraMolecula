@@ -28,6 +28,20 @@ async def list_user_tasks(request: Request):
     #     raise HTTPException(status_code=404, detail="no tasks found for this user")
     return tasks
 
+@router.get("/{task_id}", response_model=TaskResponse)
+async def get_task_status(request: Request, task_id: str):
+    """
+    获取指定任务的状态和详细信息。
+    """
+    current_user = request.state.user
+    logger.info("User %s requesting status for task %s", current_user.username, task_id)
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    
+    return task
+
 @router.get("/{task_id}/download")
 async def download_task_files(request: Request, task_id: str):
     """Download result files of a finished task as a zip archive."""

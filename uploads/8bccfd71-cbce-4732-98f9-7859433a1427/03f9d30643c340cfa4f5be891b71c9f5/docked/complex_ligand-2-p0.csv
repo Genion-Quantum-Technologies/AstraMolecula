@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+complex_ligand-2,0,0.0,O=C(Nc1ccc([O-])c([N-]S(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1,complex_ligand-2-p0.sdf
