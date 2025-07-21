@@ -1,0 +1,2 @@
+smiles	title
+O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1	complex_ligand

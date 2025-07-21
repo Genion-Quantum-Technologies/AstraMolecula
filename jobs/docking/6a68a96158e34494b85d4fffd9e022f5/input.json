@@ -1,0 +1,20 @@
+{
+  "ligands": [
+    {
+      "smiles": "O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1",
+      "title": "analog_1"
+    },
+    {
+      "smiles": "O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccc(Cl)cc2)c1)c1ccc(-c2ccccc2)cc1",
+      "title": "analog_2"
+    },
+    {
+      "smiles": "O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccccc2)c1)c1ccc(-c2ccccc2)cc1",
+      "title": "analog_3"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/protein_7UDP.pdbqt",
+  "min_ph": 5.0,
+  "max_ph": 10.0,
+  "n_jobs": 1
+}

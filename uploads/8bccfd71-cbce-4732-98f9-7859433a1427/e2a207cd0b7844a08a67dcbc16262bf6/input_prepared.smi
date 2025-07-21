@@ -1,0 +1,11 @@
+O=C([N-]c1ccc(O)c([N-]S(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1	analog_1-1
+O=C(Nc1ccc([O-])c(NS(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1	analog_1-2
+O=C(Nc1ccc(O)c([N-]S(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1	analog_1-3
+O=C([N-]c1ccc([O-])c([N-]S(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1	analog_1-4
+O=C([N-]c1ccc(O)c([N-]S(=O)(=O)c2ccc(Cl)cc2)c1)c1ccc(-c2ccccc2)cc1	analog_2-1
+O=C(Nc1ccc([O-])c([N-]S(=O)(=O)c2ccc(Cl)cc2)c1)c1ccc(-c2ccccc2)cc1	analog_2-2
+O=C([N-]c1ccc([O-])c(NS(=O)(=O)c2ccc(Cl)cc2)c1)c1ccc(-c2ccccc2)cc1	analog_2-3
+O=C(Nc1ccc([O-])c(NS(=O)(=O)c2ccc(Cl)cc2)c1)c1ccc(-c2ccccc2)cc1	analog_2-4
+O=C(Nc1ccc(O)c([N-]S(=O)(=O)c2ccccc2)c1)c1ccc(-c2ccccc2)cc1	analog_3-1
+O=C(Nc1ccc([O-])c([N-]S(=O)(=O)c2ccccc2)c1)c1ccc(-c2ccccc2)cc1	analog_3-2
+O=C([N-]c1ccc(O)c(NS(=O)(=O)c2ccccc2)c1)c1ccc(-c2ccccc2)cc1	analog_3-3

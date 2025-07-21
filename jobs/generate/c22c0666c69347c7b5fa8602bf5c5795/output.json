@@ -1,0 +1,18 @@
+[
+  {
+    "smile": "COc1ccc(NC(=O)c2ccc(-c3ccccc3)cc2)cc1NS(=O)(=O)c1ccc([N+](=O)[O-])cc1",
+    "molwt": 503.5,
+    "tpsa": 127.6,
+    "slogp": 5.3,
+    "sa": 2.3,
+    "qed": 0.2
+  },
+  {
+    "smile": "O=C(Nc1ccc(Oc2ccccc2)c(NS(=O)(=O)c2ccc([N+](=O)[O-])cc2)c1)c1ccc(-c2ccccc2)cc1",
+    "molwt": 565.6,
+    "tpsa": 127.6,
+    "slogp": 7.1,
+    "sa": 2.4,
+    "qed": 0.1
+  }
+]

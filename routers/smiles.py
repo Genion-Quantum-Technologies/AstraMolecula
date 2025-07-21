@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 from PIL import Image
 import uuid
 from fastapi.responses import StreamingResponse
@@ -7,14 +8,13 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from config import ROOT
 from database.services.task_service import TaskService
 from requests.basic_request import GenerateRequestList
 from responses.basic_response import FragmentResponse
 from utils.fragment_processor import fragmentize_molecule
-from utils.log import get_logger
+import config
 
-logger = get_logger("smiles_router", str(ROOT / "logs" / "api.log"), isMain=True)
+logger = logging.getLogger("smiles_router")
 
 router = APIRouter(tags=["Smiles"])
 
@@ -62,7 +62,7 @@ async def generate_molecules(
 
     try:
         # （1）生成一个唯一的 job_id，并创建对应文件夹
-        JOBS_DIR = ROOT / "jobs" / "generate"
+        JOBS_DIR = config.ROOT / "jobs" / "generate"
         JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
         job_id = uuid.uuid4().hex

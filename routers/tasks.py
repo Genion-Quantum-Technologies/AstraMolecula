@@ -38,7 +38,7 @@ async def download_task_files(request: Request, task_id: str):
     if not task or task.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.status != "finished":
-        raise HTTPException(status_code=400, detail="task not finished")
+        raise HTTPException(status_code=409, detail="task not finished - cannot download files")
 
     job_dir = Path(task.job_dir)
     if not job_dir.exists():
@@ -72,7 +72,7 @@ async def get_generated_molecules(request: Request, task_id: str):
     if task.task_type != "generate":
         raise HTTPException(status_code=400, detail="task type is not generate")
     if task.status != "finished":
-        raise HTTPException(status_code=400, detail="task not finished")
+        raise HTTPException(status_code=202, detail="task is still processing")
 
     output_path = Path(task.job_dir) / "output.json"
     if not output_path.exists():
@@ -98,7 +98,7 @@ async def get_docking_results(request: Request, task_id: str):
     if task.task_type != "docking":
         raise HTTPException(status_code=400, detail="task type is not docking")
     if task.status != "finished":
-        raise HTTPException(status_code=400, detail="task not finished")
+        raise HTTPException(status_code=202, detail="task is still processing")
 
     output_path = Path(task.job_dir) / "dockRes.json"
     if not output_path.exists():
@@ -123,7 +123,7 @@ async def get_sdf_file(request: Request, task_id: str, filename: str):
     if task.task_type != "docking":
         raise HTTPException(status_code=400, detail="task type is not docking")
     if task.status != "finished":
-        raise HTTPException(status_code=400, detail="task not finished")
+        raise HTTPException(status_code=202, detail="task is still processing")
     
     # 验证文件名格式，防止路径遍历攻击
     if not filename.endswith('.sdf') or '/' in filename or '\\' in filename:
@@ -156,7 +156,7 @@ async def get_protein_file(request: Request, task_id: str):
     if task.task_type != "docking":
         raise HTTPException(status_code=400, detail="task type is not docking")
     if task.status != "finished":
-        raise HTTPException(status_code=400, detail="task not finished")
+        raise HTTPException(status_code=202, detail="task is still processing")
     
     # 从dockRes.json中获取protein路径
     dock_res_path = Path(task.job_dir) / "dockRes.json"

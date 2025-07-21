@@ -345,3 +345,1530 @@ RuntimeError: 在 /Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbc
 21:16:08: task_worker.process_docking +53: INFO     Finished docking task b42da9c0cf794abbb20c02a812b0a041
 21:29:50: task_worker.process_docking +39: INFO     Start docking task 6681d93a1d2a4bbf858765bc8e58b2f5
 21:32:35: task_worker.process_docking +53: INFO     Finished docking task 6681d93a1d2a4bbf858765bc8e58b2f5
+20:55:08: task_worker.process_docking +39: INFO     Start docking task ba475fc48b4146eb8003cc64dde701af
+20:56:19: task_worker.process_docking +53: INFO     Finished docking task ba475fc48b4146eb8003cc64dde701af
+21:11:52: task_worker.process_docking +39: INFO     Start docking task dcf2149144a741809ef8a3bf7f5bea27
+21:12:45: task_worker.process_docking +53: INFO     Finished docking task dcf2149144a741809ef8a3bf7f5bea27
+21:16:48: task_worker.process_generate +16: INFO     Start generate task 04d8b00e822742b8993665aaccedece6
+21:16:51: task_worker.process_generate +35: INFO     Finished generate task 04d8b00e822742b8993665aaccedece6
+21:40:38: task_worker.process_generate +16: INFO     Start generate task e9a2dd287bca42a788d4527247dfbcd2
+21:40:40: task_worker.process_generate +35: INFO     Finished generate task e9a2dd287bca42a788d4527247dfbcd2
+21:42:37: task_worker.process_docking +39: INFO     Start docking task 43f88d8489e84909885ec01c0272b00a
+21:47:27: task_worker.process_docking +53: INFO     Finished docking task 43f88d8489e84909885ec01c0272b00a
+21:53:24: task_worker.process_docking +39: INFO     Start docking task be8d3b1c314d4b25831057aede17620b
+21:53:33: task_worker.process_docking +53: INFO     Finished docking task be8d3b1c314d4b25831057aede17620b
+22:42:15: task_worker.process_docking +39: INFO     Start docking task 9b764a80d9ad40158e75c24d661c50c4
+22:42:24: task_worker.process_docking +53: INFO     Finished docking task 9b764a80d9ad40158e75c24d661c50c4
+22:51:11: task_worker.process_docking +39: INFO     Start docking task 0005f7686c1f4bc188c172c531e57ef3
+22:51:21: task_worker.process_docking +53: INFO     Finished docking task 0005f7686c1f4bc188c172c531e57ef3
+22:51:22: task_worker.process_docking +39: INFO     Start docking task 7689e9a9567d49d59a2f7d31355a0944
+22:51:30: task_worker.process_docking +53: INFO     Finished docking task 7689e9a9567d49d59a2f7d31355a0944
+22:54:06: task_worker.process_docking +39: INFO     Start docking task b9cba5698b7a4d72a64aba0975ce3182
+22:54:14: task_worker.process_docking +53: INFO     Finished docking task b9cba5698b7a4d72a64aba0975ce3182
+23:04:36: task_worker.process_generate +16: INFO     Start generate task 2fd75d3ae135482cb38d7ea07b258ac9
+23:04:38: task_worker.process_generate +35: INFO     Finished generate task 2fd75d3ae135482cb38d7ea07b258ac9
+23:05:09: task_worker.process_docking +39: INFO     Start docking task b5fd9b065d7847df96d224b7b2e5e0e9
+23:05:37: task_worker.process_docking +53: INFO     Finished docking task b5fd9b065d7847df96d224b7b2e5e0e9
+23:06:59: task_worker.process_docking +39: INFO     Start docking task 4da8f109416a4650a52de0feabe0f803
+23:07:05: task_worker.main_loop +72: ERROR    Task 4da8f109416a4650a52de0feabe0f803 failed
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 69, in main_loop
+    process_docking(task)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 43, in process_docking
+    run_dir = vina_docking_from_list(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/Vina/vina_workflow.py", line 270, in vina_docking_from_list
+    raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
+RuntimeError: 在 /Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/8d0ddf6bf92244d0b258e912447c89de/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。
+23:12:06: task_worker.process_docking +39: INFO     Start docking task 12260e78066f425e889d954f7609a81e
+23:12:22: task_worker.process_docking +53: INFO     Finished docking task 12260e78066f425e889d954f7609a81e
+23:23:24: task_worker.process_docking +39: INFO     Start docking task a10a4e365adc41c0a38c244d37695b5f
+23:23:34: task_worker.process_docking +53: INFO     Finished docking task a10a4e365adc41c0a38c244d37695b5f
+23:24:25: task_worker.process_docking +39: INFO     Start docking task 79ffad4107d74b77b3f192e5ff2fe916
+23:24:34: task_worker.process_docking +53: INFO     Finished docking task 79ffad4107d74b77b3f192e5ff2fe916
+23:29:20: task_worker.process_docking +39: INFO     Start docking task 3b7c11f257374ca3bb93f50d516ae64e
+23:29:29: task_worker.process_docking +53: INFO     Finished docking task 3b7c11f257374ca3bb93f50d516ae64e
+23:31:00: task_worker.process_docking +39: INFO     Start docking task 6243c96662b344ffbd598ee5ca331a5e
+23:31:09: task_worker.process_docking +53: INFO     Finished docking task 6243c96662b344ffbd598ee5ca331a5e
+23:32:10: task_worker.process_docking +39: INFO     Start docking task 0e3b17b55bac4b029a96764551a7fb7c
+23:32:18: task_worker.process_docking +53: INFO     Finished docking task 0e3b17b55bac4b029a96764551a7fb7c
+23:36:40: task_worker.process_docking +39: INFO     Start docking task fab67ae662fa41389aa4caa576c3126b
+23:37:56: task_worker.process_docking +53: INFO     Finished docking task fab67ae662fa41389aa4caa576c3126b
+00:00:00: task_worker.process_docking +39: INFO     Start docking task 5dca638fc6fc491c86b3194c8c4212eb
+00:00:54: task_worker.process_docking +53: INFO     Finished docking task 5dca638fc6fc491c86b3194c8c4212eb
+00:12:53: task_worker.process_docking +39: INFO     Start docking task 466229fb31d0416b9a18b61ed93271b2
+00:14:13: task_worker.process_docking +53: INFO     Finished docking task 466229fb31d0416b9a18b61ed93271b2
+00:16:59: task_worker.process_generate +16: INFO     Start generate task d3c525b4706a4f85b084b8842dfda407
+00:16:59: task_worker.main_loop +72: ERROR    Task d3c525b4706a4f85b084b8842dfda407 failed
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 67, in main_loop
+    time.sleep(5)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 24, in process_generate
+    res = run_generate_runner(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/utils/tools.py", line 57, in run_generate_runner
+    runner = GenerateRunner(opt)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/utils/generate.py", line 58, in __init__
+    with open(os.path.join(opt.vocab_path, 'vocab.pkl'), "rb") as input_file:
+FileNotFoundError: [Errno 2] No such file or directory: './resource/vocab.pkl'
+00:24:11: task_worker.process_generate +16: INFO     Start generate task 8c8485d173ee40f7b250dea7d6e20e08
+00:24:14: task_worker.process_generate +35: INFO     Finished generate task 8c8485d173ee40f7b250dea7d6e20e08
+00:31:16: task_worker.process_generate +16: INFO     Start generate task b5de7d71f3894040919915f270389667
+00:31:18: task_worker.process_generate +35: INFO     Finished generate task b5de7d71f3894040919915f270389667
+00:38:17: task_worker.process_generate +16: INFO     Start generate task 0f04e501e3a34959b171dc6a2eb0f5bb
+00:38:20: task_worker.process_generate +35: INFO     Finished generate task 0f04e501e3a34959b171dc6a2eb0f5bb
+00:46:51: task_worker.process_docking +39: INFO     Start docking task c5e5f621a8e94406bd0bfb13bea2b662
+00:47:57: task_worker.process_docking +53: INFO     Finished docking task c5e5f621a8e94406bd0bfb13bea2b662
+00:48:39: task_worker.process_docking +39: INFO     Start docking task bd36b2bfa6cb45999ffca33c1a7deb00
+00:48:46: task_worker.main_loop +72: ERROR    Task bd36b2bfa6cb45999ffca33c1a7deb00 failed
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 69, in main_loop
+    process_docking(task)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 43, in process_docking
+    run_dir = vina_docking_from_list(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/Vina/vina_workflow.py", line 270, in vina_docking_from_list
+    raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
+RuntimeError: 在 /Users/youngwild/Dev/jingyuan/dockingVina/resource/d43f91495d804a7d821ca4c886b07723/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。
+00:49:12: task_worker.process_docking +39: INFO     Start docking task b32a4158fac34868acf4e293b35e08ad
+2025-07-21 01:04:03 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task cdbe729bc0fd4f0c99db99e1e2db7946
+2025-07-21 01:04:58 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task cdbe729bc0fd4f0c99db99e1e2db7946
+2025-07-21 01:06:24 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task fae088b222a74acb83dd8587d1aca9aa
+2025-07-21 01:07:21 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task fae088b222a74acb83dd8587d1aca9aa
+2025-07-21 01:10:37 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 67298a70817e4d0e8458b104b27d3752
+2025-07-21 01:11:36 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 67298a70817e4d0e8458b104b27d3752
+2025-07-21 01:12:57 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 2926ed0561644fdcaa6436bbb857be2a
+2025-07-21 01:13:05 | task_worker | [31mERROR[0m | task_worker.py:72:main_loop() | Task 2926ed0561644fdcaa6436bbb857be2a failed
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 69, in main_loop
+    process_docking(task)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 43, in process_docking
+    run_dir = vina_docking_from_list(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/Vina/vina_workflow.py", line 270, in vina_docking_from_list
+    raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
+RuntimeError: 在 /Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/d25f33754c8e40e6a4955074d1b53d22/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。
+2025-07-21 01:14:16 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 76a8934e1fd04c0fa488167d691edacc
+2025-07-21 01:15:15 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 76a8934e1fd04c0fa488167d691edacc
+2025-07-21 01:17:21 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 50780c51780a4373b25ad06e323d9b03
+2025-07-21 01:17:31 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 50780c51780a4373b25ad06e323d9b03
+2025-07-21 01:19:42 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 0d8af67ec1fd4595a24207c5e8390ccb
+2025-07-21 01:20:40 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 0d8af67ec1fd4595a24207c5e8390ccb
+2025-07-21 01:23:27 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 958f9937b8794253b11df4cd6ab0ef44
+2025-07-21 01:24:41 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 958f9937b8794253b11df4cd6ab0ef44
+2025-07-21 01:31:08 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 6dcb0163277344a4914419f3ecd36e2f
+2025-07-21 01:32:21 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 6dcb0163277344a4914419f3ecd36e2f
+2025-07-21 01:36:23 | task_worker | [32mINFO[0m | task_worker.py:39:process_docking() | Start docking task 5f360e3d874a43df83243d87bfebcc07
+2025-07-21 01:37:33 | task_worker | [32mINFO[0m | task_worker.py:53:process_docking() | Finished docking task 5f360e3d874a43df83243d87bfebcc07
+2025-07-21 01:51:58 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:02:49 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:03:08 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:03:26 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:03:46 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:05:48 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:05:55 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:09:06 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:09:34 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:09:52 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:09:58 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:22:54 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:23:08 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:23:21 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:23:33 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:23:57 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:24:31 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:24:40 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:28:09 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:28:22 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:28:38 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:29:29 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:29:44 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:30:45 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:31:51 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:35:11 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:37:15 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:37:15 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:15 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:20 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:20 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:25 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:25 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:30 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:30 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:35 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:35 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:40 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:40 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:45 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:45 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:37:57 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:37:57 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:37:57 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:38:02 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:02 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:38:07 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:07 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:38:12 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:12 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:38:17 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:17 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: type object 'TaskStatus' has no attribute 'QUEUED'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 61, in _process_pending_tasks
+    task.id, TaskStatus.QUEUED, 0.0, "Task queued for processing"
+AttributeError: type object 'TaskStatus' has no attribute 'QUEUED'
+2025-07-21 02:38:24 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:38:24 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:24 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:38:29 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:29 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:38:34 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:34 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:38:44 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:38:44 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:44 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:38:49 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:49 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:38:54 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:54 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:38:59 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:38:59 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:09 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:39:14 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:39:14 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:39:14 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:19 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:39:19 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:24 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:39:24 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:29 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:39:29 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:34 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:39:34 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:39 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 9 pending tasks
+2025-07-21 02:39:39 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:44 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:39:44 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:49 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:39:49 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:54 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:39:54 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:39:59 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:39:59 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:04 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:04 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:09 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:09 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:14 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:14 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:19 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:19 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:24 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:24 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:29 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:29 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:34 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:34 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:39 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:39 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:44 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:44 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:49 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:49 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:54 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:54 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:40:59 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:40:59 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:04 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:04 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:09 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:09 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:14 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:14 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:19 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:19 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:24 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:24 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:29 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:29 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:34 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:34 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:39 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:39 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:44 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:44 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:49 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:49 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:54 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:54 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:41:59 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:41:59 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:42:04 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:42:04 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:42:09 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:42:09 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:42:14 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:42:14 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:42:19 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 10 pending tasks
+2025-07-21 02:42:19 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: name 'task_processor' is not defined
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 50, in _process_pending_tasks
+    running_task_ids = task_processor.get_running_tasks()
+NameError: name 'task_processor' is not defined
+2025-07-21 02:42:29 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:42:29 | task_worker | [31mERROR[0m | task_worker.py:71:_process_pending_tasks() | Error processing pending tasks: type object 'TaskService' has no attribute 'get_pending_tasks'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 42, in _process_pending_tasks
+    pending_tasks = TaskService.get_pending_tasks(limit=5)
+AttributeError: type object 'TaskService' has no attribute 'get_pending_tasks'
+2025-07-21 02:42:34 | task_worker | [31mERROR[0m | task_worker.py:71:_process_pending_tasks() | Error processing pending tasks: type object 'TaskService' has no attribute 'get_pending_tasks'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 42, in _process_pending_tasks
+    pending_tasks = TaskService.get_pending_tasks(limit=5)
+AttributeError: type object 'TaskService' has no attribute 'get_pending_tasks'
+2025-07-21 02:42:39 | task_worker | [31mERROR[0m | task_worker.py:71:_process_pending_tasks() | Error processing pending tasks: type object 'TaskService' has no attribute 'get_pending_tasks'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 42, in _process_pending_tasks
+    pending_tasks = TaskService.get_pending_tasks(limit=5)
+AttributeError: type object 'TaskService' has no attribute 'get_pending_tasks'
+2025-07-21 02:42:44 | task_worker | [31mERROR[0m | task_worker.py:71:_process_pending_tasks() | Error processing pending tasks: type object 'TaskService' has no attribute 'get_pending_tasks'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 42, in _process_pending_tasks
+    pending_tasks = TaskService.get_pending_tasks(limit=5)
+AttributeError: type object 'TaskService' has no attribute 'get_pending_tasks'
+2025-07-21 02:42:49 | task_worker | [31mERROR[0m | task_worker.py:71:_process_pending_tasks() | Error processing pending tasks: type object 'TaskService' has no attribute 'get_pending_tasks'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 42, in _process_pending_tasks
+    pending_tasks = TaskService.get_pending_tasks(limit=5)
+AttributeError: type object 'TaskService' has no attribute 'get_pending_tasks'
+2025-07-21 02:42:54 | task_worker | [31mERROR[0m | task_worker.py:71:_process_pending_tasks() | Error processing pending tasks: type object 'TaskService' has no attribute 'get_pending_tasks'
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 42, in _process_pending_tasks
+    pending_tasks = TaskService.get_pending_tasks(limit=5)
+AttributeError: type object 'TaskService' has no attribute 'get_pending_tasks'
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 5 pending tasks
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 3bde1094e05e40f581eb7abdfa1969e9 (type: docking)
+2025-07-21 02:43:02 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 3bde1094e05e40f581eb7abdfa1969e9: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 6f034d52ce5e474b878c21c853f9ae9c (type: docking)
+2025-07-21 02:43:02 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 6f034d52ce5e474b878c21c853f9ae9c: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task c72357f76b06498a90292bc83a8f3595 (type: docking)
+2025-07-21 02:43:02 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task c72357f76b06498a90292bc83a8f3595: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 27b1746e61944964b7a40325b512c15b (type: docking)
+2025-07-21 02:43:02 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 27b1746e61944964b7a40325b512c15b: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:02 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 3ff88865265b4fc18c9e0344586a7016 (type: docking)
+2025-07-21 02:43:02 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 3ff88865265b4fc18c9e0344586a7016: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:07 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 5 pending tasks
+2025-07-21 02:43:07 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 83cf7065e72c4784b94e28271ba96454 (type: docking)
+2025-07-21 02:43:07 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 83cf7065e72c4784b94e28271ba96454: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:07 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 68296b6d3d2848ce956ccbf99e6ec1c7 (type: docking)
+2025-07-21 02:43:07 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 68296b6d3d2848ce956ccbf99e6ec1c7: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:07 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 1f32cdd74df146ee969cbd2e542323dd (type: docking)
+2025-07-21 02:43:07 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 1f32cdd74df146ee969cbd2e542323dd: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:07 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 90ed4a9ffb6c43a28f54c7af6baed015 (type: docking)
+2025-07-21 02:43:07 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task 90ed4a9ffb6c43a28f54c7af6baed015: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:43:07 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task fcf7cc7a15da4ee196939486706c4a94 (type: docking)
+2025-07-21 02:43:07 | task_worker | [31mERROR[0m | task_worker.py:67:_process_pending_tasks() | Error processing task fcf7cc7a15da4ee196939486706c4a94: 1054 (42S22): Unknown column 'started_at' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'started_at' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 55, in _process_pending_tasks
+    TaskService.update_task_status(task.id, TaskStatus.RUNNING)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 56, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 49, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'started_at' in 'field list'
+2025-07-21 02:44:39 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:47:31 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:49:24 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:49:54 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:50:05 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:50:16 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:50:28 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:50:40 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:52:40 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:52:54 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 02:56:29 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:00:48 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:01:07 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:02:29 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:02:33 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:03:41 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:09:02 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 03:09:02 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 75f5bce2f960410e9582bdad239a29cc (type: generate)
+2025-07-21 03:09:02 | task_worker | [32mINFO[0m | task_worker.py:75:_process_generate_task() | Processing generate task: 75f5bce2f960410e9582bdad239a29cc
+2025-07-21 03:09:03 | task_worker | [32mINFO[0m | task_worker.py:80:_process_generate_task() | Generate task completed: 75f5bce2f960410e9582bdad239a29cc
+2025-07-21 03:09:58 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 03:09:58 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task efac4afe924c4282b60ed70ca36b3be8 (type: generate)
+2025-07-21 03:09:58 | task_worker | [32mINFO[0m | task_worker.py:75:_process_generate_task() | Processing generate task: efac4afe924c4282b60ed70ca36b3be8
+2025-07-21 03:09:59 | task_worker | [32mINFO[0m | task_worker.py:80:_process_generate_task() | Generate task completed: efac4afe924c4282b60ed70ca36b3be8
+2025-07-21 03:10:42 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:12:15 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:14:14 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 03:28:45 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 03:28:45 | task_worker | [32mINFO[0m | task_worker.py:52:_process_pending_tasks() | Processing task 85d95df2744f4b55bba02d4d70a878bc (type: generate)
+2025-07-21 03:28:45 | task_worker | [32mINFO[0m | task_worker.py:75:_process_generate_task() | Processing generate task: 85d95df2744f4b55bba02d4d70a878bc
+2025-07-21 03:28:46 | task_worker | [32mINFO[0m | task_worker.py:80:_process_generate_task() | Generate task completed: 85d95df2744f4b55bba02d4d70a878bc
+2025-07-21 03:42:11 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:51:08 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:51:37 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:51:50 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:53:17 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:54:57 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:55:29 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:55:56 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:56:01 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 12:56:01 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'progress' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'progress' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 61, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'progress' in 'field list'
+2025-07-21 12:56:06 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 12:56:06 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'progress' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'progress' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 61, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'progress' in 'field list'
+2025-07-21 12:56:19 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:56:19 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 12:56:19 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'progress' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'progress' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 59, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'progress' in 'field list'
+2025-07-21 12:56:24 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:56:24 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'progress' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'progress' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 59, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'progress' in 'field list'
+2025-07-21 12:56:33 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:56:33 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:56:33 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 57, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:56:38 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:56:38 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 57, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:56:43 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:56:43 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 57, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:56:48 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:56:48 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 57, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:56:58 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:56:58 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:56:58 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:03 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:57:03 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:08 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 2 pending tasks
+2025-07-21 12:57:08 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:13 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:13 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:18 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:18 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:23 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:23 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:28 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:28 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:33 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:33 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:38 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:38 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:43 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:43 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:48 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:48 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:53 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:53 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:57:58 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:57:58 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:03 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:03 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:08 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:08 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:13 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:13 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:18 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:18 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:23 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:23 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:28 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:28 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: 1054 (42S22): Unknown column 'error_message' in 'field list'
+Traceback (most recent call last):
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Unknown column 'error_message' in 'field list'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/services/task_service.py", line 48, in update_task_status
+    TaskRepository.update_task(task_id, update_data)
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/database/repositorys/task_repository.py", line 50, in update_task
+    cur.execute(sql, values)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "/Users/youngwild/dev_tools/miniconda3/envs/dockingvina_final/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 781, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1054 (42S22): Unknown column 'error_message' in 'field list'
+2025-07-21 12:58:37 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:58:37 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:37 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:58:42 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:42 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:58:47 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:47 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:58:52 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:58:52 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:59:00 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:59:00 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:59:00 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:59:05 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:59:05 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:59:10 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:59:10 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:59:15 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:59:15 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:59:20 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:59:20 | task_worker | [31mERROR[0m | task_worker.py:70:_process_pending_tasks() | Error processing pending tasks: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+Traceback (most recent call last):
+  File "/Users/youngwild/Dev/jingyuan/dockingVina/task_worker.py", line 60, in _process_pending_tasks
+    TaskService.update_task_status(
+TypeError: TaskService.update_task_status() takes from 2 to 3 positional arguments but 4 were given
+2025-07-21 12:59:32 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 12:59:32 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 3 pending tasks
+2025-07-21 12:59:32 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 47fc852884244d719cea6506ea7f29cd for async processing
+2025-07-21 12:59:32 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 5813ad647629477c9814afb9c9f84026 for async processing
+2025-07-21 12:59:32 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 430b985dfe994e1da356e0d1766f6427 for async processing
+2025-07-21 12:59:37 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 12:59:37 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task acee7b08ffc340a1b41908d548852f68 for async processing
+2025-07-21 12:59:58 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 12:59:58 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 5749e6c191b34375aeb84fe5341fc4ea for async processing
+2025-07-21 13:00:11 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:00:31 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:00:31 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 680ee6ec28df49cc9d4a417fda4d65ce for async processing
+2025-07-21 13:00:42 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:01:08 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:01:28 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:01:33 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:01:33 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 5b0cb4c5a7e34b6caa11d2c01f3aff69 for async processing
+2025-07-21 13:01:53 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:01:59 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:03:26 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:03:36 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:03:36 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task dac9827b92f9457c88fd0c062d1571d4 for async processing
+2025-07-21 13:03:50 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:03:56 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:04:01 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:04:01 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 4da49943befb409daa9269cfbd3b94f0 for async processing
+2025-07-21 13:06:03 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:06:08 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:06:08 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 37b16c060f2647f1adc63f724ba80259 for async processing
+2025-07-21 13:06:48 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:06:48 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 6a6adcc4b7504e809efe2a5d992a2bbc for async processing
+2025-07-21 13:06:58 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:08:18 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:08:18 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task a6156b1e799f42a79f6c0c5595b6ecbd for async processing
+2025-07-21 13:09:09 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:09:14 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:09:14 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 7ea2bfde54f442efa02fdcbc8b574012 for async processing
+2025-07-21 13:09:39 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:09:39 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 172b96c3e73546d6a4e0afef7fdd2d65 for async processing
+2025-07-21 13:10:26 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:10:31 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:10:31 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 60d2bd8a5e7a4fb6ba8cb85d39903a18 for async processing
+2025-07-21 13:10:41 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:10:41 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 34e7bca735c347198e2bf461e07af6d8 for async processing
+2025-07-21 13:12:27 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:12:47 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:12:47 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 90a401fd0c024dbf8f509159f4800be8 for async processing
+2025-07-21 13:13:22 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:13:22 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 4473d6fa727e4bbebd4701b1e57d612c for async processing
+2025-07-21 13:13:52 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:13:52 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task 236da86784c54011b20870541f063347 for async processing
+2025-07-21 13:14:36 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:14:46 | task_worker | [32mINFO[0m | task_worker.py:47:_process_pending_tasks() | Found 1 pending tasks
+2025-07-21 13:14:46 | task_worker | [32mINFO[0m | task_worker.py:67:_process_pending_tasks() | Queued task b1c6307dc9e44296a71a0e38efe5b21a for async processing
+2025-07-21 13:16:50 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:16:57 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:17:04 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:20:14 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker
+2025-07-21 13:20:32 | task_worker | [32mINFO[0m | task_worker.py:23:start() | Starting async task worker

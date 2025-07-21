@@ -1,0 +1,4 @@
+smiles,title
+[*:1]c1ccc(S(=O)(=O)Nc2cc(NC(=O)c3ccc(-c4ccccc4)cc3)ccc2O)cc1_generated_0,analog_1
+[*:1]c1ccc(S(=O)(=O)Nc2cc(NC(=O)c3ccc(-c4ccccc4)cc3)ccc2O)cc1_generated_1,analog_2
+[*:1]c1ccc(S(=O)(=O)Nc2cc(NC(=O)c3ccc(-c4ccccc4)cc3)ccc2O)cc1_generated_2,analog_3

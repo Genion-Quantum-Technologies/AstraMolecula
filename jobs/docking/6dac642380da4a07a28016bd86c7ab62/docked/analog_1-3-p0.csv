@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+analog_1-3,0,-11.836,COc1ccc(S(=O)(=O)[N-]c2cc([N-]C(=O)c3ccc(-c4ccccc4)cc3)ccc2[O-])cc1,analog_1-3-p0.sdf

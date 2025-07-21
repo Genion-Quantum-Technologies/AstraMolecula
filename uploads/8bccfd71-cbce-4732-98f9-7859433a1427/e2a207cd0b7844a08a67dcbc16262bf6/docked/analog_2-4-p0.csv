@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+analog_2-4,0,-11.915,O=C(Nc1ccc([O-])c(NS(=O)(=O)c2ccc(Cl)cc2)c1)c1ccc(-c2ccccc2)cc1,analog_2-4-p0.sdf

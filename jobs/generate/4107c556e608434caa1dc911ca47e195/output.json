@@ -1,0 +1,82 @@
+[
+  {
+    "smile": "COc1ccc(S(=O)(=O)Nc2cc(NC(=O)c3ccc(-c4ccccc4)cc3)ccc2O)cc1",
+    "molwt": 474.5,
+    "tpsa": 104.7,
+    "slogp": 5.1,
+    "sa": 2.2,
+    "qed": 0.3
+  },
+  {
+    "smile": "O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccccc2)c1)c1ccc(-c2ccccc2)cc1",
+    "molwt": 444.5,
+    "tpsa": 95.5,
+    "slogp": 5.1,
+    "sa": 2.1,
+    "qed": 0.3
+  },
+  {
+    "smile": "Nc1ccc(C(=O)Nc2ccc(O)c(NS(=O)(=O)c3ccc(F)cc3)c2)cc1",
+    "molwt": 401.4,
+    "tpsa": 121.5,
+    "slogp": 3.2,
+    "sa": 2.3,
+    "qed": 0.3
+  },
+  {
+    "smile": "O=C(Nc1ccc(O)c(NS(=O)(=O)c2ccc(F)cc2)c1)c1ccc(Cl)cc1",
+    "molwt": 420.8,
+    "tpsa": 95.5,
+    "slogp": 4.2,
+    "sa": 2.2,
+    "qed": 0.4
+  },
+  {
+    "smile": "CS(=O)(=O)c1cc(NC(=O)c2ccc(-c3ccccc3)cc2)ccc1O",
+    "molwt": 367.4,
+    "tpsa": 83.5,
+    "slogp": 3.7,
+    "sa": 2.1,
+    "qed": 0.7
+  },
+  {
+    "smile": "CS(=O)(=O)Nc1cc(NC(=O)c2ccc(-c3ccccc3)cc2)ccc1O",
+    "molwt": 382.4,
+    "tpsa": 95.5,
+    "slogp": 3.7,
+    "sa": 2.1,
+    "qed": 0.5
+  },
+  {
+    "smile": "CN(C)c1ccc(NC(=O)c2ccc(-c3ccccc3)cc2)cc1NS(=O)(=O)c1ccc(F)cc1",
+    "molwt": 489.6,
+    "tpsa": 78.5,
+    "slogp": 5.6,
+    "sa": 2.3,
+    "qed": 0.4
+  },
+  {
+    "smile": "O=C(Nc1cccc(NS(=O)(=O)c2ccc(F)cc2)c1)c1ccc(-c2ccccc2)cc1",
+    "molwt": 446.5,
+    "tpsa": 75.3,
+    "slogp": 5.5,
+    "sa": 2.0,
+    "qed": 0.4
+  },
+  {
+    "smile": "COc1ccccc1-c1ccc(C(=O)Nc2ccc(O)c(NS(=O)(=O)c3ccc(F)cc3)c2)cc1",
+    "molwt": 492.5,
+    "tpsa": 104.7,
+    "slogp": 5.3,
+    "sa": 2.4,
+    "qed": 0.2
+  },
+  {
+    "smile": "COc1ccc(Cc2ccc(C(=O)Nc3ccc(O)c(NS(=O)(=O)c4ccc(F)cc4)c3)cc2)cc1",
+    "molwt": 506.6,
+    "tpsa": 104.7,
+    "slogp": 5.2,
+    "sa": 2.4,
+    "qed": 0.2
+  }
+]

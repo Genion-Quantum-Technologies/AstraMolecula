@@ -1,0 +1,82 @@
+[
+  {
+    "smile": "CC(C)NC[C@@H](O)CCc1ccccc1",
+    "molwt": 207.3,
+    "tpsa": 32.3,
+    "slogp": 2.0,
+    "sa": 2.7,
+    "qed": 0.7
+  },
+  {
+    "smile": "O=C(O)Cc1cc(-c2ccccc2)[nH]n1",
+    "molwt": 202.2,
+    "tpsa": 66.0,
+    "slogp": 1.7,
+    "sa": 2.7,
+    "qed": 0.8
+  },
+  {
+    "smile": "O=C(O)CSCc1ccccc1",
+    "molwt": 182.2,
+    "tpsa": 37.3,
+    "slogp": 2.0,
+    "sa": 2.1,
+    "qed": 0.8
+  },
+  {
+    "smile": "c1ccc([C@@H]2CCNC2)cc1",
+    "molwt": 147.2,
+    "tpsa": 12.0,
+    "slogp": 1.8,
+    "sa": 2.7,
+    "qed": 0.6
+  },
+  {
+    "smile": "N[C@H](Cc1ccccc1)C(=O)O",
+    "molwt": 165.2,
+    "tpsa": 63.3,
+    "slogp": 0.6,
+    "sa": 2.4,
+    "qed": 0.7
+  },
+  {
+    "smile": "O=C(/C=C/c1ccncc1)c1ccccc1",
+    "molwt": 209.2,
+    "tpsa": 30.0,
+    "slogp": 3.0,
+    "sa": 2.1,
+    "qed": 0.6
+  },
+  {
+    "smile": "CCN1C(=O)O[C@@H](c2ccccc2)C1=O",
+    "molwt": 205.2,
+    "tpsa": 46.6,
+    "slogp": 1.7,
+    "sa": 3.2,
+    "qed": 0.7
+  },
+  {
+    "smile": "CN(CCc1cccs1)Cc1ccccc1",
+    "molwt": 231.4,
+    "tpsa": 3.2,
+    "slogp": 3.4,
+    "sa": 2.2,
+    "qed": 0.8
+  },
+  {
+    "smile": "C[C@@H](C[C@@H](N)C(=O)O)Sc1ccccc1",
+    "molwt": 225.3,
+    "tpsa": 63.3,
+    "slogp": 2.0,
+    "sa": 3.4,
+    "qed": 0.8
+  },
+  {
+    "smile": "CCN(CC)CCC(=O)c1ccccc1",
+    "molwt": 205.3,
+    "tpsa": 20.3,
+    "slogp": 2.6,
+    "sa": 2.1,
+    "qed": 0.7
+  }
+]

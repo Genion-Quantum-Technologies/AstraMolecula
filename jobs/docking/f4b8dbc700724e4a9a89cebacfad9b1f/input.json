@@ -1,0 +1,12 @@
+{
+  "ligands": [
+    {
+      "smiles": "O=C(NC1=CC(NS(C2=CC=C(F)C=C2)(=O)=O)=C(O)C=C1)C(C=C3)=CC=C3C4=CC=CC=C4",
+      "title": "ligand_1"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/resource/protein_7UDP.pdbqt",
+  "min_ph": 5.0,
+  "max_ph": 10.0,
+  "n_jobs": 1
+}

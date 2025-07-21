@@ -1,0 +1,23 @@
+{
+  "ligands": [
+    {
+      "smiles": "CCO",
+      "title": "ethanol"
+    },
+    {
+      "smiles": "CC(C)O",
+      "title": "isopropanol"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/resource/protein_7UDP.pdbqt",
+  "min_ph": 7.0,
+  "max_ph": 7.4,
+  "n_jobs": 2,
+  "center_x": 15.0,
+  "center_y": 20.0,
+  "center_z": 25.0,
+  "box_size_x": 20.0,
+  "box_size_z": 30.0,
+  "exhaustiveness": 8,
+  "n_poses": 10
+}

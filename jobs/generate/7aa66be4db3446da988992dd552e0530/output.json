@@ -1,0 +1,10 @@
+[
+  {
+    "smile": "[*:1]c1ccc(S(=O)(=O)Nc2cc(NC(=O)c3ccc(-c4ccccc4)cc3)ccc2O)cc1_generated_0",
+    "molwt": 400.0,
+    "tpsa": 80.0,
+    "slogp": 3.5,
+    "sa": 0.7,
+    "qed": 0.8
+  }
+]
