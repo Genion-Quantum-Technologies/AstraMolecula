@@ -5642,3 +5642,23 @@
 19:52:57: tasks.get_sdf_file +280: INFO     User admin downloading SDF file analog_1-4-p0.sdf for task ec11a321fa7d42a08a84aa83cdb89da4
 19:53:01: tasks.get_sdf_file +280: INFO     User admin downloading SDF file analog_1-4-p0.sdf for task ec11a321fa7d42a08a84aa83cdb89da4
 19:53:01: tasks.get_protein_file +327: INFO     User admin downloading protein file for task ec11a321fa7d42a08a84aa83cdb89da4
+19:54:19: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:54:19: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:54:46: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:55:16: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:55:46: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:56:16: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:56:46: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:57:16: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:57:46: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:58:16: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:58:46: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+19:59:29: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:00:23: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:00:53: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:01:23: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:02:01: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:02:31: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:03:00: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:03:31: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
+20:19:58: tasks.list_user_tasks +60: INFO     User admin listing tasks (high priority)
