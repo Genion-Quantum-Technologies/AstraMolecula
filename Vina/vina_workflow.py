@@ -163,12 +163,16 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
             for _, row in df_molecules.iterrows():
                 mol = Chem.MolFromSmiles(row['smiles'])
                 if mol is not None:
-                    mol = Chem.AddHs(mol)
+                    # 确保添加显式氢原子
+                    mol = Chem.AddHs(mol, explicitOnly=False, addCoords=False)
                     # 生成3D坐标
                     if AllChem.EmbedMolecule(mol, AllChem.ETKDG()) == 0:
-                        AllChem.OptimizeMolecule(mol)
+                        # 优化分子几何
+                        AllChem.OptimizeMolecule(mol, maxIters=200)
                         mol.SetProp('_Name', str(row['title']))
                         sdf_writer.write(mol)
+                    else:
+                        print(f"Warning: Failed to generate 3D coordinates for {row['title']}")
                         
             sdf_writer.close()
             print("Successfully generated 3D coordinates using RDKit")
@@ -177,16 +181,34 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     
     # 使用更详细的错误处理进行PDBQT转换
     print("Converting SDF to PDBQT format...")
-    # 移除不支持的 --add_hydrogens 参数
-    prepare_cmd = f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts"
+    # 使用更好的参数确保正确处理显式氢原子
+    prepare_cmd = f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts --keep_nonpolar_hydrogens"
     result = os.system(prepare_cmd)
     
     if result != 0:
-        print("Warning: PDBQT preparation had issues, but continuing...")
+        print("Warning: PDBQT preparation had issues, trying without keep_nonpolar_hydrogens...")
+        # 备用方法：不使用 keep_nonpolar_hydrogens 参数
+        prepare_cmd_backup = f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts"
+        result_backup = os.system(prepare_cmd_backup)
+        
+        if result_backup != 0:
+            print("Warning: Both PDBQT preparation methods failed, but continuing...")
         
     # 检查生成的PDBQT文件数量
     pdbqt_files = glob(f"{dir}/pdbqts/*.pdbqt")
     print(f"Successfully generated {len(pdbqt_files)} PDBQT files for docking")
+    
+    # 如果没有生成任何PDBQT文件，尝试使用更简单的方法
+    if len(pdbqt_files) == 0:
+        print("No PDBQT files generated, trying alternative approach...")
+        try:
+            # 尝试使用更基本的转换方法
+            basic_cmd = f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts --rigid_macrocycles"
+            os.system(basic_cmd)
+            pdbqt_files = glob(f"{dir}/pdbqts/*.pdbqt")
+            print(f"Alternative method generated {len(pdbqt_files)} PDBQT files for docking")
+        except Exception as e:
+            print(f"Alternative PDBQT generation also failed: {e}")
 
 def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
     """

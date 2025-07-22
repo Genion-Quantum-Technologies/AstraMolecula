@@ -1,0 +1,11 @@
+smiles,title
+c1ccc(-n2cnc3cncnc32)cc1,analog_1
+CC(N=Nc1ccccc1)c1cnccn1,analog_2
+Cc1scc(Nc2ccccc2)c1C#N,analog_3
+Clc1nc(Nc2ccccc2)cs1,analog_4
+O=P(O)(O)Oc1ccccc1,analog_5
+c1ccc(C[C@H]2CNCCN2)cc1,analog_6
+O=C(CSc1nccs1)c1ccccc1,analog_7
+C[C@H](N)C(=O)c1ccccc1,analog_8
+C/C(=N/NC(=O)c1ccccc1)C(=O)O,analog_9
+O=C(O)C[C@@H]1C[C@H]1c1ccccc1,analog_10
