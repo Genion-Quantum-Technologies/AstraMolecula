@@ -1,0 +1,31 @@
+REMARK SMILES C/C(=N/NC(=O)c1ccccc1)C(=O)[O-]
+REMARK SMILES IDX 1 1 2 2 3 3 4 4 5 5 6 7 7 8 8 9 12 10 9 11 11 12 10 13 13 14
+REMARK SMILES IDX 14 15 15 16
+REMARK H PARENT 4 6
+ROOT
+ATOM      1  C   UNL     1      -2.394   4.680  -0.759  1.00  0.00     0.071 C 
+ATOM      2  C   UNL     1      -1.572   3.630  -0.056  1.00  0.00     0.080 C 
+ENDROOT
+BRANCH   2   3
+ATOM      3  N   UNL     1      -1.241   3.869   1.191  1.00  0.00    -0.176 NA
+BRANCH   3   4
+ATOM      4  N   UNL     1      -0.477   2.928   1.821  1.00  0.00    -0.243 N 
+ATOM      5  C   UNL     1      -0.029   3.111   3.114  1.00  0.00     0.271 C 
+ATOM      6  H   UNL     1      -0.262   2.090   1.262  1.00  0.00     0.194 HD
+ATOM      7  O   UNL     1      -0.310   4.074   3.828  1.00  0.00    -0.267 OA
+BRANCH   5   8
+ATOM      8  C   UNL     1       0.860   2.038   3.676  1.00  0.00     0.041 A 
+ATOM      9  C   UNL     1       1.380   0.981   2.917  1.00  0.00     0.014 A 
+ATOM     10  C   UNL     1       1.189   2.111   5.041  1.00  0.00     0.014 A 
+ATOM     11  C   UNL     1       2.183   0.005   3.519  1.00  0.00     0.001 A 
+ATOM     12  C   UNL     1       1.993   1.137   5.639  1.00  0.00     0.001 A 
+ATOM     13  C   UNL     1       2.483   0.079   4.878  1.00  0.00     0.000 A 
+ENDBRANCH   5   8
+ENDBRANCH   3   4
+ENDBRANCH   2   3
+BRANCH   2  14
+ATOM     14  C   UNL     1      -1.146   2.373  -0.842  1.00  0.00     0.087 C 
+ATOM     15  O   UNL     1      -0.476   1.492  -0.203  1.00  0.00    -0.543 OA
+ATOM     16  O   UNL     1      -1.494   2.323  -2.061  1.00  0.00    -0.543 OA
+ENDBRANCH   2  14
+TORSDOF 4

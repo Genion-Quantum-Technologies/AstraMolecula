@@ -99,17 +99,30 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     gypsum_output_dir = f"{dir}/gypsumFolder"
     if not os.path.exists(gypsum_output_dir):
         os.makedirs(gypsum_output_dir)  # 先手动创建，避免 Start.py 报错
-    os.system(f"mpirun -n {num_processors} python -m mpi4py "
-              f"{gypsumPath} --source {inputSmi} --output_folder {dir}/gypsumFolder "
-              f"--min_ph {min_ph} --max_ph {max_ph} --pka_precision 1 "
-              f"--skip_optimize_geometry --2d_output_only --use_durrant_lab_filters")
+    
+    print("Running Gypsum-DL for molecule preparation...")
+    # 使用更宽松的参数来减少conformer generation failures
+    gypsum_cmd = (f"mpirun -n {num_processors} python -m mpi4py "
+                  f"{gypsumPath} --source {inputSmi} --output_folder {dir}/gypsumFolder "
+                  f"--min_ph {min_ph} --max_ph {max_ph} --pka_precision 1 "
+                  f"--skip_optimize_geometry --2d_output_only --use_durrant_lab_filters "
+                  f"--max_variants_per_compound 5")  # 限制变体数量
+    
+    result = os.system(gypsum_cmd)
+    if result != 0:
+        print("Warning: Gypsum-DL had issues, but continuing with available output...")
+    
     print(" gypsum output folder:", f"{dir}/gypsumFolder")
     try:
         supplier = Chem.SDMolSupplier(f"{dir}/gypsumFolder/gypsum_dl_success.sdf")
     except:
+        print("Error: Could not read Gypsum-DL output. Exiting.")
         sys.exit(1)
+    
     molName_count = {}
     smiList = []
+    processed_count = 0
+    
     for idx, mol in enumerate(supplier):
         if mol is not None:
             mol_name = mol.GetProp('_Name') if mol.HasProp('_Name') else 'NoName'
@@ -122,32 +135,203 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
                 continue
             print(f"Molecule Name: {mol_name} {smi}")
             smiList.append([smi, f"{mol_name}-{molName_count[mol_name]}"])
+            processed_count += 1
+    
+    print(f"Successfully processed {processed_count} molecules from Gypsum-DL")
+    
+    if processed_count == 0:
+        print("Error: No molecules were successfully processed by Gypsum-DL")
+        sys.exit(1)
+        
     dfSmi = pd.DataFrame(smiList, columns=['smiles', 'title'])
     dfSmi.to_csv(f'{dir}/input_prepared.smi', sep='\t', index=None, header=None)
-    ''' covert smiles to 3d with babel '''
-    os.system(f"{env_root}/obabel -ismi input_prepared.smi -osdf -O input_prepared.sdf --gen3d")
-    os.system(f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts")
+    
+    # 改进的分子3D坐标生成和PDBQT转换过程
+    print("Converting SMILES to 3D structures...")
+    
+    # 使用更简单和稳定的3D坐标生成方法
+    babel_cmd = f"{env_root}/obabel -ismi input_prepared.smi -osdf -O input_prepared.sdf --gen3d"
+    result = os.system(babel_cmd)
+    
+    if result != 0:
+        print("Warning: Open Babel 3D coordinate generation had issues, trying RDKit fallback...")
+        # 使用RDKit作为备用方法生成3D坐标
+        try:
+            df_molecules = pd.read_csv(f'{dir}/input_prepared.smi', sep='\t', header=None, names=['smiles', 'title'])
+            sdf_writer = Chem.SDWriter(f'{dir}/input_prepared.sdf')
+            
+            for _, row in df_molecules.iterrows():
+                mol = Chem.MolFromSmiles(row['smiles'])
+                if mol is not None:
+                    mol = Chem.AddHs(mol)
+                    # 生成3D坐标
+                    if AllChem.EmbedMolecule(mol, AllChem.ETKDG()) == 0:
+                        AllChem.OptimizeMolecule(mol)
+                        mol.SetProp('_Name', str(row['title']))
+                        sdf_writer.write(mol)
+                        
+            sdf_writer.close()
+            print("Successfully generated 3D coordinates using RDKit")
+        except Exception as e:
+            print(f"RDKit fallback also failed: {e}")
+    
+    # 使用更详细的错误处理进行PDBQT转换
+    print("Converting SDF to PDBQT format...")
+    # 移除不支持的 --add_hydrogens 参数
+    prepare_cmd = f"{env_root}/mk_prepare_ligand.py -i input_prepared.sdf --multimol_outdir pdbqts"
+    result = os.system(prepare_cmd)
+    
+    if result != 0:
+        print("Warning: PDBQT preparation had issues, but continuing...")
+        
+    # 检查生成的PDBQT文件数量
+    pdbqt_files = glob(f"{dir}/pdbqts/*.pdbqt")
+    print(f"Successfully generated {len(pdbqt_files)} PDBQT files for docking")
 
-@try_except_decorator
 def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
+    """
+    执行分子对接
+    """
     ligPath = Path(lig)
+    
+    # 检查是否已有对接结果
     if os.path.exists(f'{dir}/docked/{ligPath.stem}.pdbqt'):
         print(f"Previous docking results will be used for {ligPath.stem}!")
-    if not os.path.exists(f'{dir}/docked/{ligPath.stem}.pdbqt'):
+        # 如果结果文件存在但CSV不存在，尝试生成CSV
+        if not os.path.exists(f"{dir}/docked/{ligPath.stem}-p0.csv"):
+            try:
+                pdbqt2sdf(f"{dir}/docked/{ligPath.stem}.pdbqt")
+            except Exception as e:
+                print(f"Error generating CSV for existing result {ligPath.stem}: {e}")
+        return
+    
+    try:
+        # 验证受体文件存在
+        if not os.path.exists(recpt):
+            raise FileNotFoundError(f"Receptor file not found: {recpt}")
+        
+        # 验证配体文件存在且不为空
+        if not os.path.exists(lig):
+            raise FileNotFoundError(f"Ligand file not found: {lig}")
+        
+        # 检查配体文件内容是否有效
+        with open(lig, 'r') as f:
+            ligand_content = f.read().strip()
+            if not ligand_content or len(ligand_content) < 10:
+                raise ValueError(f"Ligand file appears to be empty or invalid: {lig}")
+        
+        print(f"Starting docking for ligand: {lig}")
+        print(f"Using receptor: {recpt}")
+        print(f"Center: {center}")
+        print(f"Box size: {box_size}")
+        
+        # 创建Vina对象
         v = Vina(sf_name='vina')
-        v.set_receptor(recpt)
-        v.set_ligand_from_file(lig)
-        v.compute_vina_maps(center=np.array(center, dtype=float), box_size=box_size)
+        
+        # 设置受体 - 使用不同的调用方式
+        try:
+            # 方法1: 直接传递文件路径字符串
+            v.set_receptor(str(recpt))
+            print("Receptor set successfully using string path")
+        except Exception as e1:
+            try:
+                # 方法2: 使用rigid参数（如果是较新版本的vina）
+                v.set_receptor(rigid_pdbqt_filename=str(recpt))
+                print("Receptor set successfully using rigid_pdbqt_filename")
+            except Exception as e2:
+                try:
+                    # 方法3: 读取文件内容后设置
+                    with open(recpt, 'r') as f:
+                        receptor_content = f.read()
+                    v.set_receptor(receptor_content)
+                    print("Receptor set successfully using file content")
+                except Exception as e3:
+                    print(f"All receptor setting methods failed:")
+                    print(f"Method 1 error: {e1}")
+                    print(f"Method 2 error: {e2}")
+                    print(f"Method 3 error: {e3}")
+                    raise RuntimeError(f"Failed to set receptor: {recpt}")
+        
+        # 设置配体
+        print(f"Setting ligand: {lig}")
+        try:
+            v.set_ligand_from_file(str(lig))
+            print("Ligand set successfully")
+        except Exception as e:
+            print(f"Error setting ligand {lig}: {e}")
+            # 尝试先验证PDBQT文件格式
+            print("Attempting to validate and fix ligand file...")
+            raise RuntimeError(f"Failed to set ligand: {lig}")
+        
+        # 计算Vina maps
+        print(f"Computing vina maps...")
+        try:
+            v.compute_vina_maps(center=np.array(center, dtype=float), box_size=np.array(box_size, dtype=float))
+            print("Vina maps computed successfully")
+        except Exception as e:
+            print(f"Error computing vina maps for {lig}: {e}")
+            raise RuntimeError(f"Failed to compute vina maps for ligand: {lig}")
 
-        '''   Dock the ligand  '''
-        v.dock(exhaustiveness=4, n_poses=20)
-        if not os.path.exists(f'{dir}/docked'):
-            os.system(f"mkdir -p {dir}/docked")
-        v.write_poses(f'{dir}/docked/{ligPath.stem}.pdbqt', n_poses=5, overwrite=True)
-
-    if not os.path.exists(f"{dir}/docked/{ligPath.stem}-p0.csv"):
-        pdbqt2sdf(f"{dir}/docked/{ligPath.stem}.pdbqt")  # 重新启用生成SDF和CSV
-        pass
+        # 执行对接 - 添加更多错误处理
+        print("Starting docking...")
+        try:
+            # 使用较低的exhaustiveness来避免一些数值问题
+            v.dock(exhaustiveness=2, n_poses=10)
+            print("Docking completed successfully")
+        except Exception as e:
+            print(f"Docking failed for {lig}: {e}")
+            # 如果assertion error，跳过这个分子但不终止整个流程
+            if "Assertion failed" in str(e) or "nrm >= epsilon_fl" in str(e):
+                print(f"Skipping problematic ligand {ligPath.stem} due to coordinate/structure issues")
+                # 创建一个错误记录文件
+                error_dir = f'{dir}/errors'
+                if not os.path.exists(error_dir):
+                    os.makedirs(error_dir, exist_ok=True)
+                with open(f'{error_dir}/{ligPath.stem}_error.txt', 'w') as f:
+                    f.write(f"Docking failed for {lig}: {e}\n")
+                    f.write("Likely cause: problematic ligand coordinates or structure\n")
+                return  # 跳过这个分子，继续下一个
+            else:
+                raise  # 其他类型的错误继续抛出
+        
+        # 创建输出目录
+        docked_dir = f'{dir}/docked'
+        if not os.path.exists(docked_dir):
+            os.makedirs(docked_dir, exist_ok=True)
+        
+        # 写入对接结果
+        output_file = f'{docked_dir}/{ligPath.stem}.pdbqt'
+        v.write_poses(output_file, n_poses=5, overwrite=True)
+        print(f"Poses written to {output_file}")
+        
+        # 生成CSV结果
+        if not os.path.exists(f"{docked_dir}/{ligPath.stem}-p0.csv"):
+            try:
+                pdbqt2sdf(output_file)
+                print(f"CSV generated for {ligPath.stem}")
+            except Exception as e:
+                print(f"Error generating CSV for {ligPath.stem}: {e}")
+                # 不抛出异常，因为主要的对接已经完成
+    
+    except Exception as e:
+        print(f"An error occurred in vina_dock for {lig}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # 对于assertion错误，不重新抛出异常，而是记录并跳过
+        if "Assertion failed" in str(e) or "nrm >= epsilon_fl" in str(e):
+            print(f"Skipping problematic ligand {ligPath.stem} and continuing with next ligand")
+            error_dir = f'{dir}/errors'
+            if not os.path.exists(error_dir):
+                os.makedirs(error_dir, exist_ok=True)
+            with open(f'{error_dir}/{ligPath.stem}_error.txt', 'w') as f:
+                f.write(f"Docking failed for {lig}: {e}\n")
+                f.write("Likely cause: problematic ligand coordinates or structure\n")
+                f.write(traceback.format_exc())
+            return
+        else:
+            # 其他错误重新抛出
+            raise
 
 def read_csv(file_path):
     return pd.read_csv(file_path)

@@ -5417,3 +5417,23 @@
 19:12:15: tasks.list_user_tasks +25: INFO     User admin listing tasks
 19:12:19: tasks.get_sdf_file +212: INFO     User admin downloading SDF file analog_1-2-p0.sdf for task fab06770eff547949039a088172a3ebd
 19:12:19: tasks.get_protein_file +259: INFO     User admin downloading protein file for task fab06770eff547949039a088172a3ebd
+19:16:16: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 3a20734817d34d71a01a06e87bcfe8bf
+19:16:16: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 3a20734817d34d71a01a06e87bcfe8bf
+19:16:23: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 3a20734817d34d71a01a06e87bcfe8bf
+19:16:29: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 935c5410d1ee4bbf90f5e0e1101461e5
+19:19:02: tasks.get_docking_results +177: INFO     User admin requesting docking results for task 22e653fc7ac842028aefa4a48a48e16e
+19:19:34: tasks.get_sdf_file +212: INFO     User admin downloading SDF file analog_1-2-p0.sdf for task 22e653fc7ac842028aefa4a48a48e16e
+19:19:34: tasks.get_protein_file +259: INFO     User admin downloading protein file for task 22e653fc7ac842028aefa4a48a48e16e
+19:24:08: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 935c5410d1ee4bbf90f5e0e1101461e5
+19:24:08: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 935c5410d1ee4bbf90f5e0e1101461e5
+19:24:11: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:11: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:14: tasks.get_docking_results +177: INFO     User admin requesting docking results for task 22e653fc7ac842028aefa4a48a48e16e
+19:24:14: tasks.get_docking_results +177: INFO     User admin requesting docking results for task 22e653fc7ac842028aefa4a48a48e16e
+19:24:15: tasks.get_docking_results +177: INFO     User admin requesting docking results for task 22e653fc7ac842028aefa4a48a48e16e
+19:24:15: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:15: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:15: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:28: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:28: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:24:51: tasks.list_user_tasks +25: INFO     User admin listing tasks
