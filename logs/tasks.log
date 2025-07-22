@@ -5437,3 +5437,9 @@
 19:24:28: tasks.list_user_tasks +25: INFO     User admin listing tasks
 19:24:28: tasks.list_user_tasks +25: INFO     User admin listing tasks
 19:24:51: tasks.list_user_tasks +25: INFO     User admin listing tasks
+19:25:06: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 935c5410d1ee4bbf90f5e0e1101461e5
+19:25:06: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 935c5410d1ee4bbf90f5e0e1101461e5
+19:25:06: tasks.get_generated_molecules +142: INFO     User admin requesting generated molecules for task 935c5410d1ee4bbf90f5e0e1101461e5
+19:25:49: tasks.get_docking_results +177: INFO     User admin requesting docking results for task 62657a90f32349bf90c19e68c58c90d8
+19:26:15: tasks.get_sdf_file +212: INFO     User admin downloading SDF file analog_1-1-p0.sdf for task 62657a90f32349bf90c19e68c58c90d8
+19:26:15: tasks.get_protein_file +259: INFO     User admin downloading protein file for task 62657a90f32349bf90c19e68c58c90d8
