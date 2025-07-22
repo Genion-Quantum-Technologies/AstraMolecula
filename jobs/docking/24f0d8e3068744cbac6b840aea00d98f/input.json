@@ -1,0 +1,56 @@
+{
+  "ligands": [
+    {
+      "smiles": "C[C@]1(c2ccccc2)CN=C(N)C1",
+      "title": "analog_1"
+    },
+    {
+      "smiles": "CCN1C(=O)[C@@H](c2ccccc2)NC1=S",
+      "title": "analog_2"
+    },
+    {
+      "smiles": "OC[C@H]1CCCN1Cc1ccccc1",
+      "title": "analog_3"
+    },
+    {
+      "smiles": "NC(N)=NNC(=O)c1ccccc1",
+      "title": "analog_4"
+    },
+    {
+      "smiles": "Cc1onc(-c2ccccc2)c1S(C)(=O)=O",
+      "title": "analog_5"
+    },
+    {
+      "smiles": "CCC(O)(CNC(C)=O)Cc1ccccc1",
+      "title": "analog_6"
+    },
+    {
+      "smiles": "OC(Cc1ccccc1)CN1CCCCC1",
+      "title": "analog_7"
+    },
+    {
+      "smiles": "O=C(CCl)c1ccccc1",
+      "title": "analog_8"
+    },
+    {
+      "smiles": "NCCc1csc(-c2ccccc2)n1",
+      "title": "analog_9"
+    },
+    {
+      "smiles": "N#Cc1cccc(Oc2ccccc2)c1",
+      "title": "analog_10"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/ligand_1-2.pdbqt",
+  "min_ph": 5.0,
+  "max_ph": 10.0,
+  "n_jobs": 1,
+  "center_x": 61.1052604588654,
+  "center_y": 24.324535606693694,
+  "center_z": 17.160999141356285,
+  "box_size_x": 20.0,
+  "box_size_y": 25.0,
+  "box_size_z": 30.0,
+  "exhaustiveness": 4,
+  "n_poses": 20
+}
