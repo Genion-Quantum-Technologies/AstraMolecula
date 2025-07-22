@@ -140,8 +140,23 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     print(f"Successfully processed {processed_count} molecules from Gypsum-DL")
     
     if processed_count == 0:
-        print("Error: No molecules were successfully processed by Gypsum-DL")
-        sys.exit(1)
+        print("Warning: No molecules were successfully processed by Gypsum-DL, trying direct SMILES processing...")
+        # 尝试直接从原始SMILES文件处理
+        try:
+            original_df = pd.read_csv(inputSmi, sep='\t', header=None, names=['smiles', 'title'])
+            print(f"Attempting to process {len(original_df)} original SMILES directly...")
+            
+            # 直接使用原始SMILES，跳过Gypsum-DL处理
+            for idx, row in original_df.iterrows():
+                smiles = row['smiles']
+                title = row['title'] if pd.notna(row['title']) else f"mol_{idx}"
+                smiList.append([smiles, title])
+                processed_count += 1
+            
+            print(f"Successfully recovered {processed_count} molecules from original SMILES")
+        except Exception as e:
+            print(f"Failed to recover from original SMILES: {e}")
+            raise RuntimeError("No molecules could be processed by Gypsum-DL and recovery failed")
         
     dfSmi = pd.DataFrame(smiList, columns=['smiles', 'title'])
     dfSmi.to_csv(f'{dir}/input_prepared.smi', sep='\t', index=None, header=None)
@@ -149,35 +164,94 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     # 改进的分子3D坐标生成和PDBQT转换过程
     print("Converting SMILES to 3D structures...")
     
-    # 使用更简单和稳定的3D坐标生成方法
+    # 首先尝试使用Open Babel
     babel_cmd = f"{env_root}/obabel -ismi input_prepared.smi -osdf -O input_prepared.sdf --gen3d"
     result = os.system(babel_cmd)
     
     if result != 0:
         print("Warning: Open Babel 3D coordinate generation had issues, trying RDKit fallback...")
-        # 使用RDKit作为备用方法生成3D坐标
+    
+    # 检查是否生成了有效的SDF文件
+    sdf_valid = False
+    if os.path.exists(f'{dir}/input_prepared.sdf'):
+        try:
+            test_supplier = Chem.SDMolSupplier(f'{dir}/input_prepared.sdf')
+            valid_mols = sum(1 for mol in test_supplier if mol is not None)
+            if valid_mols > 0:
+                sdf_valid = True
+                print(f"Open Babel successfully generated {valid_mols} valid molecules")
+        except:
+            pass
+    
+    # 如果Open Babel失败，使用RDKit作为备用方法
+    if not sdf_valid:
+        print("Using RDKit for 3D coordinate generation...")
         try:
             df_molecules = pd.read_csv(f'{dir}/input_prepared.smi', sep='\t', header=None, names=['smiles', 'title'])
             sdf_writer = Chem.SDWriter(f'{dir}/input_prepared.sdf')
+            successful_count = 0
             
             for _, row in df_molecules.iterrows():
-                mol = Chem.MolFromSmiles(row['smiles'])
-                if mol is not None:
-                    # 确保添加显式氢原子
-                    mol = Chem.AddHs(mol, explicitOnly=False, addCoords=False)
-                    # 生成3D坐标
-                    if AllChem.EmbedMolecule(mol, AllChem.ETKDG()) == 0:
-                        # 优化分子几何
-                        AllChem.OptimizeMolecule(mol, maxIters=200)
-                        mol.SetProp('_Name', str(row['title']))
-                        sdf_writer.write(mol)
-                    else:
-                        print(f"Warning: Failed to generate 3D coordinates for {row['title']}")
+                try:
+                    mol = Chem.MolFromSmiles(row['smiles'])
+                    if mol is not None:
+                        # 确保添加显式氢原子
+                        mol = Chem.AddHs(mol, explicitOnly=False, addCoords=False)
+                        
+                        # 尝试多种3D坐标生成方法
+                        embed_success = False
+                        
+                        # 方法1: 标准ETKDG
+                        try:
+                            if AllChem.EmbedMolecule(mol, AllChem.ETKDG()) == 0:
+                                embed_success = True
+                        except:
+                            pass
+                        
+                        # 方法2: 使用不同的随机种子
+                        if not embed_success:
+                            try:
+                                params = AllChem.ETKDG()
+                                params.randomSeed = 42
+                                if AllChem.EmbedMolecule(mol, params) == 0:
+                                    embed_success = True
+                            except:
+                                pass
+                        
+                        # 方法3: 使用基本距离几何
+                        if not embed_success:
+                            try:
+                                if AllChem.EmbedMolecule(mol, randomSeed=42) == 0:
+                                    embed_success = True
+                            except:
+                                pass
+                        
+                        if embed_success:
+                            # 优化分子几何
+                            try:
+                                AllChem.OptimizeMolecule(mol, maxIters=200)
+                            except:
+                                pass  # 优化失败也继续
+                            
+                            mol.SetProp('_Name', str(row['title']))
+                            sdf_writer.write(mol)
+                            successful_count += 1
+                        else:
+                            print(f"Warning: Failed to generate 3D coordinates for {row['title']}")
+                            
+                except Exception as e:
+                    print(f"Error processing molecule {row['title']}: {e}")
+                    continue
                         
             sdf_writer.close()
-            print("Successfully generated 3D coordinates using RDKit")
+            print(f"RDKit successfully generated 3D coordinates for {successful_count} molecules")
+            
+            if successful_count == 0:
+                raise RuntimeError("No molecules could be converted to 3D structures")
+                
         except Exception as e:
             print(f"RDKit fallback also failed: {e}")
+            raise RuntimeError(f"All 3D coordinate generation methods failed: {e}")
     
     # 使用更详细的错误处理进行PDBQT转换
     print("Converting SDF to PDBQT format...")
@@ -209,6 +283,10 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
             print(f"Alternative method generated {len(pdbqt_files)} PDBQT files for docking")
         except Exception as e:
             print(f"Alternative PDBQT generation also failed: {e}")
+    
+    # 最终检查：如果仍然没有PDBQT文件，抛出错误而不是继续
+    if len(pdbqt_files) == 0:
+        raise RuntimeError("Failed to generate any PDBQT files for docking. This could be due to problematic input molecules or missing dependencies.")
 
 def vina_dock(lig, recpt='', center='', box_size=[20, 20, 20], dir='.'):
     """
@@ -474,6 +552,8 @@ def vina_docking_from_list(ligands: list,
     pdbqtList = glob(f"{parent_path}/pdbqts/*.pdbqt")
     if len(pdbqtList) == 0:
         raise RuntimeError(f"在 {parent_path}/pdbqts 下未发现任何 .pdbqt 文件，可能生成步骤失败。")
+    
+    print(f"Found {len(pdbqtList)} PDBQT files for docking")
     random.shuffle(pdbqtList)
 
     vina_dock_p = partial(vina_dock,
@@ -485,9 +565,18 @@ def vina_docking_from_list(ligands: list,
     # Step 6: 合并所有单个 ligand 的 CSV，生成 dockRes.csv
     csv_paths = glob(f"{parent_path}/docked/*.csv")
     if len(csv_paths) == 0:
-        raise RuntimeError("未发现任何 docked/*.csv，说明 docking 或 pdbqt2sdf 步骤出错。")
-    dfRes = combine_csv(csv_paths)
-    dfRes = dfRes.sort_values(by='score', ascending=True)
+        # 检查是否有错误文件生成
+        error_files = glob(f"{parent_path}/errors/*.txt")
+        if len(error_files) > 0:
+            print(f"Warning: {len(error_files)} ligands failed docking but no successful results found")
+            print(f"Creating empty result set...")
+            # 创建空的结果数据框
+            dfRes = pd.DataFrame(columns=['title', 'pose', 'score', 'smiles', 'file', 'protein_path'])
+        else:
+            raise RuntimeError("未发现任何 docked/*.csv，说明 docking 或 pdbqt2sdf 步骤出错。")
+    else:
+        dfRes = combine_csv(csv_paths)
+        dfRes = dfRes.sort_values(by='score', ascending=True)
     
     # 为每个结果添加protein路径信息
     dfRes['protein_path'] = str(receptPath)
@@ -504,5 +593,5 @@ def vina_docking_from_list(ligands: list,
 # 保持原有的命令行入口：如果直接脚本调用，则走 argparse → main
 # ============================================================
 if __name__ == "__main__":
-    args = get_parser()
-    main(args)
+    print("This module is designed to be imported and used via vina_docking_from_list() function")
+    print("Command line interface not available in this version")

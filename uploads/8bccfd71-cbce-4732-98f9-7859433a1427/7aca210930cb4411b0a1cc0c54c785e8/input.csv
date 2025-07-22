@@ -1,0 +1,4 @@
+smiles,title
+CNC(F)(F)c1cccc(Nc2cc(Nc3cccc(NC(=O)C4CC4)c3)ncn2)c1,analog_1
+O=C(Nc1cccc(Nc2cc(Nc3cccc(C(F)(F)c4ccco4)c3)ncn2)c1)C1CC1,analog_2
+O=C(Nc1cccc(Nc2cc(Nc3cccc(C(F)F)c3)ncn2)c1)C1CC1,analog_3

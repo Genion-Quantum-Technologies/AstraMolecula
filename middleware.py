@@ -14,10 +14,26 @@ OPEN_PATHS = {
     "/signup",         
 }
 
+# 高优先级路径列表（tasks相关接口）
+HIGH_PRIORITY_PATHS = {
+    "/tasks",
+    "/tasks/",
+}
+
+def is_high_priority_request(path: str) -> bool:
+    """检查是否为高优先级请求"""
+    return any(path.startswith(hp) for hp in HIGH_PRIORITY_PATHS)
+
 async def auth_middleware(request: Request, call_next):
-    """认证中间件，提供详细的错误响应"""
+    """认证中间件，提供详细的错误响应和高优先级处理"""
     try:
-        logger.debug("Processing request: %s %s", request.method, request.url.path)
+        # 检查是否为高优先级请求
+        is_high_priority = is_high_priority_request(request.url.path)
+        
+        if is_high_priority:
+            logger.debug("High priority request: %s %s", request.method, request.url.path)
+        else:
+            logger.debug("Processing request: %s %s", request.method, request.url.path)
         
         if request.method == "OPTIONS":
             logger.debug("Handling OPTIONS request for %s", request.url.path)
@@ -38,12 +54,21 @@ async def auth_middleware(request: Request, call_next):
         api_key = request.headers.get("X-API-Key")
         if api_key:
             if api_key in SERVICE_API_KEYS:
-                logger.debug("Valid API key used for %s", request.url.path)
+                if is_high_priority:
+                    logger.debug("High priority API key request: %s", request.url.path)
+                else:
+                    logger.debug("Valid API key used for %s", request.url.path)
                 request.state.service = api_key
                 response = await call_next(request)
                 response.headers["Access-Control-Allow-Origin"] = "*"
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
                 response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
+                
+                # 为高优先级请求添加特殊头部
+                if is_high_priority:
+                    response.headers["X-Priority"] = "high"
+                    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+                
                 return response
             logger.warning("Invalid API key attempted: %s", api_key[:10] + "...")
             return JSONResponse(

@@ -115,12 +115,12 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# 注册路由
-app.include_router(auth.router)
-app.include_router(uploads.router)
-app.include_router(smiles.router)
-app.include_router(docking.router)
-app.include_router(tasks.router)
+# 注册路由 - 按优先级顺序排列，tasks路由优先
+app.include_router(tasks.router)      # 最高优先级，任务查询接口
+app.include_router(auth.router)       # 认证接口
+app.include_router(uploads.router)    # 上传接口
+app.include_router(smiles.router)     # 生成接口
+app.include_router(docking.router)    # 对接接口（计算密集型，最后处理）
 
 # 全局访问异步处理器的函数
 def get_async_processor() -> AsyncTaskProcessor:

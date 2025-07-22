@@ -1,0 +1,56 @@
+{
+  "ligands": [
+    {
+      "smiles": "c1ccc(-n2cnc3cncnc32)cc1",
+      "title": "analog_1"
+    },
+    {
+      "smiles": "CC(N=Nc1ccccc1)c1cnccn1",
+      "title": "analog_2"
+    },
+    {
+      "smiles": "Cc1scc(Nc2ccccc2)c1C#N",
+      "title": "analog_3"
+    },
+    {
+      "smiles": "Clc1nc(Nc2ccccc2)cs1",
+      "title": "analog_4"
+    },
+    {
+      "smiles": "O=P(O)(O)Oc1ccccc1",
+      "title": "analog_5"
+    },
+    {
+      "smiles": "c1ccc(C[C@H]2CNCCN2)cc1",
+      "title": "analog_6"
+    },
+    {
+      "smiles": "O=C(CSc1nccs1)c1ccccc1",
+      "title": "analog_7"
+    },
+    {
+      "smiles": "C[C@H](N)C(=O)c1ccccc1",
+      "title": "analog_8"
+    },
+    {
+      "smiles": "C/C(=N/NC(=O)c1ccccc1)C(=O)O",
+      "title": "analog_9"
+    },
+    {
+      "smiles": "O=C(O)C[C@@H]1C[C@H]1c1ccccc1",
+      "title": "analog_10"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/resource/protein_7UDP.pdbqt",
+  "min_ph": 5.0,
+  "max_ph": 10.0,
+  "n_jobs": 1,
+  "center_x": 61.1052604588654,
+  "center_y": 24.324535606693694,
+  "center_z": 17.160999141356285,
+  "box_size_x": 20.0,
+  "box_size_y": 25.0,
+  "box_size_z": 30.0,
+  "exhaustiveness": 4,
+  "n_poses": 20
+}
