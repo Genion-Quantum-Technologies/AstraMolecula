@@ -24,10 +24,24 @@ class TaskProgressCallback:
     
     def __init__(self, task_id: str):
         self.task_id = task_id
+        self._is_completed = False  # 添加完成标志
         
     def update_progress(self, progress: float, info: str = None):
         """更新任务进度"""
+        # 如果任务已完成，不再更新状态
+        if self._is_completed:
+            logger.debug("Task %s already completed, skipping progress update", self.task_id)
+            return
+            
         try:
+            # 检查当前任务状态，避免覆盖终态状态
+            current_task = TaskService.get_task(self.task_id)
+            if current_task and current_task.status in ["finished", "failed", "cancelled"]:
+                logger.debug("Task %s is in final state (%s), skipping progress update", 
+                           self.task_id, current_task.status)
+                self._is_completed = True
+                return
+                
             TaskService.update_task_status(
                 self.task_id, 
                 TaskStatus.PROCESSING, 
@@ -38,6 +52,10 @@ class TaskProgressCallback:
         except Exception as e:
             logger.error("Failed to update progress for task %s: %s", 
                         self.task_id, e)
+    
+    def mark_completed(self):
+        """标记任务已完成，停止后续进度更新"""
+        self._is_completed = True
 
 
 class AsyncTaskProcessor:
@@ -91,12 +109,15 @@ class AsyncTaskProcessor:
             TaskService.update_task_status(
                 task_id, TaskStatus.FINISHED, "Task completed successfully"
             )
+            # 标记进度回调已完成，防止后续更新覆盖状态
+            progress_callback.mark_completed()
             logger.info("Task %s completed successfully", task_id)
             
         except asyncio.CancelledError:
             TaskService.update_task_status(
                 task_id, TaskStatus.CANCELLED, "Task was cancelled"
             )
+            progress_callback.mark_completed()
             logger.info("Task %s was cancelled", task_id)
             
         except Exception as e:
@@ -104,6 +125,7 @@ class AsyncTaskProcessor:
             TaskService.update_task_status(
                 task_id, TaskStatus.FAILED, "Task failed"
             )
+            progress_callback.mark_completed()
             logger.exception("Task %s failed: %s", task_id, e)
             
         finally:
@@ -311,10 +333,17 @@ class AsyncTaskProcessor:
                     for i in range(30, 80, 10):
                         time.sleep(5)  # 模拟处理时间
                         try:
+                            # 检查任务是否已完成，避免覆盖终态状态
+                            current_task = TaskService.get_task(task_id)
+                            if current_task and current_task.status in ["finished", "failed", "cancelled"]:
+                                logger.debug("Task %s is in final state, stopping progress updates", task_id)
+                                break
+                                
                             TaskService.update_task_status(
                                 task_id, TaskStatus.PROCESSING, f"Docking in progress ({i}%)"
                             )
-                        except:
+                        except Exception as e:
+                            logger.debug("Progress update failed for task %s: %s", task_id, e)
                             pass
                 
                 import threading

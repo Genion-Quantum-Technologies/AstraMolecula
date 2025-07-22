@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 import threading
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from middleware import auth_middleware
 from routers import auth, tasks, uploads, smiles, docking
 from async_task_processor import main_loop
@@ -27,9 +29,11 @@ async def lifespan(app: FastAPI):
     async_processor = AsyncTaskProcessor()
     
     # 启动传统任务工作线程（用于兼容现有系统）
-    logger.info("Starting background task worker thread...")
-    thread = threading.Thread(target=main_loop, daemon=True)
-    thread.start()
+    # 注意：已禁用旧的轮询机制以避免与新异步处理器冲突
+    # logger.info("Starting background task worker thread...")
+    # thread = threading.Thread(target=main_loop, daemon=True)
+    # thread.start()
+    logger.info("Legacy task worker disabled - using new async processor only")
     
     logger.info("Application startup complete")
     yield
@@ -49,6 +53,67 @@ app = FastAPI(
 
 # 添加中间件
 app.middleware("http")(auth_middleware)
+
+# 全局异常处理器
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """处理HTTP异常，提供更友好的错误响应"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": f"HTTP {exc.status_code}",
+            "message": exc.detail,
+            "path": request.url.path,
+            "method": request.method,
+            "error_code": f"HTTP_{exc.status_code}"
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
+        }
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """处理请求验证错误"""
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "Validation Error",
+            "message": "Request validation failed",
+            "details": exc.errors(),
+            "path": request.url.path,
+            "method": request.method,
+            "error_code": "VALIDATION_ERROR"
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """处理其他未捕获的异常"""
+    logger.exception("Unhandled exception occurred: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred. Please try again later.",
+            "path": request.url.path,
+            "method": request.method,
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "suggestion": "Please contact the administrator if this error persists."
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
+        }
+    )
 
 # 注册路由
 app.include_router(auth.router)

@@ -159,6 +159,21 @@ async def docking_endpoint(
             job_dir=str(job_dir)
         )
 
+        # —— 4.5) 启动异步处理 —— #
+        try:
+            from async_task_processor import task_processor
+            task = TaskService.get_task(task_id)
+            if task:
+                # 在后台启动任务处理
+                import asyncio
+                asyncio.create_task(task_processor.process_task(task))
+                logger.info("Started async processing for task %s", task_id)
+            else:
+                logger.error("Failed to retrieve created task %s", task_id)
+        except Exception as e:
+            logger.error("Failed to start async processing for task %s: %s", task_id, e)
+            # 即使启动失败，也返回任务ID，让旧的轮询机制处理
+
         # —— 5) 返回详细的响应信息 —— #
         response_data = {
             "task_id": task_id,

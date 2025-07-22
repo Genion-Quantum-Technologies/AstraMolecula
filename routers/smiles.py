@@ -81,6 +81,21 @@ async def generate_molecules(
             job_dir=str(job_dir)
         )
 
+        # （3.5）启动异步处理 —— #
+        try:
+            from async_task_processor import task_processor
+            task = TaskService.get_task(task_id)
+            if task:
+                # 在后台启动任务处理
+                import asyncio
+                asyncio.create_task(task_processor.process_task(task))
+                logger.info("Started async processing for generate task %s", task_id)
+            else:
+                logger.error("Failed to retrieve created generate task %s", task_id)
+        except Exception as e:
+            logger.error("Failed to start async processing for generate task %s: %s", task_id, e)
+            # 即使启动失败，也返回任务ID，让旧的轮询机制处理
+
         # （4）立即返回 task_id，让客户端稍后查询结果
         return {"task_id": task_id}
 

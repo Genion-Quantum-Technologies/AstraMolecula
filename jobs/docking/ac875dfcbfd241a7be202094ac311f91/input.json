@@ -1,0 +1,20 @@
+{
+  "ligands": [
+    {
+      "smiles": "C=C",
+      "title": "ligand_1"
+    }
+  ],
+  "receptor_pdbqt": "/Users/youngwild/Dev/jingyuan/dockingVina/uploads/8bccfd71-cbce-4732-98f9-7859433a1427/protein_7UDP.pdbqt",
+  "min_ph": 5.0,
+  "max_ph": 10.0,
+  "n_jobs": 1,
+  "center_x": 61.1052604588654,
+  "center_y": 24.324535606693694,
+  "center_z": 17.160999141356285,
+  "box_size_x": 20.0,
+  "box_size_y": 25.0,
+  "box_size_z": 30.0,
+  "exhaustiveness": 4,
+  "n_poses": 20
+}
