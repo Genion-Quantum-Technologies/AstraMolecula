@@ -1,0 +1,2 @@
+title,pose,score,smiles,file
+analog_9-1,0,-10.084,O=[N+]([O-])c1ccc(Nc2cc([NH2+]c3cccc(C(F)(F)F)c3)[nH+]cn2)cc1,analog_9-1-p0.sdf
