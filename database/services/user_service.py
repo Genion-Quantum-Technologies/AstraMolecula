@@ -1,3 +1,4 @@
+import uuid
 import bcrypt
 from typing import Optional, List
 
@@ -8,8 +9,10 @@ class UserService:
     def register(username: str, password: str, phone: str = None, email: str = None) -> None:
         # 1) 哈希密码
         pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        # 2) 调用存储库
-        UserRepository.create(username, pw_hash, phone, email)
+        # 2) 生成 UUID
+        user_id = str(uuid.uuid4())  # 生成 UUID
+        # 3) 调用存储库，并传递 user_id
+        UserRepository.create(user_id, username, pw_hash, phone, email)
 
     @staticmethod
     def authenticate(username: str, password: str) -> bool:

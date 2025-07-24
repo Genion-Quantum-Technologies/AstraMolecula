@@ -1,3 +1,14 @@
+
+CREATE USER 'vina_user'@'%' 
+  IDENTIFIED BY 'Aa7758258123';
+
+GRANT ALL PRIVILEGES 
+  ON project1.* 
+  TO 'vina_user'@'%';
+
+FLUSH PRIVILEGES;
+
+
 GRANT ALL PRIVILEGES ON project1.*  TO 'vina_user'@'%' IDENTIFIED BY 'Aa7758258123';
 
 #连接数据库

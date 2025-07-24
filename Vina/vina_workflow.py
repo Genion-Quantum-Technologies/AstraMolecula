@@ -99,7 +99,6 @@ def smi2pdbqt(inputSmi, min_ph=5, max_ph=9, num_processors=os.cpu_count(), dir='
     gypsum_output_dir = f"{dir}/gypsumFolder"
     if not os.path.exists(gypsum_output_dir):
         os.makedirs(gypsum_output_dir)  # 先手动创建，避免 Start.py 报错
-    
     print("Running Gypsum-DL for molecule preparation...")
     # 使用更宽松的参数来减少conformer generation failures
     gypsum_cmd = (f"mpirun -n {num_processors} python -m mpi4py "

@@ -1,0 +1,29 @@
+name: dockingvina_final
+channels:
+  - defaults
+dependencies:
+  - pytorch
+  - scipy
+  - torchvision
+  - tqdm
+  - numpy
+  - seaborn
+  - uvicorn
+  - openmpi=4.1.6
+  - mysql-connector-python
+  - vina
+  - pillow
+  - python=3.10
+  - mpi4py
+  - matplotlib
+  - pymol-open-source
+  - rdkit
+  - scikit-learn
+  - bcrypt
+  - meeko
+  - pandas
+  - pybind11
+  - fastapi
+  - torchaudio
+  - openbabel
+prefix: /home/davis/miniconda3/envs/dockingvina_final

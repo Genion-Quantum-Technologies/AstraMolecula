@@ -4,8 +4,8 @@ import json
 BASE_URL = "http://127.0.0.1:8000"
 # USERNAME = "bob"
 # PASSWORD = "Pa$$w0rd123"
-USERNAME = "TOM"
-PASSWORD = "321312"
+USERNAME = "admin"
+PASSWORD = "Admin#2024"
 def get_token():
     """先登录拿到 JWT"""
     payload = {"username": USERNAME, "password": PASSWORD}
