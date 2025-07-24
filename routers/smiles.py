@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 from PIL import Image
 import uuid
 from fastapi.responses import StreamingResponse
@@ -7,14 +8,13 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from config import ROOT
 from database.services.task_service import TaskService
 from requests.basic_request import GenerateRequestList
 from responses.basic_response import FragmentResponse
 from utils.fragment_processor import fragmentize_molecule
-from utils.log import get_logger
+import config
 
-logger = get_logger("smiles_router", str(ROOT / "logs" / "api.log"), isMain=True)
+logger = logging.getLogger("smiles_router")
 
 router = APIRouter(tags=["Smiles"])
 
@@ -62,7 +62,7 @@ async def generate_molecules(
 
     try:
         # （1）生成一个唯一的 job_id，并创建对应文件夹
-        JOBS_DIR = ROOT / "jobs" / "generate"
+        JOBS_DIR = config.ROOT / "jobs" / "generate"
         JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
         job_id = uuid.uuid4().hex
@@ -80,6 +80,21 @@ async def generate_molecules(
             task_type="generate",
             job_dir=str(job_dir)
         )
+
+        # （3.5）启动异步处理 —— #
+        try:
+            from async_task_processor import task_processor
+            task = TaskService.get_task(task_id)
+            if task:
+                # 在后台启动任务处理
+                import asyncio
+                asyncio.create_task(task_processor.process_task(task))
+                logger.info("Started async processing for generate task %s", task_id)
+            else:
+                logger.error("Failed to retrieve created generate task %s", task_id)
+        except Exception as e:
+            logger.error("Failed to start async processing for generate task %s: %s", task_id, e)
+            # 即使启动失败，也返回任务ID，让旧的轮询机制处理
 
         # （4）立即返回 task_id，让客户端稍后查询结果
         return {"task_id": task_id}

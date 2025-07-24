@@ -40,18 +40,20 @@ def calculate_descriptors(smiles):
     return {"molwt": molwt, "tpsa": tpsa, "slogp": slogp, "sa": sa, "qed": qed_v}
 
 def run_generate_runner(const_smiles, var_smiles, main_cls, minor_cls, delta_value, num_samples):
+    import config
+    
     opt = {
         'batch_size': num_samples,
-        'data_path' :  './',
+        'data_path' :  str(config.ROOT),
         'decode_type' :  'multinomial',
         'dev_no' :  0,
         'epoch' :  20,
         'model_choice' :  'transformer',
-        'model_path' :  './resource',
+        'model_path' :  str(config.ROOT / 'resource'),
         'num_samples' :  50,
         'overwrite' :  True,
         'test_file_name' :  'test_cut',
-        'vocab_path' :  './resource'
+        'vocab_path' :  str(config.ROOT / 'resource')
     }
     opt = Options(**opt)
     runner = GenerateRunner(opt)

@@ -1,16 +1,20 @@
 
+import logging
 from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from config import ROOT
 from database.services.upload_service import UploadService
 from security.auth import get_current_user
+import config
 
+logger = logging.getLogger("uploads_router")
 router = APIRouter(tags=["Uploads"])
 
 @router.get("/users/me/uploads")
 async def list_my_uploads(request: Request):
     current_user = request.state.user
+    logger.info("User %s listing uploads", current_user.username)
     uploads = UploadService.list_by_user(current_user.id)
+    logger.debug("Found %d uploads for user %s", len(uploads), current_user.username)
     return [u.__dict__ for u in uploads]
 
 @router.post("/upload_pdbqt")
@@ -20,7 +24,8 @@ async def upload_pdbqt(
 ):
     current_user = request.state.user
     user_id = current_user.id
-    UPLOAD_DIR = ROOT / "uploads" / user_id
+    logger.info("User %s uploading %d PDBQT files", current_user.username, len(files))
+    UPLOAD_DIR = config.ROOT / "uploads" / user_id
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
     saved = []

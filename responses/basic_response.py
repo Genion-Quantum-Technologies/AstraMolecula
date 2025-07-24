@@ -29,6 +29,26 @@ class DockResponse(BaseModel):
     smiles: str
     file: str
     protein_path: Optional[str] = None  # 添加protein路径字段
+    
+    # 扩展字段，提供更多信息
+    ligand_properties: Optional[dict] = None  # 配体属性（分子量、TPSA等）
+    docking_parameters: Optional[dict] = None  # 对接参数
+    file_size: Optional[int] = None  # SDF文件大小
+    creation_time: Optional[datetime] = None  # 文件创建时间
+    
+class DockingTaskResponse(BaseModel):
+    """对接任务详细响应"""
+    task_id: str
+    status: str
+    message: str
+    details: dict
+    next_steps: dict
+    
+class DockingErrorResponse(BaseModel):
+    """对接任务错误响应"""
+    error: str
+    message: str
+    details: dict
 
 class TaskResponse(BaseModel):
     id: str

@@ -31,6 +31,20 @@ class DockingLigand(BaseModel):
 
 class DockingRequest(BaseModel):
     ligands: List[DockingLigand]
-    min_ph: Optional[float] = 6.0
-    max_ph: Optional[float] = 8.0
-    n_jobs: Optional[int]   = 8
+    min_ph: float = 6.0
+    max_ph: float = 8.0
+    n_jobs: int = 8
+    
+    # 中心坐标参数 (必填)
+    center_x: float
+    center_y: float
+    center_z: float
+    
+    # 盒子大小参数 (必填，必须提供xyz三个维度)
+    box_size_x: float
+    box_size_y: float
+    box_size_z: float
+    
+    # 其他参数 (必填)
+    exhaustiveness: int = 4
+    n_poses: int = 20

@@ -9,5 +9,6 @@
 **/__pycache__/
 /gypsum_dl/
 /uploads/
+/jobs/
 /resource/model_20.pt
 /logs
