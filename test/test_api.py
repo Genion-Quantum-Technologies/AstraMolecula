@@ -57,7 +57,7 @@ def test_fragmentize():
 
 
 def test_generate():
-    print("Testing /generate...")
+    print("Testing /generate12312...")
     token = get_token()
     if not token:
         return
@@ -123,20 +123,20 @@ def test_generate():
 
 def test_create_user():
     print("Testing POST /users …")
-    # payload = {
-    #     "username": "bob",
-    #     "password": "Pa$$w0rd123",
-    #     "phone": "13900001111",
-    #     "email": "bob@example.com"
-    # }
     payload = {
-        "username": "TOM2",
-        "password": "321312",
-        "phone": "13922221111",
-        "email": "TOM2@example.com"
+        "username": "bob",
+        "password": "Pa$$w0rd123",
+        "phone": "13900001111",
+        "email": "bob@example.com"
     }
+    # payload = {
+    #     "username": "admin",
+    #     "password": "Admin#2024",
+    #     "phone": "13922221111",
+    #     "email": "TOM2@example.com"
+    # }
     headers = {"Content-Type": "application/json"}
-    resp = requests.post(f"{BASE_URL}/users", headers=headers, data=json.dumps(payload))
+    resp = requests.post(f"{BASE_URL}/signup", headers=headers, data=json.dumps(payload))
     if resp.status_code == 201:
         print("✅ 创建用户成功：", resp.json())
     else:
