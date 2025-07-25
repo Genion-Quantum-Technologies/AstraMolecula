@@ -3,10 +3,10 @@ import json
 from pathlib import Path
 
 BASE_URL = "http://127.0.0.1:8000"
-USERNAME = "bob"
-PASSWORD = "Pa$$w0rd123"
-# USERNAME = "TOM"
-# PASSWORD = "321312"
+# USERNAME = "bob"
+# PASSWORD = "Pa$$w0rd123"
+USERNAME = "admin"
+PASSWORD = "Admin#2024"
 def get_token() -> str:
     """先登录拿到 JWT"""
     payload = {"username": USERNAME, "password": PASSWORD}
@@ -49,6 +49,13 @@ def test_docking_with_uploaded_receptor():
         params=params,
         data=json.dumps({
             "ligands": ligands,
+            # 对接盒子参数
+            "center_x": 61.105,
+            "center_y": 24.325,
+            "center_z": 17.161,
+            "box_size_x": 20.0,
+            "box_size_y": 25.0,
+            "box_size_z": 30.0,
             # 可选：覆盖默认 pH 范围和线程数
             # "min_ph": 6.0,
             # "max_ph": 8.0,

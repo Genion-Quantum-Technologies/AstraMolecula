@@ -2,14 +2,14 @@ FROM continuumio/anaconda3:latest
 
 WORKDIR /app
 
-COPY environment.yml ./
+COPY env.yml ./
 COPY . /app
 
 # 禁用 pip 缓存
 ENV PIP_NO_CACHE_DIR=1
 
 # 创建环境并立刻清理所有缓存
-RUN conda env create -f environment.yml \
+RUN conda env create -f env.yml \
     && conda clean --all --yes \
     && rm -rf /root/.cache/pip
 
