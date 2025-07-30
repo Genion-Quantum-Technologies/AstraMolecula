@@ -4,6 +4,7 @@ import json
 from typing import List
 import zipfile
 import asyncio
+import pandas as pd
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from database.services import TaskService
@@ -368,7 +369,77 @@ async def get_protein_file(request: Request, task_id: str):
 @router.get("/{task_id}/peptide/result")
 async def get_peptide_result_csv(request: Request, task_id: str):
     """
-    获取肽段优化任务的结果CSV文件
+    获取肽段优化任务的结果数据，以JSON格式返回供前端页面展示
+    """
+    current_user = request.state.user
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != "peptide_optimization":
+        raise HTTPException(status_code=400, detail="task type is not peptide_optimization")
+    
+    # 优化状态检查 - 根据不同状态返回不同的错误码
+    if task.status == "pending":
+        raise HTTPException(status_code=425, detail="task is pending")
+    elif task.status == "processing":
+        raise HTTPException(status_code=202, detail="task is still processing")
+    elif task.status == "failed":
+        raise HTTPException(status_code=410, detail="task failed")
+    elif task.status != "finished":
+        raise HTTPException(status_code=409, detail=f"task status is {task.status}")
+    
+    # 记录获取操作
+    logger.info("User %s requesting peptide result data for task %s", current_user.username, task_id)
+    
+    # 构建result.csv文件路径
+    result_csv_path = Path(task.job_dir) / "output" / "result.csv"
+    if not result_csv_path.exists():
+        raise HTTPException(status_code=404, detail="result.csv file not found")
+    
+    try:
+        # 读取CSV文件并转换为JSON格式
+        df = pd.read_csv(result_csv_path, index_col=0)
+        
+        # 转换为字典格式，保持索引作为行标识
+        result_data = {
+            "task_id": task_id,
+            "task_status": task.status,
+            "created_at": task.created_at.isoformat() if task.created_at else None,
+            "finished_at": task.finished_at.isoformat() if task.finished_at else None,
+            "data": {
+                "columns": df.columns.tolist(),  # 列名列表
+                "index": df.index.tolist(),      # 行索引列表
+                "rows": []                       # 行数据
+            }
+        }
+        
+        # 逐行转换数据
+        for idx, row in df.iterrows():
+            row_data = {
+                "index": idx,
+                "values": {}
+            }
+            for col in df.columns:
+                value = row[col]
+                # 处理NaN值
+                if pd.isna(value):
+                    row_data["values"][col] = None
+                else:
+                    row_data["values"][col] = value
+            result_data["data"]["rows"].append(row_data)
+        
+        return result_data
+        
+    except Exception as e:
+        logger.error("Error reading CSV file for task %s: %s", task_id, str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to read result file: {str(e)}")
+
+
+@router.get("/{task_id}/peptide/result/download")
+async def download_peptide_result_csv(request: Request, task_id: str):
+    """
+    下载肽段优化任务的结果CSV文件（原始文件下载）
     """
     current_user = request.state.user
     
@@ -389,7 +460,7 @@ async def get_peptide_result_csv(request: Request, task_id: str):
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
     
     # 记录下载操作
-    logger.info("User %s downloading peptide result CSV for task %s", current_user.username, task_id)
+    logger.info("User %s downloading peptide result CSV file for task %s", current_user.username, task_id)
     
     # 构建result.csv文件路径
     result_csv_path = Path(task.job_dir) / "output" / "result.csv"
