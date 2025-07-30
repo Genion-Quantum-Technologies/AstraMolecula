@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from middleware import auth_middleware
-from routers import auth, tasks, uploads, smiles, docking
+from routers import auth, tasks, uploads, smiles, docking, peptide
 from async_task_processor import main_loop
 from config.logging_config import setup_logging
 from async_task_processor import AsyncTaskProcessor
@@ -120,6 +120,7 @@ app.include_router(tasks.router)      # 最高优先级，任务查询接口
 app.include_router(auth.router)       # 认证接口
 app.include_router(uploads.router)    # 上传接口
 app.include_router(smiles.router)     # 生成接口
+app.include_router(peptide.router)    # 蛋白优化接口
 app.include_router(docking.router)    # 对接接口（计算密集型，最后处理）
 
 # 全局访问异步处理器的函数

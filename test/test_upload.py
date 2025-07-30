@@ -28,7 +28,7 @@ def test_upload_pdbqt():
     # 准备文件列表
     # 多文件上传时，把文件 tuple 都放到列表里
     files = [
-        ("files", ("user2.pdbqt", open("user2.pdbqt", "rb"), "application/octet-stream")),
+        ("files", ("test1.pdb", open("test1.pdb", "rb"), "application/octet-stream")),
         # 如果还有别的 pdbqt 文件，可继续追加
         # ("files", ("another.pdbqt", open("another.pdbqt", "rb"), "application/octet-stream")),
     ]

@@ -48,3 +48,21 @@ class DockingRequest(BaseModel):
     # 其他参数 (必填)
     exhaustiveness: int = 4
     n_poses: int = 20
+
+# ============================================
+# 2. 为 peptide optimization 定义 Pydantic 模型
+# ============================================
+class PeptideOptimizationRequest(BaseModel):
+    # 肽段序列（FASTA格式的序列部分，不包含>header）
+    peptide_sequence: str
+    
+    # 受体蛋白PDB文件名（用户上传的文件名）
+    receptor_pdb_filename: str
+    
+    # 可选参数
+    cores: int = 12  # CPU核心数
+    cleanup: bool = True  # 是否清理中间文件
+    step: Optional[int] = None  # 运行特定步骤(1-8)，None表示运行完整流程
+    
+    # ProteinMPNN相关参数
+    proteinmpnn_enabled: bool = True  # 是否启用ProteinMPNN优化
