@@ -115,36 +115,6 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
         raise HTTPException(status_code=500, detail="Failed to create optimization task")
 
 
-@router.get("/optimize/{task_id}", response_model=TaskResponse,
-           summary="获取蛋白优化任务状态",
-           description="查询特定蛋白优化任务的状态和详细信息")
-async def get_optimization_task_status(request: Request, task_id: str):
-    """
-    获取蛋白优化任务的状态和详细信息。
-    """
-    current_user = request.state.user
-    logger.info("User %s requesting peptide optimization task status: %s", 
-               current_user.username, task_id)
-    
-    try:
-        task = TaskService.get_task(task_id)
-        
-        if not task or task.user_id != current_user.id:
-            raise HTTPException(status_code=404, detail="Task not found")
-        
-        if task.task_type != "peptide_optimization":
-            raise HTTPException(status_code=400, detail="Task is not a peptide optimization task")
-        
-        return task
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Error fetching peptide optimization task %s for user %s: %s", 
-                    task_id, current_user.username, e)
-        raise HTTPException(status_code=500, detail="Failed to fetch task status")
-
-
 @router.get("/optimize/{task_id}/config",
            summary="获取蛋白优化任务配置",
            description="查询蛋白优化任务的配置参数")
