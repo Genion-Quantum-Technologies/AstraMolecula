@@ -363,3 +363,99 @@ async def get_protein_file(request: Request, task_id: str):
     except Exception as e:
         logger.exception("Error getting protein file: %s", e)
         raise HTTPException(status_code=500, detail=f"error getting protein file: {e}")
+
+
+@router.get("/{task_id}/peptide/result")
+async def get_peptide_result_csv(request: Request, task_id: str):
+    """
+    获取肽段优化任务的结果CSV文件
+    """
+    current_user = request.state.user
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != "peptide_optimization":
+        raise HTTPException(status_code=400, detail="task type is not peptide_optimization")
+    
+    # 优化状态检查 - 根据不同状态返回不同的错误码
+    if task.status == "pending":
+        raise HTTPException(status_code=425, detail="task is pending")
+    elif task.status == "processing":
+        raise HTTPException(status_code=202, detail="task is still processing")
+    elif task.status == "failed":
+        raise HTTPException(status_code=410, detail="task failed")
+    elif task.status != "finished":
+        raise HTTPException(status_code=409, detail=f"task status is {task.status}")
+    
+    # 记录下载操作
+    logger.info("User %s downloading peptide result CSV for task %s", current_user.username, task_id)
+    
+    # 构建result.csv文件路径
+    result_csv_path = Path(task.job_dir) / "output" / "result.csv"
+    if not result_csv_path.exists():
+        raise HTTPException(status_code=404, detail="result.csv file not found")
+    
+    # 返回CSV文件内容，添加缓存头
+    return FileResponse(
+        path=str(result_csv_path),
+        media_type="text/csv",
+        filename="result.csv",
+        headers={
+            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}",
+            "ETag": f'"{task_id}-result-csv"'
+        }
+    )
+
+
+@router.get("/{task_id}/peptide/output")
+async def download_peptide_output_folder(request: Request, task_id: str):
+    """
+    下载肽段优化任务的整个output文件夹，打包为ZIP压缩包
+    """
+    current_user = request.state.user
+    task = TaskService.get_task(task_id)
+    
+    if not task or task.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != "peptide_optimization":
+        raise HTTPException(status_code=400, detail="task type is not peptide_optimization")
+    
+    # 优化状态检查
+    if task.status == "pending":
+        raise HTTPException(status_code=425, detail="task is pending")
+    elif task.status == "processing":
+        raise HTTPException(status_code=202, detail="task is still processing")
+    elif task.status == "failed":
+        raise HTTPException(status_code=410, detail="task failed")
+    elif task.status != "finished":
+        raise HTTPException(status_code=409, detail=f"task status is {task.status}")
+
+    logger.info("User %s downloading peptide output folder for task %s", current_user.username, task_id)
+
+    output_dir = Path(task.job_dir) / "output"
+    if not output_dir.exists():
+        raise HTTPException(status_code=404, detail="output directory not found")
+
+    # 创建内存中的ZIP文件
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
+        # 递归添加output目录下的所有文件
+        for item in output_dir.rglob("*"):
+            if item.is_file():
+                # 计算相对路径，保持目录结构
+                arcname = item.relative_to(output_dir)
+                zf.write(item, arcname=str(arcname))
+    
+    memory_file.seek(0)
+
+    filename = f"peptide_optimization_{task_id}_output.zip"
+    return StreamingResponse(
+        memory_file,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}",
+            "ETag": f'"{task_id}-output-archive"'
+        },
+    )
