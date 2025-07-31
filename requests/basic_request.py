@@ -66,3 +66,10 @@ class PeptideOptimizationRequest(BaseModel):
     
     # ProteinMPNN相关参数
     proteinmpnn_enabled: bool = True  # 是否启用ProteinMPNN优化
+    
+    # Docking相关参数
+    n_poses: int = 10  # adcp命令中的-N参数，生成对接构象数量
+    
+    # ProteinMPNN序列生成参数
+    num_seq_per_target: int = 10  # 每个目标生成的序列数
+    proteinmpnn_seed: int = 37  # ProteinMPNN随机数种子

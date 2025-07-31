@@ -28,6 +28,9 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
     - cleanup: 是否清理中间文件（可选，默认True）
     - step: 运行特定步骤（可选，None表示运行完整流程）
     - proteinmpnn_enabled: 是否启用ProteinMPNN优化（可选，默认True）
+    - n_poses: 生成对接构象数量（可选，默认10）
+    - num_seq_per_target: 每个目标生成的序列数（可选，默认10）
+    - proteinmpnn_seed: ProteinMPNN随机数种子（可选，默认37）
     """
     current_user = request.state.user
     logger.info("User %s creating peptide optimization task", current_user.username)
@@ -77,6 +80,9 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             f.write(f"cores={optimization_request.cores}\n")
             f.write(f"cleanup={optimization_request.cleanup}\n")
             f.write(f"proteinmpnn_enabled={optimization_request.proteinmpnn_enabled}\n")
+            f.write(f"n_poses={optimization_request.n_poses}\n")
+            f.write(f"num_seq_per_target={optimization_request.num_seq_per_target}\n")
+            f.write(f"proteinmpnn_seed={optimization_request.proteinmpnn_seed}\n")
             if optimization_request.step:
                 f.write(f"step={optimization_request.step}\n")
             f.write(f"peptide_sequence={optimization_request.peptide_sequence}\n")

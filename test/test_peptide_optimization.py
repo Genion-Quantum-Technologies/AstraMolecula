@@ -49,7 +49,10 @@ def test_create_peptide_optimization_task(token: str) -> Optional[str]:
         "cores": 8,  # 使用8核
         "cleanup": True,  # 清理中间文件
         "step": None,  # 运行完整流程
-        "proteinmpnn_enabled": True  # 启用ProteinMPNN
+        "proteinmpnn_enabled": True,  # 启用ProteinMPNN
+        "n_poses": 5,  # 生成5个对接构象（测试用较小值）
+        "num_seq_per_target": 5,  # 每个目标生成5个序列（测试用较小值）
+        "proteinmpnn_seed": 42  # 使用不同的随机种子用于测试
     }
     
     headers = {
