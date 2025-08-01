@@ -30,7 +30,8 @@ async def upload_pdbqt(
 
     saved = []
     for f in files:
-        if not f.filename.endswith(".pdb") or f.filename.endswith(".pdbqt"):
+        allowed_extensions = [".pdb", ".pdbqt"]
+        if not any(f.filename.endswith(ext) for ext in allowed_extensions):
             raise HTTPException(status_code=400, detail=f"不支持的文件类型: {f.filename}")
         dest = UPLOAD_DIR / f.filename
         with open(dest, "wb") as fh:
