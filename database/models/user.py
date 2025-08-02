@@ -11,3 +11,8 @@ class User:
     email: Optional[str]
     created_at: datetime
     updated_at: datetime
+    external_user_id: Optional[str] = None
+    source_system: str = 'internal'
+    created_by_service: Optional[str] = None
+    is_shadow_user: bool = False
+    migrated_to: Optional[str] = None

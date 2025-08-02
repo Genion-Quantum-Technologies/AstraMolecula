@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from middleware import auth_middleware
-from routers import auth, tasks, uploads, smiles, docking, peptide
+from routers import auth, tasks, uploads, smiles, docking, peptide, user_migration
 from async_task_processor import main_loop
 from config.logging_config import setup_logging
 from async_task_processor import AsyncTaskProcessor
@@ -118,6 +118,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # 注册路由 - 按优先级顺序排列，tasks路由优先
 app.include_router(tasks.router)      # 最高优先级，任务查询接口
 app.include_router(auth.router)       # 认证接口
+app.include_router(user_migration.router)  # 用户迁移接口
 app.include_router(uploads.router)    # 上传接口
 app.include_router(smiles.router)     # 生成接口
 app.include_router(peptide.router)    # 蛋白优化接口

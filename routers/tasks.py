@@ -1,7 +1,7 @@
 import io
 from pathlib import Path
 import json
-from typing import List
+from typing import List, Dict, Any
 import zipfile
 import asyncio
 import pandas as pd
@@ -17,6 +17,22 @@ from starlette.responses import FileResponse
 logger = get_logger("tasks_router", str(ROOT / "logs" / "tasks.log"), isMain=True)
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
+
+def get_current_user_info(request: Request) -> Dict[str, Any]:
+    """获取当前用户信息，支持多种认证方式"""
+    if not hasattr(request.state, 'user') or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    user = request.state.user
+    auth_type = getattr(request.state, 'auth_type', 'user')
+    external_user_id = getattr(request.state, 'external_user_id', None)
+    
+    return {
+        'user': user,
+        'auth_type': auth_type,
+        'external_user_id': external_user_id,
+        'is_shadow_user': getattr(user, 'is_shadow_user', False)
+    }
 
 # 创建高优先级的任务查询缓存
 _task_cache = {}
@@ -54,20 +70,23 @@ async def _get_cached_tasks(user_id: str, max_age: int = 5):
            description="获取用户任务列表，使用缓存优化，减少阻塞")
 async def list_user_tasks(request: Request):
     """
-    列出当前登录用户提交的所有任务。
-    使用缓存机制，提供高优先级响应，减少AutoDock运行时的阻塞。
+    列出当前用户的所有任务。
+    支持用户认证和服务认证，使用缓存机制提供高优先级响应。
     """
-    current_user = request.state.user
-    logger.info("User %s listing tasks (high priority)", current_user.username)
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    logger.info("User %s (%s) listing tasks (high priority)", 
+                user.username, user_info['auth_type'])
     
     # 使用缓存机制快速响应
     try:
-        tasks = await _get_cached_tasks(current_user.id)
+        tasks = await _get_cached_tasks(user.id)
         return tasks
     except Exception as e:
-        logger.error("Failed to get cached tasks for user %s: %s", current_user.username, e)
+        logger.error("Failed to get cached tasks for user %s: %s", user.username, e)
         # 降级到直接数据库查询
-        tasks = TaskService.get_tasks_by_user(current_user.id)
+        tasks = TaskService.get_tasks_by_user(user.id)
         return tasks
 
 @router.get("/{task_id}", response_model=TaskResponse,
@@ -76,10 +95,13 @@ async def list_user_tasks(request: Request):
 async def get_task_status(request: Request, task_id: str):
     """
     获取指定任务的状态和详细信息。
-    使用优化查询，减少AutoDock运行时的阻塞。
+    支持用户认证和服务认证，使用优化查询减少阻塞。
     """
-    current_user = request.state.user
-    logger.info("User %s requesting status for task %s (high priority)", current_user.username, task_id)
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    logger.info("User %s (%s) requesting status for task %s (high priority)", 
+                user.username, user_info['auth_type'], task_id)
     
     # 异步执行数据库查询，避免阻塞
     try:
@@ -87,15 +109,15 @@ async def get_task_status(request: Request, task_id: str):
             None, TaskService.get_task, task_id
         )
         
-        if not task or task.user_id != current_user.id:
+        if not task or task.user_id != user.id:
             raise HTTPException(status_code=404, detail="task not found")
         
         return task
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching task %s for user %s: %s", 
-                    task_id, current_user.username, e)
+        logger.error("Error fetching task %s for user %s (%s): %s", 
+                    task_id, user.username, user_info['auth_type'], e)
         raise HTTPException(status_code=500, detail="Failed to fetch task status")
 
 
@@ -108,7 +130,8 @@ async def get_task_status_simple(request: Request, task_id: str):
     专门优化为最快响应速度。
     返回格式: {"status": "pending|processing|finished|failed", "progress": number, "poll_interval": number}
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     
     # 使用异步执行，提高响应速度
     try:
@@ -116,7 +139,7 @@ async def get_task_status_simple(request: Request, task_id: str):
             None, TaskService.get_task, task_id
         )
         
-        if not task or task.user_id != current_user.id:
+        if not task or task.user_id != user.id:
             raise HTTPException(status_code=404, detail="task not found")
         
         # 根据任务状态建议轮询间隔
@@ -138,17 +161,18 @@ async def get_task_status_simple(request: Request, task_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching task status %s for user %s: %s", 
-                    task_id, current_user.username, e)
+        logger.error("Error fetching task status %s for user %s (%s): %s", 
+                    task_id, user.username, user_info['auth_type'], e)
         raise HTTPException(status_code=500, detail="Failed to fetch task status")
 
 @router.get("/{task_id}/download")
 async def download_task_files(request: Request, task_id: str):
     """Download result files of a finished task as a zip archive."""
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     task = TaskService.get_task(task_id)
     
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     
     # 优化状态检查
@@ -161,7 +185,8 @@ async def download_task_files(request: Request, task_id: str):
     elif task.status != "finished":
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
 
-    logger.info("User %s downloading files for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) downloading files for task %s", 
+                user.username, user_info['auth_type'], task_id)
 
     job_dir = Path(task.job_dir)
     if not job_dir.exists():
@@ -190,10 +215,11 @@ async def get_generated_molecules(request: Request, task_id: str):
     """
     获取单个 generate 任务的 output.json，并以 List[MoleculeOutput] 格式返回。
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     task = TaskService.get_task(task_id)
 
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "generate":
         raise HTTPException(status_code=400, detail="task type is not generate")
@@ -208,7 +234,8 @@ async def get_generated_molecules(request: Request, task_id: str):
     elif task.status != "finished":
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
 
-    logger.info("User %s requesting generated molecules for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) requesting generated molecules for task %s", 
+                user.username, user_info['auth_type'], task_id)
     
     output_path = Path(task.job_dir) / "output.json"
     if not output_path.exists():
@@ -225,10 +252,11 @@ async def get_docking_results(request: Request, task_id: str):
     获取单个 docking 任务的 dockRes.json，并以 List[DockResponse] 格式返回。
     包含每个ligand的对接结果以及使用的protein路径信息。
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     task = TaskService.get_task(task_id)
 
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "docking":
         raise HTTPException(status_code=400, detail="task type is not docking")
@@ -243,7 +271,7 @@ async def get_docking_results(request: Request, task_id: str):
     elif task.status != "finished":
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
 
-    logger.info("User %s requesting docking results for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) requesting docking results for task %s", user.username, user_info['auth_type'], task_id)
 
     output_path = Path(task.job_dir) / "dockRes.json"
     if not output_path.exists():
@@ -259,10 +287,11 @@ async def get_sdf_file(request: Request, task_id: str, filename: str):
     """
     获取docking任务生成的SDF文件
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     
     task = TaskService.get_task(task_id)
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "docking":
         raise HTTPException(status_code=400, detail="task type is not docking")
@@ -278,7 +307,7 @@ async def get_sdf_file(request: Request, task_id: str, filename: str):
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
     
     # 减少日志频率 - 只在成功访问时记录
-    logger.info("User %s downloading SDF file %s for task %s", current_user.username, filename, task_id)
+    logger.info("User %s (%s) downloading SDF file %s for task %s", user.username, user_info['auth_type'], filename, task_id)
     
     # 验证文件名格式，防止路径遍历攻击
     if not filename.endswith('.sdf') or '/' in filename or '\\' in filename:
@@ -306,10 +335,11 @@ async def get_protein_file(request: Request, task_id: str):
     """
     获取docking任务使用的protein文件内容
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     
     task = TaskService.get_task(task_id)
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "docking":
         raise HTTPException(status_code=400, detail="task type is not docking")
@@ -325,7 +355,7 @@ async def get_protein_file(request: Request, task_id: str):
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
     
     # 减少日志频率 - 只在成功访问时记录
-    logger.info("User %s downloading protein file for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) downloading protein file for task %s", user.username, user_info['auth_type'], task_id)
     
     # 从dockRes.json中获取protein路径
     dock_res_path = Path(task.job_dir) / "dockRes.json"
@@ -371,10 +401,11 @@ async def get_peptide_result_csv(request: Request, task_id: str):
     """
     获取肽段优化任务的结果数据，以JSON格式返回供前端页面展示
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     
     task = TaskService.get_task(task_id)
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "peptide_optimization":
         raise HTTPException(status_code=400, detail="task type is not peptide_optimization")
@@ -390,7 +421,7 @@ async def get_peptide_result_csv(request: Request, task_id: str):
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
     
     # 记录获取操作
-    logger.info("User %s requesting peptide result data for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) requesting peptide result data for task %s", user.username, user_info['auth_type'], task_id)
     
     # 构建result.csv文件路径
     result_csv_path = Path(task.job_dir) / "output" / "result.csv"
@@ -441,10 +472,11 @@ async def download_peptide_result_csv(request: Request, task_id: str):
     """
     下载肽段优化任务的结果CSV文件（原始文件下载）
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     
     task = TaskService.get_task(task_id)
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "peptide_optimization":
         raise HTTPException(status_code=400, detail="task type is not peptide_optimization")
@@ -460,7 +492,7 @@ async def download_peptide_result_csv(request: Request, task_id: str):
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
     
     # 记录下载操作
-    logger.info("User %s downloading peptide result CSV file for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) downloading peptide result CSV file for task %s", user.username, user_info['auth_type'], task_id)
     
     # 构建result.csv文件路径
     result_csv_path = Path(task.job_dir) / "output" / "result.csv"
@@ -484,10 +516,11 @@ async def download_peptide_output_folder(request: Request, task_id: str):
     """
     下载肽段优化任务的整个output文件夹，打包为ZIP压缩包
     """
-    current_user = request.state.user
+    user_info = get_current_user_info(request)
+    user = user_info['user']
     task = TaskService.get_task(task_id)
     
-    if not task or task.user_id != current_user.id:
+    if not task or task.user_id != user.id:
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != "peptide_optimization":
         raise HTTPException(status_code=400, detail="task type is not peptide_optimization")
@@ -502,7 +535,7 @@ async def download_peptide_output_folder(request: Request, task_id: str):
     elif task.status != "finished":
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
 
-    logger.info("User %s downloading peptide output folder for task %s", current_user.username, task_id)
+    logger.info("User %s (%s) downloading peptide output folder for task %s", user.username, user_info['auth_type'], task_id)
 
     output_dir = Path(task.job_dir) / "output"
     if not output_dir.exists():
