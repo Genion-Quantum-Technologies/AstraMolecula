@@ -154,7 +154,7 @@ async def get_task_status_simple(request: Request, task_id: str):
         return {
             "status": task.status,
             "progress": getattr(task, 'progress', 0),
-            "updated_at": task.updated_at,
+            "updated_at": getattr(task, 'updated_at', task.created_at),
             "poll_interval": poll_interval,
             "can_download": task.status == "finished"
         }

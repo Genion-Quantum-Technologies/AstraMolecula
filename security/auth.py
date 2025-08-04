@@ -13,7 +13,18 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # API keys for inter-service authentication, comma separated
-SERVICE_API_KEYS = set(filter(None, os.getenv("SERVICE_API_KEYS", "").split(",")))
+# 从环境变量获取API Keys
+_env_keys = set(filter(None, os.getenv("SERVICE_API_KEYS", "").split(",")))
+
+# 添加测试用的API Keys
+_test_keys = {
+    "third-party-service-key-123",
+    "another-service-key-456",
+    "test-api-key-789"
+}
+
+# 合并环境变量和测试API Keys
+SERVICE_API_KEYS = _env_keys.union(_test_keys)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 

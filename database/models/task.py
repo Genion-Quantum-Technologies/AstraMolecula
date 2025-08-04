@@ -25,3 +25,4 @@ class Task(BaseModel):
     created_at: datetime
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
