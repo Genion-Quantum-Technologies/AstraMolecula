@@ -1,9 +1,8 @@
 
 import logging
 from typing import List
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from database.services.upload_service import UploadService
-from security.auth import get_current_user
 import config
 
 logger = logging.getLogger("uploads_router")
