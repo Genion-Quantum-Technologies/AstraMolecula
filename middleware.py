@@ -12,7 +12,11 @@ logger = logging.getLogger("middleware")
 # 你想要跳过验证的路径列表
 OPEN_PATHS = {
     "/login",
-    "/signup",         
+    "/signup",
+    "/health",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
 }
 
 # 高优先级路径列表（tasks相关接口）

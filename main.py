@@ -4,8 +4,9 @@ import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from middleware import auth_middleware
-from routers import auth, tasks, uploads, smiles, docking, peptide, user_migration
+from routers import auth, tasks, uploads, smiles, docking, peptide
 from async_task_processor import main_loop
 from config.logging_config import setup_logging
 from async_task_processor import AsyncTaskProcessor
@@ -51,8 +52,28 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# 添加中间件
+# 添加CORS中间件 - 必须在其他中间件之前
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],  # 允许前端域名
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# 添加认证中间件
 app.middleware("http")(auth_middleware)
+
+# 健康检查端点（无需认证）
+@app.get("/health")
+async def health_check():
+    """健康检查端点"""
+    return {
+        "status": "healthy",
+        "message": "DockingVina API is running",
+        "timestamp": "2025-08-27T14:40:00Z",
+        "version": "2.0.0"
+    }
 
 # 全局异常处理器
 @app.exception_handler(HTTPException)
@@ -118,7 +139,6 @@ async def general_exception_handler(request: Request, exc: Exception):
 # 注册路由 - 按优先级顺序排列，tasks路由优先
 app.include_router(tasks.router)      # 最高优先级，任务查询接口
 app.include_router(auth.router)       # 认证接口
-app.include_router(user_migration.router)  # 用户迁移接口
 app.include_router(uploads.router)    # 上传接口
 app.include_router(smiles.router)     # 生成接口
 app.include_router(peptide.router)    # 蛋白优化接口
