@@ -5,6 +5,9 @@
 
 set -e
 
+# 脚本目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 颜色定义
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -79,8 +82,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     log "应用配置到 setup_autossh.sh..."
     
     # 修改setup_autossh.sh中的配置
-    sed -i "s/CLOUD_USER=\".*\"/CLOUD_USER=\"$cloud_user\"/" setup_autossh.sh
-    sed -i "s|SSH_KEY_PATH=\".*\"|SSH_KEY_PATH=\"$ssh_key\"|" setup_autossh.sh
+    sed -i "s/CLOUD_USER=\".*\"/CLOUD_USER=\"$cloud_user\"/" "$SCRIPT_DIR/setup_autossh.sh"
+    sed -i "s|SSH_KEY_PATH=\".*\"|SSH_KEY_PATH=\"$ssh_key\"|" "$SCRIPT_DIR/setup_autossh.sh"
     
     log "✅ 配置已成功应用!"
     
@@ -90,13 +93,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "   ssh-copy-id -i $ssh_key.pub $cloud_user@106.14.212.218"
     echo ""
     echo "2. 测试SSH连接:"
-    echo "   ./setup_autossh.sh test"
+    echo "   $SCRIPT_DIR/setup_autossh.sh test"
     echo ""
     echo "3. 启动所有服务:"
-    echo "   ./deploy.sh start"
+    echo "   $SCRIPT_DIR/deploy.sh start"
     echo ""
     echo "4. 在云服务器上配置Nginx:"
-    echo "   scp nginx_setup.sh $cloud_user@106.14.212.218:/tmp/"
+    echo "   scp $SCRIPT_DIR/nginx_setup.sh $cloud_user@106.14.212.218:/tmp/"
     echo "   ssh $cloud_user@106.14.212.218 'sudo /tmp/nginx_setup.sh install'"
     echo ""
     echo "部署完成后，您可以通过以下地址访问:"

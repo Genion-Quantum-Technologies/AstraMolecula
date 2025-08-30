@@ -7,6 +7,7 @@ set -e
 
 # 项目路径
 PROJECT_DIR="/home/davis/projects/AstraMolecula/dockingVina"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
 # 颜色定义
@@ -36,11 +37,11 @@ info() {
 check_scripts() {
     local missing_scripts=()
     
-    if [ ! -f "./start_docking_service.sh" ]; then
+    if [ ! -f "$SCRIPT_DIR/start_docking_service.sh" ]; then
         missing_scripts+=("start_docking_service.sh")
     fi
     
-    if [ ! -f "./setup_autossh.sh" ]; then
+    if [ ! -f "$SCRIPT_DIR/setup_autossh.sh" ]; then
         missing_scripts+=("setup_autossh.sh")
     fi
     
@@ -59,14 +60,14 @@ start_all() {
     
     # 1. 启动DockingVina服务
     log "1. 启动DockingVina API服务..."
-    ./start_docking_service.sh start
+    "$SCRIPT_DIR/start_docking_service.sh" start
     
     # 等待服务启动
     sleep 5
     
     # 2. 启动AutoSSH隧道
     log "2. 启动AutoSSH反向隧道..."
-    ./setup_autossh.sh start
+    "$SCRIPT_DIR/setup_autossh.sh" start
     
     # 等待隧道建立
     sleep 3
@@ -82,11 +83,11 @@ stop_all() {
     
     # 1. 停止AutoSSH隧道
     log "1. 停止AutoSSH隧道..."
-    ./setup_autossh.sh stop
+    "$SCRIPT_DIR/setup_autossh.sh" stop
     
     # 2. 停止DockingVina服务
     log "2. 停止DockingVina API服务..."
-    ./start_docking_service.sh stop
+    "$SCRIPT_DIR/start_docking_service.sh" stop
     
     log "✅ 所有服务已停止"
 }
@@ -109,12 +110,12 @@ status_all() {
     # DockingVina服务状态
     echo ""
     info "📡 DockingVina API服务:"
-    ./start_docking_service.sh status
+    "$SCRIPT_DIR/start_docking_service.sh" status
     
     # AutoSSH隧道状态
     echo ""
     info "🔄 AutoSSH反向隧道:"
-    ./setup_autossh.sh status
+    "$SCRIPT_DIR/setup_autossh.sh" status
     
     # 端口检查
     echo ""
@@ -151,10 +152,10 @@ logs_all() {
     
     case $choice in
         1)
-            ./start_docking_service.sh logs
+            "$SCRIPT_DIR/start_docking_service.sh" logs
             ;;
         2)
-            ./setup_autossh.sh logs
+            "$SCRIPT_DIR/setup_autossh.sh" logs
             ;;
         3)
             log "同时显示所有日志 (Ctrl+C退出):"
@@ -168,7 +169,7 @@ logs_all() {
             else
                 warn "建议安装tmux以同时查看多个日志: sudo apt install tmux"
                 echo "当前显示DockingVina日志，按Ctrl+C可切换到AutoSSH日志"
-                ./start_docking_service.sh logs
+                "$SCRIPT_DIR/start_docking_service.sh" logs
             fi
             ;;
         *)
@@ -188,13 +189,13 @@ test_all() {
         log "✅ 本地DockingVina服务响应正常"
     else
         error "❌ 本地DockingVina服务无响应"
-        echo "   请检查服务是否启动: ./start_docking_service.sh status"
+        echo "   请检查服务是否启动: $SCRIPT_DIR/start_docking_service.sh status"
         return 1
     fi
     
     echo ""
     info "2. 测试AutoSSH隧道连接..."
-    ./setup_autossh.sh test
+    "$SCRIPT_DIR/setup_autossh.sh" test
     
     echo ""
     info "3. 测试API端点..."
@@ -335,7 +336,7 @@ configure() {
         echo
         
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ./setup_autossh.sh test
+            "$SCRIPT_DIR/setup_autossh.sh" test
         fi
     else
         info "配置未应用，请手动编辑 setup_autossh.sh"
@@ -360,8 +361,8 @@ show_help() {
     echo "  help       显示此帮助信息"
     echo ""
     echo "单独控制:"
-    echo "  ./start_docking_service.sh {start|stop|restart|status|logs}"
-    echo "  ./setup_autossh.sh {start|stop|restart|status|logs|test}"
+    echo "  $SCRIPT_DIR/start_docking_service.sh {start|stop|restart|status|logs}"
+    echo "  $SCRIPT_DIR/setup_autossh.sh {start|stop|restart|status|logs|test}"
     echo ""
     echo "部署流程:"
     echo "  1. 运行环境检查: $0 check"

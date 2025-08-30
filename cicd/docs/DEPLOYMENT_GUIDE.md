@@ -26,7 +26,7 @@
 ### 方式一：使用快速配置工具（推荐）
 ```bash
 cd /home/davis/projects/AstraMolecula/dockingVina
-./quick_config.sh
+./cicd/scripts/quick_config.sh
 ```
 按提示输入云服务器用户名，脚本会自动配置IP地址：106.14.212.218
 
@@ -34,12 +34,12 @@ cd /home/davis/projects/AstraMolecula/dockingVina
 #### 第一步：环境检查
 ```bash
 cd /home/davis/projects/AstraMolecula/dockingVina
-./deploy.sh check
+./cicd/scripts/deploy.sh check
 ```
 
 #### 第二步：配置连接参数
 ```bash
-./deploy.sh config
+./cicd/scripts/deploy.sh config
 ```
 按提示输入：
 - 云服务器IP：106.14.212.218（已预配置）
@@ -48,13 +48,13 @@ cd /home/davis/projects/AstraMolecula/dockingVina
 
 #### 第三步：启动服务
 ```bash
-./deploy.sh start
+./cicd/scripts/deploy.sh start
 ```
 
 #### 第四步：验证部署
 ```bash
-./deploy.sh status
-./deploy.sh test
+./cicd/scripts/deploy.sh status
+./cicd/scripts/deploy.sh test
 ```
 
 ## 📁 脚本文件说明
@@ -64,11 +64,11 @@ cd /home/davis/projects/AstraMolecula/dockingVina
 
 **用法**:
 ```bash
-./start_docking_service.sh start      # 启动服务
-./start_docking_service.sh stop       # 停止服务
-./start_docking_service.sh restart    # 重启服务
-./start_docking_service.sh status     # 查看状态
-./start_docking_service.sh logs       # 查看日志
+./cicd/scripts/start_docking_service.sh start      # 启动服务
+./cicd/scripts/start_docking_service.sh stop       # 停止服务
+./cicd/scripts/start_docking_service.sh restart    # 重启服务
+./cicd/scripts/start_docking_service.sh status     # 查看状态
+./cicd/scripts/start_docking_service.sh logs       # 查看日志
 ```
 
 **特性**:
@@ -83,11 +83,11 @@ cd /home/davis/projects/AstraMolecula/dockingVina
 
 **用法**:
 ```bash
-./setup_autossh.sh start      # 启动隧道
-./setup_autossh.sh stop       # 停止隧道
-./setup_autossh.sh status     # 查看状态
-./setup_autossh.sh test       # 测试连接
-./setup_autossh.sh config     # 显示配置
+./cicd/scripts/setup_autossh.sh start      # 启动隧道
+./cicd/scripts/setup_autossh.sh stop       # 停止隧道
+./cicd/scripts/setup_autossh.sh status     # 查看状态
+./cicd/scripts/setup_autossh.sh test       # 测试连接
+./cicd/scripts/setup_autossh.sh config     # 显示配置
 ```
 
 **配置参数** (脚本顶部修改):
@@ -105,7 +105,7 @@ REMOTE_DOCKING_PORT=8000
 **用法** (在云服务器上运行):
 ```bash
 # 下载脚本到云服务器
-scp nginx_setup.sh user@cloud-server:/tmp/
+scp cicd/scripts/nginx_setup.sh user@cloud-server:/tmp/
 
 # 在云服务器上执行
 sudo /tmp/nginx_setup.sh install     # 安装配置
@@ -126,13 +126,13 @@ EMAIL="your-email@example.com"        # SSL证书邮箱
 
 **用法**:
 ```bash
-./deploy.sh start      # 启动所有服务
-./deploy.sh stop       # 停止所有服务
-./deploy.sh status     # 查看所有状态
-./deploy.sh logs       # 查看实时日志
-./deploy.sh test       # 测试所有连接
-./deploy.sh check      # 环境检查
-./deploy.sh config     # 配置助手
+./cicd/scripts/deploy.sh start      # 启动所有服务
+./cicd/scripts/deploy.sh stop       # 停止所有服务
+./cicd/scripts/deploy.sh status     # 查看所有状态
+./cicd/scripts/deploy.sh logs       # 查看实时日志
+./cicd/scripts/deploy.sh test       # 测试所有连接
+./cicd/scripts/deploy.sh check      # 环境检查
+./cicd/scripts/deploy.sh config     # 配置助手
 ```
 
 ---

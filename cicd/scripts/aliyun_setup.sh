@@ -5,6 +5,9 @@
 
 set -e
 
+# 脚本目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 颜色定义
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -138,9 +141,9 @@ apply_configuration() {
     log "应用DockingVina配置..."
     
     # 修改setup_autossh.sh中的配置
-    sed -i 's/CLOUD_SERVER=".*"/CLOUD_SERVER="106.14.212.218"/' setup_autossh.sh
-    sed -i 's/CLOUD_USER=".*"/CLOUD_USER="root"/' setup_autossh.sh
-    sed -i "s|SSH_KEY_PATH=\".*\"|SSH_KEY_PATH=\"$HOME/.ssh/pc_wsl2ecs.pem\"|" setup_autossh.sh
+    sed -i 's/CLOUD_SERVER=".*"/CLOUD_SERVER="106.14.212.218"/' "$SCRIPT_DIR/setup_autossh.sh"
+    sed -i 's/CLOUD_USER=".*"/CLOUD_USER="root"/' "$SCRIPT_DIR/setup_autossh.sh"
+    sed -i "s|SSH_KEY_PATH=\".*\"|SSH_KEY_PATH=\"$HOME/.ssh/pc_wsl2ecs.pem\"|" "$SCRIPT_DIR/setup_autossh.sh"
     
     log "✅ 配置已应用到 setup_autossh.sh"
 }
@@ -155,11 +158,11 @@ show_next_steps() {
     echo "接下来的部署步骤:"
     echo ""
     echo "1. 检查环境和启动WSL服务:"
-    echo "   ./deploy.sh check"
-    echo "   ./deploy.sh start"
+    echo "   $SCRIPT_DIR/deploy.sh check"
+    echo "   $SCRIPT_DIR/deploy.sh start"
     echo ""
     echo "2. 在阿里云服务器上配置Nginx:"
-    echo "   scp -i ~/.ssh/pc_wsl2ecs.pem nginx_setup.sh root@106.14.212.218:/tmp/"
+    echo "   scp -i ~/.ssh/pc_wsl2ecs.pem $SCRIPT_DIR/nginx_setup.sh root@106.14.212.218:/tmp/"
     echo "   ssh -i ~/.ssh/pc_wsl2ecs.pem root@106.14.212.218 'sudo /tmp/nginx_setup.sh install'"
     echo ""
     echo "3. 验证部署:"
