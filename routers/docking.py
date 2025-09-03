@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from Vina.vina_workflow import vina_docking_from_list
 from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
+from database.services.docking_task_params_service import DockingTaskParamsService
 from requests.basic_request import DockingRequest
 import config
 
@@ -159,6 +160,29 @@ async def docking_endpoint(
             job_dir=str(job_dir)
         )
 
+        # —— 4.1) 创建任务参数记录并计算成本 —— #
+        try:
+            task_params = DockingTaskParamsService.create_task_params(
+                task_id=task_id,
+                n_ligands=len(docking_request.ligands),
+                min_ph=docking_request.min_ph,
+                max_ph=docking_request.max_ph,
+                center_x=docking_request.center_x,
+                center_y=docking_request.center_y,
+                center_z=docking_request.center_z,
+                box_size_x=docking_request.box_size_x,
+                box_size_y=docking_request.box_size_y,
+                box_size_z=docking_request.box_size_z,
+                exhaustiveness=docking_request.exhaustiveness,
+                n_poses=docking_request.n_poses,
+                n_jobs=docking_request.n_jobs
+            )
+            logger.info("Task %s: Estimated compute units: %.2f", task_id, task_params.total_compute_units)
+        except Exception as e:
+            logger.error("Failed to create task params for task %s: %s", task_id, e)
+            # 即使参数保存失败，也继续执行任务
+            task_params = None
+
         # —— 4.5) 启动异步处理 —— #
         try:
             from async_task_processor import task_processor
@@ -208,9 +232,22 @@ async def docking_endpoint(
             "next_steps": {
                 "check_status": f"/tasks/{task_id}",
                 "get_results": f"/tasks/{task_id}/dockRes",
-                "download_files": f"/tasks/{task_id}/download"
+                "download_files": f"/tasks/{task_id}/download",
+                "get_cost_info": f"/tasks/{task_id}/cost"
             }
         }
+        
+        # 添加成本信息（如果可用）
+        if task_params:
+            cost_summary = DockingTaskParamsService.get_cost_summary(task_id)
+            if cost_summary:
+                response_data["cost_estimate"] = {
+                    "total_compute_units": cost_summary["compute_units"]["total"],
+                    "per_ligand_cost": cost_summary["compute_units"]["per_ligand"],
+                    "complexity_category": cost_summary["comparison"]["category"],
+                    "estimated_molecules": cost_summary["input_summary"]["estimated_molecules"]
+                }
+        
         return JSONResponse(content=response_data, status_code=201)
 
     except HTTPException:
@@ -227,6 +264,59 @@ async def docking_endpoint(
                     "error_type": type(e).__name__,
                     "error_message": str(e),
                     "suggestion": "请检查请求参数或联系系统管理员"
+                }
+            }
+        )
+
+
+@router.post("/docking/estimate-cost")
+async def estimate_docking_cost(
+    request: Request,
+    docking_request: DockingRequest
+):
+    """
+    预估 docking 任务成本（不创建实际任务）
+    """
+    # 从中间件注入的 state 中取出已验证的用户
+    current_user = request.state.user
+    logger.info("User %s requesting cost estimate", current_user.username)
+
+    try:
+        # 使用服务层进行成本预估
+        cost_estimate = DockingTaskParamsService.estimate_cost_before_submission(
+            n_ligands=len(docking_request.ligands),
+            min_ph=docking_request.min_ph,
+            max_ph=docking_request.max_ph,
+            center_x=docking_request.center_x,
+            center_y=docking_request.center_y,
+            center_z=docking_request.center_z,
+            box_size_x=docking_request.box_size_x,
+            box_size_y=docking_request.box_size_y,
+            box_size_z=docking_request.box_size_z,
+            exhaustiveness=docking_request.exhaustiveness,
+            n_poses=docking_request.n_poses,
+            n_jobs=docking_request.n_jobs
+        )
+
+        response_data = {
+            "status": "success",
+            "message": "成本预估完成",
+            "cost_estimate": cost_estimate,
+            "disclaimer": "这是基于理论模型的估算，实际执行时间可能因硬件和系统负载而有所不同"
+        }
+
+        return JSONResponse(content=response_data, status_code=200)
+
+    except Exception as e:
+        logger.exception("Cost estimation failed: %s", e)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "cost_estimation_failed",
+                "message": "成本预估失败",
+                "details": {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e)
                 }
             }
         )

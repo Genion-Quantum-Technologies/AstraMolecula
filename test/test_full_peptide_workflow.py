@@ -43,7 +43,7 @@ def create_peptide_task(token: str) -> Optional[str]:
     # 测试数据 - 使用一个较短的肽段序列进行快速测试
     peptide_data = {
         "peptide_sequence": "MKFLVNVAL",  # 较短的测试序列
-        "receptor_pdb_filename": "test1.pdb",
+        "receptor_pdb_filename": "5ffg.pdb",
         "cores": 4,  # 使用较少的核心以便更快完成
         "cleanup": False,  # 保留中间文件以便检查
         "step": None,  # 运行完整流程

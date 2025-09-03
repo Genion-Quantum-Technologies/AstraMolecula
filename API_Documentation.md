@@ -91,6 +91,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 以下实用工具接口无需任何认证即可访问：
 - `GET /smiles2img` - SMILES转分子结构图片
 - `GET /fragmentize` - 分子片段化处理
+- `GET /logs/` - 查看系统日志（实时监控）
 
 ### 认证方式对比
 
@@ -119,6 +120,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 - [对接计算接口](#对接计算接口)
 - [肽段优化接口](#肽段优化接口)
 - [任务管理接口](#任务管理接口)
+- [日志查看接口](#日志查看接口)
 - [数据结构说明](#数据结构说明)
 - [认证说明](#认证说明)
 - [任务状态说明](#任务状态说明)
@@ -629,6 +631,142 @@ results = session.get("/tasks/{task_id}/dockRes")
 - `task_id`: 任务ID
 
 **返回值**: ZIP文件流
+
+## 日志查看接口
+
+### 获取可查看的日志文件列表
+
+**接口地址**: `GET /logs/`
+
+**描述**: 获取系统中可以查看的日志文件列表
+
+**认证要求**: 无（开放接口）
+
+**请求参数**: 无
+
+**返回值**:
+```json
+{
+  "available_logs": [
+    {
+      "name": "docking_service.log",
+      "size": 12345,
+      "modified": 1693737600.0,
+      "path": "/logs/docking_service.log"
+    },
+    {
+      "name": "tasks.log", 
+      "size": 6789,
+      "modified": 1693737500.0,
+      "path": "/logs/tasks.log"
+    }
+  ],
+  "count": 2
+}
+```
+
+### 查看对接服务日志
+
+**接口地址**: `GET /logs/docking_service.log`
+
+**描述**: 查看对接服务的实时日志，支持行数限制和格式选择
+
+**认证要求**: 无（开放接口）
+
+**请求参数**:
+- `lines` (Query, 可选): 返回最后N行日志，默认100行
+- `format` (Query, 可选): 返回格式，text或json，默认text
+
+**返回值**: 
+- format=text: 纯文本日志内容
+- format=json: JSON格式的结构化日志数据
+
+**JSON格式返回值**:
+```json
+{
+  "log_file": "docking_service.log",
+  "total_lines": 1000,
+  "returned_lines": 100,
+  "entries": [
+    {
+      "line_number": 901,
+      "content": "2025-09-03 16:55:03 | INFO | main.py:26 | Starting application..."
+    }
+  ]
+}
+```
+
+### 查看任务日志
+
+**接口地址**: `GET /logs/tasks.log`
+
+**描述**: 查看任务处理的日志
+
+**认证要求**: 无（开放接口）
+
+**请求参数**:
+- `lines` (Query, 可选): 返回最后N行日志，默认100行
+- `format` (Query, 可选): 返回格式，text或json，默认text
+
+**返回值**: 日志内容（格式同上）
+
+### 实时查看对接服务日志
+
+**接口地址**: `GET /logs/live/docking_service`
+
+**描述**: 获取对接服务日志的最新内容，适合用于实时监控，包含日志级别解析
+
+**认证要求**: 无（开放接口）
+
+**请求参数**:
+- `lines` (Query, 可选): 返回最后N行日志，默认50行
+
+**返回值**:
+```json
+{
+  "status": "success",
+  "log_file": "docking_service.log",
+  "total_lines": 1000,
+  "returned_lines": 50,
+  "last_update": 1693737600.0,
+  "entries": [
+    {
+      "line_number": 951,
+      "level": "INFO",
+      "content": "2025-09-03 16:55:03 | INFO | main.py:26 | Starting application...",
+      "timestamp": "2025-09-03 16:55:03"
+    },
+    {
+      "line_number": 952,
+      "level": "WARNING", 
+      "content": "2025-09-03 16:59:48 | WARNING | middleware.py:169 | Unauthenticated request...",
+      "timestamp": "2025-09-03 16:59:48"
+    }
+  ]
+}
+```
+
+### 查看指定日志文件
+
+**接口地址**: `GET /logs/{log_name}`
+
+**描述**: 查看指定的日志文件内容
+
+**认证要求**: 无（开放接口）
+
+**路径参数**:
+- `log_name`: 日志文件名（仅允许访问预定义的安全日志文件）
+
+**请求参数**:
+- `lines` (Query, 可选): 返回最后N行日志，默认100行
+- `format` (Query, 可选): 返回格式，text或json，默认text
+
+**返回值**: 日志内容
+
+**安全说明**: 
+- 仅允许访问预定义的日志文件：`docking_service.log`, `tasks.log`
+- 如果访问不存在或不允许的文件，返回404错误
+- 所有日志内容经过安全过滤，避免敏感信息泄露
 
 ## 数据结构说明
 

@@ -73,3 +73,7 @@ class PeptideOptimizationRequest(BaseModel):
     # ProteinMPNN序列生成参数
     num_seq_per_target: int = 10  # 每个目标生成的序列数
     proteinmpnn_seed: int = 37  # ProteinMPNN随机数种子
+    
+    # 成本计算参数
+    n_iterations: int = 5  # 优化迭代次数（默认5次）
+    n_rosetta_runs: int = 20  # 每次迭代中Rosetta的运行次数（默认20次）

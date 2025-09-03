@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File
 from database.services import TaskService
+from database.services.peptide_task_params_service import PeptideTaskParamsService
 from requests.basic_request import PeptideOptimizationRequest
 from responses.basic_response import TaskResponse
 from utils.log import get_logger
@@ -31,6 +32,8 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
     - n_poses: 生成对接构象数量（可选，默认10）
     - num_seq_per_target: 每个目标生成的序列数（可选，默认10）
     - proteinmpnn_seed: ProteinMPNN随机数种子（可选，默认37）
+    - n_iterations: 优化迭代次数（可选，默认5）
+    - n_rosetta_runs: 每次迭代中Rosetta的运行次数（可选，默认20）
     """
     current_user = request.state.user
     logger.info("User %s creating peptide optimization task", current_user.username)
@@ -83,6 +86,8 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             f.write(f"n_poses={optimization_request.n_poses}\n")
             f.write(f"num_seq_per_target={optimization_request.num_seq_per_target}\n")
             f.write(f"proteinmpnn_seed={optimization_request.proteinmpnn_seed}\n")
+            f.write(f"n_iterations={optimization_request.n_iterations}\n")
+            f.write(f"n_rosetta_runs={optimization_request.n_rosetta_runs}\n")
             if optimization_request.step:
                 f.write(f"step={optimization_request.step}\n")
             f.write(f"peptide_sequence={optimization_request.peptide_sequence}\n")
@@ -94,6 +99,20 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             task_type="peptide_optimization",
             job_dir=str(job_dir)
         )
+        
+        # 创建peptide任务参数记录到peptide_task_params表
+        try:
+            peptide_params = PeptideTaskParamsService.create_task_params(
+                task_id=task_id,
+                peptide_sequence=optimization_request.peptide_sequence,
+                n_iterations=optimization_request.n_iterations,
+                n_rosetta_runs=optimization_request.n_rosetta_runs
+            )
+            logger.info("Peptide task params created: task_id=%s, total_compute_units=%.2f", 
+                       task_id, peptide_params.total_compute_units)
+        except Exception as e:
+            logger.error("Failed to create peptide task params for task %s: %s", task_id, e)
+            # 注意：这里不抛出异常，因为主要任务已经创建，参数记录失败不应该影响任务执行
         
         logger.info("Peptide optimization task created: task_id=%s, user=%s", 
                    task_id, current_user.username)

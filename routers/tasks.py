@@ -8,6 +8,7 @@ import pandas as pd
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from database.services import TaskService
+from database.services.docking_task_params_service import DockingTaskParamsService
 from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse
 from config import ROOT
 from config.api_config import CACHE_SETTINGS, TASK_STATUS_PRIORITY
@@ -164,6 +165,75 @@ async def get_task_status_simple(request: Request, task_id: str):
         logger.error("Error fetching task status %s for user %s (%s): %s", 
                     task_id, user.username, user_info['auth_type'], e)
         raise HTTPException(status_code=500, detail="Failed to fetch task status")
+
+
+@router.get("/{task_id}/cost")
+async def get_task_cost_info(request: Request, task_id: str):
+    """
+    获取任务的详细成本信息
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    # 验证任务权限
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    
+    logger.info("User %s (%s) requesting cost info for task %s", 
+               user.username, user_info['auth_type'], task_id)
+    
+    try:
+        # 只有 docking 任务有成本信息
+        if task.task_type != "docking":
+            raise HTTPException(
+                status_code=400, 
+                detail={
+                    "error": "invalid_task_type",
+                    "message": f"成本信息仅适用于 docking 任务，当前任务类型: {task.task_type}",
+                    "task_type": task.task_type
+                }
+            )
+        
+        # 获取成本摘要
+        cost_summary = DockingTaskParamsService.get_cost_summary(task_id)
+        if not cost_summary:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": "cost_info_not_found",
+                    "message": "未找到任务的成本信息，可能是较早创建的任务",
+                    "suggestion": "只有在新成本系统启用后创建的任务才有详细成本信息"
+                }
+            )
+        
+        # 添加任务基本信息
+        response_data = {
+            "task_info": {
+                "task_id": task_id,
+                "task_type": task.task_type,
+                "status": task.status,
+                "created_at": task.created_at.isoformat() if task.created_at else None,
+                "finished_at": task.finished_at.isoformat() if task.finished_at else None
+            },
+            "cost_details": cost_summary
+        }
+        
+        return response_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching cost info for task %s: %s", task_id, e)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "internal_server_error",
+                "message": "获取成本信息失败",
+                "details": str(e)
+            }
+        )
+
 
 @router.get("/{task_id}/download")
 async def download_task_files(request: Request, task_id: str):

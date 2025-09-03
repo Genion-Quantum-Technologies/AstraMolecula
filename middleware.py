@@ -11,18 +11,29 @@ logger = logging.getLogger("middleware")
 
 # 你想要跳过验证的路径列表
 OPEN_PATHS = {
+    "/",
     "/login",
     "/signup",
     "/health",
     "/docs",
     "/openapi.json",
     "/redoc",
+    "/smiles2img",
+    "/fragmentize",
+    "/logs",
+    "/logs/",
 }
 
 # 高优先级路径列表（tasks相关接口）
 HIGH_PRIORITY_PATHS = {
     "/tasks",
     "/tasks/",
+}
+
+# 开放路径前缀列表（需要前缀匹配的路径）
+OPEN_PATH_PREFIXES = {
+    "/logs",
+    "/static",
 }
 
 def is_high_priority_request(path: str) -> bool:
@@ -73,7 +84,7 @@ async def auth_middleware(request: Request, call_next):
             response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
             return response
 
-        if request.url.path in OPEN_PATHS:
+        if request.url.path in OPEN_PATHS or any(request.url.path.startswith(prefix) for prefix in OPEN_PATH_PREFIXES):
             logger.debug("Open path accessed: %s", request.url.path)
             response = await call_next(request)
             response.headers["Access-Control-Allow-Origin"] = "*"

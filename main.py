@@ -5,8 +5,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from middleware import auth_middleware
-from routers import auth, tasks, uploads, smiles, docking, peptide
+from routers import auth, tasks, uploads, smiles, docking, peptide, logs
 from async_task_processor import main_loop
 from config.logging_config import setup_logging
 from async_task_processor import AsyncTaskProcessor
@@ -74,6 +75,13 @@ async def health_check():
         "timestamp": "2025-08-27T14:40:00Z",
         "version": "2.0.0"
     }
+
+# 根路径重定向到日志查看器
+@app.get("/")
+async def root():
+    """根路径重定向到日志查看器"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/static/log-viewer.html")
 
 # 全局异常处理器
 @app.exception_handler(HTTPException)
@@ -143,6 +151,19 @@ app.include_router(uploads.router)    # 上传接口
 app.include_router(smiles.router)     # 生成接口
 app.include_router(peptide.router)    # 蛋白优化接口
 app.include_router(docking.router)    # 对接接口（计算密集型，最后处理）
+app.include_router(logs.router)       # 日志查看接口（免认证）
+
+# 挂载静态文件目录（用于提供日志查看器等静态资源）
+try:
+    from pathlib import Path
+    static_dir = Path(__file__).parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+        logger.info(f"Static files mounted at /static from {static_dir}")
+    else:
+        logger.warning(f"Static directory not found: {static_dir}")
+except Exception as e:
+    logger.error(f"Failed to mount static files: {e}")
 
 # 全局访问异步处理器的函数
 def get_async_processor() -> AsyncTaskProcessor:
