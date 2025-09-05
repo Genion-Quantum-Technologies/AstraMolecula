@@ -8,12 +8,11 @@ from typing import Optional
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-from Vina.vina_workflow import vina_docking_from_list
 from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
 from database.services.docking_task_params_service import DockingTaskParamsService
 from requests.basic_request import DockingRequest
-import config
+from config import ROOT
 
 logger = logging.getLogger("docking_router")
 
@@ -105,7 +104,7 @@ async def docking_endpoint(
             receptor_path = str(receptor_path)
         else:
             # 使用默认受体文件
-            default_receptor_path = config.ROOT / "resource" / "protein_7UDP.pdbqt"
+            default_receptor_path = ROOT / "resource" / "protein_7UDP.pdbqt"
             if not default_receptor_path.exists():
                 raise HTTPException(
                     status_code=500,
@@ -121,11 +120,17 @@ async def docking_endpoint(
             receptor_path = str(default_receptor_path)
 
         # —— 2) 创建作业目录 —— #
-        JOBS_DOCK_DIR = config.ROOT / "jobs" / "docking"
+        JOBS_DOCK_DIR = ROOT / "jobs" / "docking"
         JOBS_DOCK_DIR.mkdir(parents=True, exist_ok=True)
         job_id = uuid.uuid4().hex
         job_dir = JOBS_DOCK_DIR / job_id
         job_dir.mkdir()
+        
+        # 创建input和output子目录
+        input_dir = job_dir / "input"
+        output_dir = job_dir / "output"
+        input_dir.mkdir()
+        output_dir.mkdir()
 
         # —— 3) 保存请求参数 —— #
         params = {
@@ -150,7 +155,8 @@ async def docking_endpoint(
         params["exhaustiveness"] = docking_request.exhaustiveness
         params["n_poses"] = docking_request.n_poses
             
-        with open(job_dir / "input.json", "w", encoding="utf-8") as f:
+        # 将配置文件保存到input目录下
+        with open(input_dir / "input.json", "w", encoding="utf-8") as f:
             json.dump(params, f, ensure_ascii=False, indent=2)
 
         # —— 4) 创建任务 —— #
@@ -183,20 +189,8 @@ async def docking_endpoint(
             # 即使参数保存失败，也继续执行任务
             task_params = None
 
-        # —— 4.5) 启动异步处理 —— #
-        try:
-            from async_task_processor import task_processor
-            task = TaskService.get_task(task_id)
-            if task:
-                # 在后台启动任务处理
-                import asyncio
-                asyncio.create_task(task_processor.process_task(task))
-                logger.info("Started async processing for task %s", task_id)
-            else:
-                logger.error("Failed to retrieve created task %s", task_id)
-        except Exception as e:
-            logger.error("Failed to start async processing for task %s: %s", task_id, e)
-            # 即使启动失败，也返回任务ID，让旧的轮询机制处理
+        # —— 4.5) 任务已创建，交给 dockingVinaApp 处理 —— #
+        logger.info("Docking task %s created and delegated to dockingVinaApp", task_id)
 
         # —— 5) 返回详细的响应信息 —— #
         response_data = {

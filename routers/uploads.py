@@ -3,7 +3,7 @@ import logging
 from typing import List
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from database.services.upload_service import UploadService
-import config
+from config import ROOT
 
 logger = logging.getLogger("uploads_router")
 router = APIRouter(tags=["Uploads"])
@@ -24,7 +24,7 @@ async def upload_pdbqt(
     current_user = request.state.user
     user_id = current_user.id
     logger.info("User %s uploading %d PDBQT files", current_user.username, len(files))
-    UPLOAD_DIR = config.ROOT / "uploads" / user_id
+    UPLOAD_DIR = ROOT / "uploads" / user_id
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
     saved = []

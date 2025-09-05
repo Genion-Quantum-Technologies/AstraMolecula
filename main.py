@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from middleware import auth_middleware
 from routers import auth, tasks, uploads, smiles, docking, peptide, logs
-from async_task_processor import main_loop
 from config.logging_config import setup_logging
 from async_task_processor import AsyncTaskProcessor
 
@@ -26,16 +25,13 @@ async def lifespan(app: FastAPI):
     
     logger.info("Starting application...")
     
-    # 初始化异步任务处理器
+    # 初始化异步任务处理器（仅处理生成任务）
     logger.info("Initializing async task processor...")
     async_processor = AsyncTaskProcessor()
     
-    # 启动传统任务工作线程（用于兼容现有系统）
-    # 注意：已禁用旧的轮询机制以避免与新异步处理器冲突
-    # logger.info("Starting background task worker thread...")
-    # thread = threading.Thread(target=main_loop, daemon=True)
-    # thread.start()
-    logger.info("Legacy task worker disabled - using new async processor only")
+    # docking 任务不在此处处理，由 dockingVinaApp 负责
+    # 本应用只负责接收 docking 任务请求并创建任务记录
+    logger.info("DockingVina configured to delegate docking tasks to dockingVinaApp")
     
     logger.info("Application startup complete")
     yield
@@ -49,8 +45,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     title="DockingVina API", 
-    description="Molecular docking and generation service with real-time progress tracking",
-    version="2.0.0"
+    description="Molecular docking task management and SMILES generation service. Docking computations are handled by dockingVinaApp.",
+    version="2.1.0"
 )
 
 # 添加CORS中间件 - 必须在其他中间件之前

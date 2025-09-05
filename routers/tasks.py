@@ -343,7 +343,7 @@ async def get_docking_results(request: Request, task_id: str):
 
     logger.info("User %s (%s) requesting docking results for task %s", user.username, user_info['auth_type'], task_id)
 
-    output_path = Path(task.job_dir) / "dockRes.json"
+    output_path = Path(task.job_dir) / "output" / "dockRes.json"
     if not output_path.exists():
         raise HTTPException(status_code=500, detail="dockRes not found")
 
@@ -384,7 +384,7 @@ async def get_sdf_file(request: Request, task_id: str, filename: str):
         raise HTTPException(status_code=400, detail="invalid filename")
     
     # 构建SDF文件路径
-    sdf_path = Path(task.job_dir) / "docked" / filename
+    sdf_path = Path(task.job_dir) / "output" / "docked" / filename
     if not sdf_path.exists():
         raise HTTPException(status_code=404, detail="SDF file not found")
     
@@ -428,7 +428,7 @@ async def get_protein_file(request: Request, task_id: str):
     logger.info("User %s (%s) downloading protein file for task %s", user.username, user_info['auth_type'], task_id)
     
     # 从dockRes.json中获取protein路径
-    dock_res_path = Path(task.job_dir) / "dockRes.json"
+    dock_res_path = Path(task.job_dir) / "output" / "dockRes.json"
     if not dock_res_path.exists():
         raise HTTPException(status_code=404, detail="dockRes not found")
     

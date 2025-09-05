@@ -13,8 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from database.services import TaskService
 from database.models.task import Task, TaskStatus
 from utils.tools import run_generate_runner
-from Vina.vina_workflow import vina_docking_from_list
-import config
+from config import ROOT
 
 logger = logging.getLogger("async_task_processor")
 
@@ -94,9 +93,9 @@ class AsyncTaskProcessor:
                     self._process_generate_async(task, progress_callback)
                 )
             elif task.task_type == "docking":
-                result_task = asyncio.create_task(
-                    self._process_docking_async(task, progress_callback)
-                )
+                # docking 任务不在此处处理，交给 dockingVinaApp
+                logger.info("Docking task %s delegated to dockingVinaApp", task_id)
+                return
             else:
                 raise ValueError(f"Unknown task type: {task.task_type}")
             
@@ -237,161 +236,6 @@ class AsyncTaskProcessor:
             
         except Exception as e:
             logger.exception("Generation failed: %s", e)
-            raise
-    
-    async def _process_docking_async(self, task: Task, callback: TaskProgressCallback) -> None:
-        """异步处理对接任务"""
-        job_dir = Path(task.job_dir)
-        input_json = job_dir / "input.json"
-        
-        callback.update_progress(10.0, "Loading docking parameters")
-        
-        with open(input_json, "r", encoding="utf-8") as f:
-            params = json.load(f)
-        
-        callback.update_progress(20.0, "Preparing docking environment")
-        
-        # 使用线程池而不是进程池来避免序列化问题
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            self.thread_executor,
-            self._run_docking_with_progress,
-            params, str(job_dir), task.id
-        )
-        
-        callback.update_progress(90.0, "Docking completed")
-        
-        # vina_docking_from_list 已经创建了 dockRes.json 文件
-        # 检查文件是否存在
-        output_path = job_dir / "dockRes.json"
-        if not output_path.exists():
-            raise RuntimeError("Docking completed but dockRes.json was not created")
-            
-        callback.update_progress(100.0, "Results saved")
-    
-    def _run_docking_with_progress(self, params: dict, job_dir: str, task_id: str) -> str:
-        """带进度的对接任务运行器"""
-        try:
-            # 从参数中提取配体信息
-            ligands = params.get('ligands', [])
-            if not ligands:
-                raise ValueError("No ligands provided")
-            
-            # 获取受体文件路径
-            receptor_pdbqt = params.get('receptor_pdbqt', '')
-            if not receptor_pdbqt:
-                raise ValueError("No receptor file specified")
-            
-            # 获取pH参数
-            min_ph = float(params.get('min_ph', 6.0))
-            max_ph = float(params.get('max_ph', 8.0))
-            n_jobs = int(params.get('n_jobs', 1))
-            
-            # 获取中心坐标和盒子大小参数 (都是必填项)
-            center_x = float(params['center_x'])
-            center_y = float(params['center_y'])
-            center_z = float(params['center_z'])
-            
-            # 获取盒子大小参数 (必填的xyz三个维度)
-            size_x = float(params['box_size_x'])
-            size_y = float(params['box_size_y'])
-            size_z = float(params['box_size_z'])
-            
-            # 获取其他可选参数
-            exhaustiveness = int(params.get('exhaustiveness', 4))
-            n_poses = int(params.get('n_poses', 20))
-            
-            logger.info("Docking parameters: ligands=%d, receptor=%s, pH=[%.1f-%.1f], jobs=%d, center=[%.2f,%.2f,%.2f], size=[%.2f,%.2f,%.2f]", 
-                       len(ligands), receptor_pdbqt, min_ph, max_ph, n_jobs, center_x, center_y, center_z, size_x, size_y, size_z)
-            
-            # 创建临时的 vina_box.json 文件
-            import shutil
-            from pathlib import Path
-            
-            # 备份原始的 vina_box.json
-            original_box_json = Path(__file__).parent / "resource" / "vina_box.json"
-            backup_path = None
-            if original_box_json.exists():
-                backup_path = original_box_json.with_suffix('.json.backup')
-                shutil.copy2(original_box_json, backup_path)
-            
-            # 创建新的 box 配置
-            box_config = {
-                "center": [center_x, center_y, center_z],
-                "box_size": [size_x, size_y, size_z],
-                "exhaustiveness": exhaustiveness,
-                "n_poses": n_poses
-            }
-            
-            # 写入临时配置
-            with open(original_box_json, 'w') as f:
-                json.dump(box_config, f, indent=2)
-            
-            try:
-                # 创建简单的进度更新机制
-                def progress_updater():
-                    for i in range(30, 80, 10):
-                        time.sleep(5)  # 模拟处理时间
-                        try:
-                            # 检查任务是否已完成，避免覆盖终态状态
-                            current_task = TaskService.get_task(task_id)
-                            if current_task and current_task.status in ["finished", "failed", "cancelled"]:
-                                logger.debug("Task %s is in final state, stopping progress updates", task_id)
-                                break
-                                
-                            TaskService.update_task_status(
-                                task_id, TaskStatus.PROCESSING, f"Docking in progress ({i}%)"
-                            )
-                        except Exception as e:
-                            logger.debug("Progress update failed for task %s: %s", task_id, e)
-                            pass
-                
-                import threading
-                progress_thread = threading.Thread(target=progress_updater, daemon=True)
-                progress_thread.start()
-                
-                # 调用实际的docking函数
-                result_dir = vina_docking_from_list(
-                    ligands=ligands,
-                    receptor_pdbqt=receptor_pdbqt,
-                    min_ph=min_ph,
-                    max_ph=max_ph,
-                    n_jobs=n_jobs
-                )
-                
-                # vina_docking_from_list 返回的是结果目录路径
-                # 需要将 dockRes.json 和相关文件复制到任务目录
-                import shutil
-                source_result_file = Path(result_dir) / "dockRes.json"
-                target_result_file = Path(job_dir) / "dockRes.json"
-                
-                if source_result_file.exists():
-                    shutil.copy2(source_result_file, target_result_file)
-                    logger.info("Copied dockRes.json from %s to %s", source_result_file, target_result_file)
-                else:
-                    raise RuntimeError(f"dockRes.json not found in result directory: {result_dir}")
-                
-                # 复制docked目录及其内容到任务目录
-                source_docked_dir = Path(result_dir) / "docked"
-                target_docked_dir = Path(job_dir) / "docked"
-                
-                if source_docked_dir.exists():
-                    if target_docked_dir.exists():
-                        shutil.rmtree(target_docked_dir)
-                    shutil.copytree(source_docked_dir, target_docked_dir)
-                    logger.info("Copied docked directory from %s to %s", source_docked_dir, target_docked_dir)
-                else:
-                    logger.warning("Source docked directory not found: %s", source_docked_dir)
-                
-                return str(result_dir)
-            
-            finally:
-                # 恢复原始的 vina_box.json
-                if backup_path and backup_path.exists():
-                    shutil.move(backup_path, original_box_json)
-            
-        except Exception as e:
-            logger.exception("Docking failed: %s", e)
             raise
     
     async def cancel_task(self, task_id: str) -> bool:

@@ -12,7 +12,7 @@ from database.services.task_service import TaskService
 from requests.basic_request import GenerateRequestList
 from responses.basic_response import FragmentResponse
 from utils.fragment_processor import fragmentize_molecule
-import config
+from config import ROOT
 
 logger = logging.getLogger("smiles_router")
 
@@ -62,7 +62,7 @@ async def generate_molecules(
 
     try:
         # （1）生成一个唯一的 job_id，并创建对应文件夹
-        JOBS_DIR = config.ROOT / "jobs" / "generate"
+        JOBS_DIR = ROOT / "jobs" / "generate"
         JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
         job_id = uuid.uuid4().hex
