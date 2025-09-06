@@ -58,3 +58,4 @@ class TaskResponse(BaseModel):
     status: str
     created_at: datetime
     finished_at: Optional[datetime]
+    total_compute_units: Optional[float] = None  # 添加计算成本字段

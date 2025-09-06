@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from database.services import TaskService
 from database.services.docking_task_params_service import DockingTaskParamsService
+from database.services.peptide_task_params_service import PeptideTaskParamsService
 from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse
 from config import ROOT
 from config.api_config import CACHE_SETTINGS, TASK_STATUS_PRIORITY
@@ -82,10 +83,11 @@ async def list_user_tasks(request: Request):
     
     # 使用缓存机制快速响应
     try:
-        tasks = await _get_cached_tasks(user.id)
-        return tasks
+        # 使用带成本信息的任务查询
+        tasks_with_cost = TaskService.get_tasks_with_cost_info(user.id)
+        return tasks_with_cost
     except Exception as e:
-        logger.error("Failed to get cached tasks for user %s: %s", user.username, e)
+        logger.error("Failed to get tasks with cost info for user %s: %s", user.username, e)
         # 降级到直接数据库查询
         tasks = TaskService.get_tasks_by_user(user.id)
         return tasks
@@ -184,26 +186,39 @@ async def get_task_cost_info(request: Request, task_id: str):
                user.username, user_info['auth_type'], task_id)
     
     try:
-        # 只有 docking 任务有成本信息
-        if task.task_type != "docking":
+        # 根据任务类型获取成本信息
+        if task.task_type == "docking":
+            # 获取docking成本摘要
+            cost_summary = DockingTaskParamsService.get_cost_summary(task_id)
+            if not cost_summary:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "error": "cost_info_not_found",
+                        "message": "未找到任务的成本信息，可能是较早创建的任务",
+                        "suggestion": "只有在新成本系统启用后创建的任务才有详细成本信息"
+                    }
+                )
+        elif task.task_type in ["peptide_optimization", "generate"]:
+            # 获取peptide成本摘要
+            cost_summary = PeptideTaskParamsService.get_cost_summary(task_id)
+            if not cost_summary:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "error": "cost_info_not_found",
+                        "message": "未找到任务的成本信息，可能是较早创建的任务",
+                        "suggestion": "只有在新成本系统启用后创建的任务才有详细成本信息"
+                    }
+                )
+        else:
             raise HTTPException(
                 status_code=400, 
                 detail={
                     "error": "invalid_task_type",
-                    "message": f"成本信息仅适用于 docking 任务，当前任务类型: {task.task_type}",
-                    "task_type": task.task_type
-                }
-            )
-        
-        # 获取成本摘要
-        cost_summary = DockingTaskParamsService.get_cost_summary(task_id)
-        if not cost_summary:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": "cost_info_not_found",
-                    "message": "未找到任务的成本信息，可能是较早创建的任务",
-                    "suggestion": "只有在新成本系统启用后创建的任务才有详细成本信息"
+                    "message": f"成本信息暂不支持任务类型: {task.task_type}",
+                    "task_type": task.task_type,
+                    "supported_types": ["docking", "peptide_optimization", "generate"]
                 }
             )
         

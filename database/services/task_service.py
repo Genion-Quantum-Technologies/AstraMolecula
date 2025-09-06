@@ -5,6 +5,8 @@ from typing import List, Optional, Dict, Any
 
 from database.models.task import Task, TaskStatus
 from database.repositorys.task_repository import TaskRepository
+from database.repositorys.docking_task_params_repository import DockingTaskParamsRepository
+from database.repositorys.peptide_task_params_repository import PeptideTaskParamsRepository
 
 logger = logging.getLogger("database.task_service")
 
@@ -62,3 +64,47 @@ class TaskService:
         返回指定用户的所有任务（按创建时间倒序，可根据需要调整排序或分页）。
         """
         return TaskRepository.get_by_user(user_id)
+    
+    @staticmethod
+    def get_tasks_with_cost_info(user_id: str) -> List[Dict[str, Any]]:
+        """
+        获取用户任务列表，包含成本信息
+        
+        Args:
+            user_id: 用户ID
+            
+        Returns:
+            包含成本信息的任务列表
+        """
+        # 获取基础任务列表
+        tasks = TaskRepository.get_by_user(user_id)
+        
+        result = []
+        for task in tasks:
+            task_dict = {
+                "id": task.id,
+                "user_id": task.user_id,
+                "task_type": task.task_type,
+                "job_dir": task.job_dir,
+                "status": task.status,
+                "created_at": task.created_at,
+                "finished_at": task.finished_at,
+                "total_compute_units": None
+            }
+            
+            # 根据任务类型获取成本信息
+            try:
+                if task.task_type == "docking":
+                    docking_params = DockingTaskParamsRepository.get_by_task_id(task.id)
+                    if docking_params:
+                        task_dict["total_compute_units"] = docking_params.total_compute_units
+                elif task.task_type == "peptide_optimization":
+                    peptide_params = PeptideTaskParamsRepository.get_by_task_id(task.id)
+                    if peptide_params:
+                        task_dict["total_compute_units"] = peptide_params.total_compute_units
+            except Exception as e:
+                logger.warning("Failed to get cost info for task %s: %s", task.id, e)
+            
+            result.append(task_dict)
+        
+        return result
