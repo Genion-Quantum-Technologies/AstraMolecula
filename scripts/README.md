@@ -22,12 +22,12 @@
 确保以下服务已启动：
 ```bash
 # dockingVina API服务 (端口8000)
-cd /home/davis/projects/AstraMolecula/dockingVina
+cd /home/davis/projects/genion_quantum/dockingvina
 conda activate dockingvina_final
 uvicorn main:app --host 0.0.0.0 --port 8000
 
 # peptide_opt处理服务 (端口8001)
-cd /home/davis/projects/AstraMolecula/peptide_opt
+cd /home/davis/projects/genion_quantum/peptide_opt
 conda activate peptide
 python main.py
 ```
@@ -36,7 +36,7 @@ python main.py
 
 ```bash
 # 进入scripts目录
-cd /home/davis/projects/AstraMolecula/dockingVina/scripts
+cd /home/davis/projects/genion_quantum/AstraMolecula/scripts
 
 # 运行交互式示例
 python peptide_examples.py
@@ -142,7 +142,7 @@ tail -f peptide_api_client.log
 ### 4. 从Docking结果开始
 如果你有docking结果，可以先用格式转换工具：
 ```bash
-cd /home/davis/projects/AstraMolecula/dockingVina
+cd /home/davis/projects/genion_quantum/dockingvina
 python utils/format_converter.py \
     --peptide_pdbqt test/user3.pdbqt \
     --receptor_pdbqt test/user3.pdbqt \
@@ -203,10 +203,10 @@ python scripts/peptide_api_client.py \
 3. **检查服务日志**
    ```bash
    # dockingVina服务日志
-   tail -f /home/davis/projects/AstraMolecula/dockingVina/logs/tasks.log
+   tail -f /home/davis/projects/serverlogs/docking_service.log
    
    # peptide_opt服务日志
-   tail -f /home/davis/projects/AstraMolecula/peptide_opt/logs/peptide_optimization.log
+   tail -f /home/davis/projects/genion_quantum/peptide_opt/logs/peptide_optimization.log
    ```
 
 ## 📊 结果文件

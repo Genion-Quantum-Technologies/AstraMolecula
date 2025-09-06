@@ -25,7 +25,7 @@
 
 ### 方式一：使用快速配置工具（推荐）
 ```bash
-cd /home/davis/projects/AstraMolecula/dockingVina
+cd /home/davis/projects/genion_quantum/AstraMolecula
 ./cicd/scripts/quick_config.sh
 ```
 按提示输入云服务器用户名，脚本会自动配置IP地址：106.14.212.218
@@ -33,7 +33,7 @@ cd /home/davis/projects/AstraMolecula/dockingVina
 ### 方式二：手动配置
 #### 第一步：环境检查
 ```bash
-cd /home/davis/projects/AstraMolecula/dockingVina
+cd /home/davis/projects/genion_quantum/AstraMolecula
 ./cicd/scripts/deploy.sh check
 ```
 

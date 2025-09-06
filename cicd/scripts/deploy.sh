@@ -6,7 +6,7 @@
 set -e
 
 # 项目路径
-PROJECT_DIR="/home/davis/projects/AstraMolecula/dockingVina"
+PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
@@ -163,7 +163,7 @@ logs_all() {
             if command -v tmux >/dev/null 2>&1; then
                 tmux new-session -d -s logs
                 tmux split-window -h
-                tmux send-keys -t 0 "tail -f $PROJECT_DIR/logs/docking_service.log" Enter
+                tmux send-keys -t 0 "tail -f /home/davis/projects/serverlogs/docking_service.log" Enter
                 tmux send-keys -t 1 "tail -f $HOME/logs/autossh_docking.log" Enter
                 tmux attach-session -t logs
             else
@@ -372,7 +372,7 @@ show_help() {
     echo "  5. 测试连接: $0 test"
     echo ""
     echo "日志文件:"
-    echo "  DockingVina: logs/docking_service.log"
+    echo "  DockingVina: /home/davis/projects/serverlogs/docking_service.log"
     echo "  AutoSSH: ~/logs/autossh_docking.log"
 }
 

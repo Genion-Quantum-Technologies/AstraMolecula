@@ -6,10 +6,10 @@
 set -e  # 遇到错误立即退出
 
 # 配置变量
-PROJECT_DIR="/home/davis/projects/AstraMolecula/dockingVina"
+PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
 CONDA_ENV_NAME="dockingvina_final"
 SERVICE_PORT=8000
-LOG_DIR="$PROJECT_DIR/logs"
+LOG_DIR="/home/davis/projects/serverlogs"
 PID_FILE="$LOG_DIR/docking_service.pid"
 LOG_FILE="$LOG_DIR/docking_service.log"
 

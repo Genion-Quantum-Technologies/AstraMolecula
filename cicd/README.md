@@ -83,7 +83,7 @@ cd cicd/scripts/
 
 ```bash
 # 项目路径
-PROJECT_DIR="/home/davis/projects/AstraMolecula/dockingVina"
+PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
 
 # 云服务器配置
 CLOUD_SERVER="106.14.212.218"
