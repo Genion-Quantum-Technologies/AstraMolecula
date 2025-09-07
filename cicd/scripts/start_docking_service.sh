@@ -7,7 +7,7 @@ set -e  # 遇到错误立即退出
 
 # 配置变量
 PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
-CONDA_ENV_NAME="dockingvina_final"
+MAMBA_ENV_NAME="AstraMolecula-new"
 SERVICE_PORT=8000
 LOG_DIR="/home/davis/projects/serverlogs/AstraMolecula"
 PID_FILE="$LOG_DIR/AstraMolecula.pid"
@@ -42,17 +42,17 @@ create_directories() {
     mkdir -p "$PROJECT_DIR/database"
 }
 
-# 检查conda环境
-check_conda_env() {
-    log "检查conda环境: $CONDA_ENV_NAME"
+# 检查micromamba环境
+check_mamba_env() {
+    log "检查micromamba环境: $MAMBA_ENV_NAME"
     
-    if ! conda env list | grep -q "$CONDA_ENV_NAME"; then
-        warn "conda环境 $CONDA_ENV_NAME 不存在，正在创建..."
+    if ! micromamba env list | grep -q "$MAMBA_ENV_NAME"; then
+        warn "micromamba环境 $MAMBA_ENV_NAME 不存在，正在创建..."
         cd "$PROJECT_DIR"
-        conda env create -f env.yml
-        log "conda环境创建完成"
+        micromamba env create -f env.yml
+        log "micromamba环境创建完成"
     else
-        log "conda环境 $CONDA_ENV_NAME 已存在"
+        log "micromamba环境 $MAMBA_ENV_NAME 已存在"
     fi
 }
 
@@ -100,9 +100,9 @@ start_service() {
     log "切换到项目目录: $PROJECT_DIR"
     cd "$PROJECT_DIR"
     
-    log "激活conda环境: $CONDA_ENV_NAME"
-    source $(conda info --base)/etc/profile.d/conda.sh
-    conda activate "$CONDA_ENV_NAME"
+    log "激活micromamba环境: $MAMBA_ENV_NAME"
+    eval "$(micromamba shell hook --shell bash)"
+    micromamba activate "$MAMBA_ENV_NAME"
     
     log "检查Python包依赖..."
     python -c "import fastapi, uvicorn, rdkit; print('所有依赖包可用')" || {
@@ -236,7 +236,7 @@ main() {
         start)
             log "启动DockingVina服务..."
             create_directories
-            check_conda_env
+            check_mamba_env
             check_existing_service
             check_port
             start_service

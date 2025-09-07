@@ -225,12 +225,12 @@ check_environment() {
     echo ""
     info "检查依赖工具:"
     
-    # 检查conda
-    if command -v conda >/dev/null 2>&1; then
-        echo "   conda:          ✅ 已安装"
+    # 检查micromamba
+    if command -v micromamba >/dev/null 2>&1; then
+        echo "   micromamba:     ✅ 已安装"
     else
-        echo "   conda:          ❌ 未安装"
-        warn "请先安装Anaconda或Miniconda"
+        echo "   micromamba:     ❌ 未安装"
+        warn "请先安装micromamba"
     fi
     
     # 检查autossh
@@ -250,12 +250,12 @@ check_environment() {
     fi
     
     echo ""
-    info "检查conda环境:"
-    if conda env list | grep -q "dockingvina_final"; then
-        echo "   dockingvina_final环境:      ✅ 已创建"
+    info "检查micromamba环境:"
+    if micromamba env list | grep -q "AstraMolecula-new"; then
+        echo "   AstraMolecula-new环境:      ✅ 已创建"
     else
-        echo "   dockingvina_final环境:      ❌ 未创建"
-        warn "请创建conda环境: conda env create -f env.yml"
+        echo "   AstraMolecula-new环境:      ❌ 未创建"
+        warn "请创建micromamba环境: micromamba env create -f env.yml"
     fi
     
     echo ""
