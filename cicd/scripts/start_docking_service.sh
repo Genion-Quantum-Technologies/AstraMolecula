@@ -9,9 +9,9 @@ set -e  # 遇到错误立即退出
 PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
 CONDA_ENV_NAME="dockingvina_final"
 SERVICE_PORT=8000
-LOG_DIR="/home/davis/projects/serverlogs"
-PID_FILE="$LOG_DIR/docking_service.pid"
-LOG_FILE="$LOG_DIR/docking_service.log"
+LOG_DIR="/home/davis/projects/serverlogs/AstraMolecula"
+PID_FILE="$LOG_DIR/AstraMolecula.pid"
+LOG_FILE="$LOG_DIR/AstraMolecula.log"
 
 # 颜色定义
 RED='\033[0;31m'
