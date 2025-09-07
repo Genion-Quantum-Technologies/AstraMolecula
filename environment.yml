@@ -1,0 +1,22 @@
+name: AstraMolecula-new
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - bcrypt
+  - cpuonly
+  - fastapi
+  - mamba
+  - mysql-connector-python
+  - pip
+  - python=3.10
+  - python-jose
+  - pytorch
+  - rdkit
+  - scipy
+  - seaborn
+  - tqdm
+  - uvicorn
+  - pip:
+    - mmpdb==2.1
+    - my_toolset==0.1.0

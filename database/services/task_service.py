@@ -98,7 +98,7 @@ class TaskService:
                     docking_params = DockingTaskParamsRepository.get_by_task_id(task.id)
                     if docking_params:
                         task_dict["total_compute_units"] = docking_params.total_compute_units
-                elif task.task_type == "peptide_optimization":
+                elif task.task_type in ["peptide_optimization", "generate"]:
                     peptide_params = PeptideTaskParamsRepository.get_by_task_id(task.id)
                     if peptide_params:
                         task_dict["total_compute_units"] = peptide_params.total_compute_units
