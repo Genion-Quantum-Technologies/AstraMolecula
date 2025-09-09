@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# DockingVina服务启动脚本
-# 用于在WSL中启动DockingVina服务并保持后台运行
+# AstraMolecula服务启动脚本
+# 用于在WSL中启动AstraMolecula服务并保持后台运行
 
 set -e  # 遇到错误立即退出
 
@@ -79,7 +79,7 @@ check_existing_service() {
     if [ -f "$PID_FILE" ]; then
         local old_pid=$(cat "$PID_FILE")
         if ps -p $old_pid > /dev/null 2>&1; then
-            warn "发现运行中的DockingVina服务 (PID: $old_pid)"
+            warn "发现运行中的AstraMolecula服务 (PID: $old_pid)"
             read -p "是否要停止现有服务? (y/N): " -n 1 -r
             echo
             if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -110,7 +110,7 @@ start_service() {
         exit 1
     }
     
-    log "启动DockingVina服务..."
+    log "启动AstraMolecula服务..."
     log "端口: $SERVICE_PORT"
     log "日志文件: $LOG_FILE"
     log "PID文件: $PID_FILE"
@@ -133,7 +133,7 @@ start_service() {
     
     # 检查服务是否成功启动
     if ps -p $service_pid > /dev/null 2>&1; then
-        log "✅ DockingVina服务启动成功!"
+        log "✅ AstraMolecula服务启动成功!"
         log "   PID: $service_pid"
         log "   端口: $SERVICE_PORT"
         log "   访问地址: http://localhost:$SERVICE_PORT"
@@ -158,7 +158,7 @@ stop_service() {
     if [ -f "$PID_FILE" ]; then
         local pid=$(cat "$PID_FILE")
         if ps -p $pid > /dev/null 2>&1; then
-            log "正在停止DockingVina服务 (PID: $pid)..."
+            log "正在停止AstraMolecula服务 (PID: $pid)..."
             kill -TERM $pid
             
             # 等待优雅关闭
@@ -190,7 +190,7 @@ status_service() {
     if [ -f "$PID_FILE" ]; then
         local pid=$(cat "$PID_FILE")
         if ps -p $pid > /dev/null 2>&1; then
-            log "✅ DockingVina服务正在运行"
+            log "✅ AstraMolecula服务正在运行"
             echo "   PID: $pid"
             echo "   端口: $SERVICE_PORT"
             echo "   启动时间: $(ps -o lstart= -p $pid)"
@@ -215,7 +215,7 @@ status_service() {
 # 查看实时日志
 logs_service() {
     if [ -f "$LOG_FILE" ]; then
-        log "显示DockingVina服务日志 (Ctrl+C退出):"
+        log "显示AstraMolecula服务日志 (Ctrl+C退出):"
         tail -f "$LOG_FILE"
     else
         warn "日志文件不存在: $LOG_FILE"
@@ -224,7 +224,7 @@ logs_service() {
 
 # 重启服务
 restart_service() {
-    log "重启DockingVina服务..."
+    log "重启AstraMolecula服务..."
     stop_service
     sleep 2
     start_service
@@ -234,7 +234,7 @@ restart_service() {
 main() {
     case "${1:-start}" in
         start)
-            log "启动DockingVina服务..."
+            log "启动AstraMolecula服务..."
             create_directories
             check_mamba_env
             check_existing_service
@@ -242,7 +242,7 @@ main() {
             start_service
             ;;
         stop)
-            log "停止DockingVina服务..."
+            log "停止AstraMolecula服务..."
             stop_service
             ;;
         restart)
@@ -258,9 +258,9 @@ main() {
             echo "用法: $0 {start|stop|restart|status|logs}"
             echo ""
             echo "命令:"
-            echo "  start    启动DockingVina服务"
-            echo "  stop     停止DockingVina服务"
-            echo "  restart  重启DockingVina服务"
+            echo "  start    启动AstraMolecula服务"
+            echo "  stop     停止AstraMolecula服务"
+            echo "  restart  重启AstraMolecula服务"
             echo "  status   查看服务状态"
             echo "  logs     查看实时日志"
             exit 1

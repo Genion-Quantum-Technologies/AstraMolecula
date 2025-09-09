@@ -5,5 +5,6 @@ DB_CONFIG = {
     "password": "Aa7758258123",
     "database": "project1",
     "charset": "utf8mb4",
-    "autocommit": False,
+    "autocommit": True,  # 避免事务锁问题
+    "connection_timeout": 10,  # 连接超时设置
 }

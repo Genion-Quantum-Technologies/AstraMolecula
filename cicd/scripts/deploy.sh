@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# DockingVina一键部署脚本
+# AstraMolecula一键部署脚本
 # 统一管理所有服务的启动、停止和状态检查
 
 set -e
@@ -37,8 +37,8 @@ info() {
 check_scripts() {
     local missing_scripts=()
     
-    if [ ! -f "$SCRIPT_DIR/start_docking_service.sh" ]; then
-        missing_scripts+=("start_docking_service.sh")
+    if [ ! -f "$SCRIPT_DIR/start_AstraMolecula.sh" ]; then
+        missing_scripts+=("start_AstraMolecula.sh")
     fi
     
     if [ ! -f "$SCRIPT_DIR/setup_autossh.sh" ]; then
@@ -56,11 +56,11 @@ check_scripts() {
 
 # 启动所有服务
 start_all() {
-    log "🚀 启动DockingVina完整服务..."
+    log "🚀 启动AstraMolecula完整服务..."
     
-    # 1. 启动DockingVina服务
-    log "1. 启动DockingVina API服务..."
-    "$SCRIPT_DIR/start_docking_service.sh" start
+    # 1. 启动AstraMolecula服务
+    log "1. 启动AstraMolecula API服务..."
+    "$SCRIPT_DIR/start_AstraMolecula.sh" start
     
     # 等待服务启动
     sleep 5
@@ -79,22 +79,22 @@ start_all() {
 
 # 停止所有服务
 stop_all() {
-    log "🛑 停止DockingVina所有服务..."
+    log "🛑 停止AstraMolecula所有服务..."
     
     # 1. 停止AutoSSH隧道
     log "1. 停止AutoSSH隧道..."
     "$SCRIPT_DIR/setup_autossh.sh" stop
     
-    # 2. 停止DockingVina服务
-    log "2. 停止DockingVina API服务..."
-    "$SCRIPT_DIR/start_docking_service.sh" stop
+    # 2. 停止AstraMolecula服务
+    log "2. 停止AstraMolecula API服务..."
+    "$SCRIPT_DIR/start_AstraMolecula.sh" stop
     
     log "✅ 所有服务已停止"
 }
 
 # 重启所有服务
 restart_all() {
-    log "🔄 重启DockingVina所有服务..."
+    log "🔄 重启AstraMolecula所有服务..."
     stop_all
     sleep 3
     start_all
@@ -104,13 +104,13 @@ restart_all() {
 status_all() {
     echo ""
     echo "======================================"
-    echo "     DockingVina服务状态总览"
+    echo "     AstraMolecula服务状态总览"
     echo "======================================"
     
-    # DockingVina服务状态
+    # AstraMolecula服务状态
     echo ""
-    info "📡 DockingVina API服务:"
-    "$SCRIPT_DIR/start_docking_service.sh" status
+    info "📡 AstraMolecula API服务:"
+    "$SCRIPT_DIR/start_AstraMolecula.sh" status
     
     # AutoSSH隧道状态
     echo ""
@@ -120,7 +120,7 @@ status_all() {
     # 端口检查
     echo ""
     info "🔌 端口占用情况:"
-    echo "   端口 8000 (DockingVina):"
+    echo "   端口 8000 (AstraMolecula):"
     if lsof -Pi :8000 -sTCP:LISTEN >/dev/null 2>&1; then
         echo "     ✅ 正在监听"
     else
@@ -145,14 +145,14 @@ status_all() {
 # 查看实时日志
 logs_all() {
     echo "选择要查看的日志:"
-    echo "1) DockingVina服务日志"
+    echo "1) AstraMolecula服务日志"
     echo "2) AutoSSH隧道日志"
     echo "3) 同时查看所有日志"
     read -p "请选择 (1-3): " choice
     
     case $choice in
         1)
-            "$SCRIPT_DIR/start_docking_service.sh" logs
+            "$SCRIPT_DIR/start_AstraMolecula.sh" logs
             ;;
         2)
             "$SCRIPT_DIR/setup_autossh.sh" logs
@@ -163,13 +163,13 @@ logs_all() {
             if command -v tmux >/dev/null 2>&1; then
                 tmux new-session -d -s logs
                 tmux split-window -h
-                tmux send-keys -t 0 "tail -f /home/davis/projects/serverlogs/docking_service.log" Enter
+                tmux send-keys -t 0 "tail -f /home/davis/projects/serverlogs/AstraMolecula.log" Enter
                 tmux send-keys -t 1 "tail -f $HOME/logs/autossh_docking.log" Enter
                 tmux attach-session -t logs
             else
                 warn "建议安装tmux以同时查看多个日志: sudo apt install tmux"
-                echo "当前显示DockingVina日志，按Ctrl+C可切换到AutoSSH日志"
-                "$SCRIPT_DIR/start_docking_service.sh" logs
+                echo "当前显示AstraMolecula日志，按Ctrl+C可切换到AutoSSH日志"
+                "$SCRIPT_DIR/start_AstraMolecula.sh" logs
             fi
             ;;
         *)
@@ -181,15 +181,15 @@ logs_all() {
 
 # 测试服务连接
 test_all() {
-    log "🧪 测试DockingVina服务连接..."
+    log "🧪 测试AstraMolecula服务连接..."
     
     echo ""
-    info "1. 测试本地DockingVina服务..."
+    info "1. 测试本地AstraMolecula服务..."
     if curl -s -f "http://localhost:8000/docs" >/dev/null 2>&1; then
-        log "✅ 本地DockingVina服务响应正常"
+        log "✅ 本地AstraMolecula服务响应正常"
     else
-        error "❌ 本地DockingVina服务无响应"
-        echo "   请检查服务是否启动: $SCRIPT_DIR/start_docking_service.sh status"
+        error "❌ 本地AstraMolecula服务无响应"
+        echo "   请检查服务是否启动: $SCRIPT_DIR/start_AstraMolecula.sh status"
         return 1
     fi
     
@@ -264,7 +264,7 @@ check_environment() {
     local required_files=(
         "main.py"
         "env.yml"
-        "start_docking_service.sh"
+        "start_AstraMolecula.sh"
         "setup_autossh.sh"
     )
     
@@ -301,7 +301,7 @@ check_environment() {
 
 # 配置助手
 configure() {
-    log "📝 DockingVina服务配置助手"
+    log "📝 AstraMolecula服务配置助手"
     
     echo ""
     echo "请按照提示配置AutoSSH连接参数:"
@@ -345,12 +345,12 @@ configure() {
 
 # 显示使用说明
 show_help() {
-    echo "DockingVina服务部署脚本"
+    echo "AstraMolecula服务部署脚本"
     echo ""
     echo "用法: $0 [命令]"
     echo ""
     echo "命令:"
-    echo "  start      启动所有服务 (DockingVina + AutoSSH)"
+    echo "  start      启动所有服务 (AstraMolecula + AutoSSH)"
     echo "  stop       停止所有服务"
     echo "  restart    重启所有服务"
     echo "  status     查看服务状态"
@@ -361,7 +361,7 @@ show_help() {
     echo "  help       显示此帮助信息"
     echo ""
     echo "单独控制:"
-    echo "  $SCRIPT_DIR/start_docking_service.sh {start|stop|restart|status|logs}"
+    echo "  $SCRIPT_DIR/start_AstraMolecula.sh {start|stop|restart|status|logs}"
     echo "  $SCRIPT_DIR/setup_autossh.sh {start|stop|restart|status|logs|test}"
     echo ""
     echo "部署流程:"
@@ -372,7 +372,7 @@ show_help() {
     echo "  5. 测试连接: $0 test"
     echo ""
     echo "日志文件:"
-    echo "  DockingVina: /home/davis/projects/serverlogs/docking_service.log"
+    echo "  AstraMolecula: /home/davis/projects/serverlogs/AstraMolecula/AstraMolecula.log"
     echo "  AutoSSH: ~/logs/autossh_docking.log"
 }
 
