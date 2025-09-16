@@ -352,7 +352,15 @@ async def get_docking_results(request: Request, task_id: str):
     elif task.status == "processing":
         raise HTTPException(status_code=202, detail="task is still processing")
     elif task.status == "failed":
-        raise HTTPException(status_code=410, detail="task failed")
+        # 提供更详细的失败信息
+        raise HTTPException(
+            status_code=410, 
+            detail={
+                "message": "task failed",
+                "error": "Task execution failed. Please check the input parameters and try again.",
+                "task_id": task_id
+            }
+        )
     elif task.status != "finished":
         raise HTTPException(status_code=409, detail=f"task status is {task.status}")
 
