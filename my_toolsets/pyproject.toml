@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_toolset"
+version = "0.1.0"
+description = "A example Python package"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "AIXB license"}
+authors = [
+    {name = "Jie Zhang", email = "jie.zhang@aixplorerbio.com"}
+]
+dependencies = [
+    "numpy",
+]
+
+[project.urls]
+Homepage = "https://github.com/SongyouZhong/AstraMolecula"
+Repository = "https://github.com/SongyouZhong/AstraMolecula.git"
+
+[tool.setuptools.packages.find]
+include = ["my_toolset*"]
+
+[tool.setuptools]
+package-dir = {"" = "."}

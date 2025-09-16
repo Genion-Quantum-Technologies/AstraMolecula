@@ -17,13 +17,15 @@ class TaskService:
         task_id = uuid.uuid4().hex
         logger.info("Creating new task: id=%s, user_id=%s, type=%s", 
                    task_id, user_id, task_type)
+        now = datetime.utcnow()
         task = Task(
             id=task_id,
             user_id=user_id,
             task_type=task_type,
             job_dir=job_dir,
             status=TaskStatus.PENDING,
-            created_at=datetime.utcnow(),
+            created_at=now,
+            updated_at=now
         )
         TaskRepository.create(task)
         logger.debug("Task created successfully: %s", task_id)
@@ -35,11 +37,13 @@ class TaskService:
         """更新任务状态，自动处理时间戳"""
         logger.info("Updating task %s: status=%s", task_id, status)
         
-        update_data = {"status": status}
+        update_data: Dict[str, Any] = {"status": status}
         
         # 根据状态自动设置时间戳
-        if status == "running" and not TaskService.get_task(task_id).started_at:
-            update_data["started_at"] = datetime.utcnow()
+        if status == "running":
+            current_task = TaskService.get_task(task_id)
+            if current_task and not current_task.started_at:
+                update_data["started_at"] = datetime.utcnow()
         elif status in ["finished", "failed", "cancelled"]:
             update_data["finished_at"] = datetime.utcnow()
             

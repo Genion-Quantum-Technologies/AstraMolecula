@@ -8,16 +8,16 @@ class TaskRepository:
     def create(task: Task) -> None:
         sql = """
         INSERT INTO tasks (
-            id, user_id, task_type, job_dir, status, started_at, created_at, finished_at
+            id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         conn = get_connection()
         try:
             with conn.cursor() as cur:
                 cur.execute(sql, (
                     task.id, task.user_id, task.task_type, task.job_dir, 
-                    task.status, task.started_at, task.created_at, task.finished_at
+                    task.status, task.created_at, task.started_at, task.finished_at, task.updated_at
                 ))
             conn.commit()
         finally:
@@ -63,7 +63,7 @@ class TaskRepository:
     @staticmethod
     def get_pending(limit: int = 10) -> List[Task]:
         sql = """
-        SELECT id, user_id, task_type, job_dir, status, started_at, created_at, finished_at
+        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
           FROM tasks
          WHERE status = 'pending'
       ORDER BY created_at ASC
@@ -83,7 +83,7 @@ class TaskRepository:
     @staticmethod
     def get(task_id: str) -> Optional[Task]:
         sql = """
-        SELECT id, user_id, task_type, job_dir, status, started_at, created_at, finished_at
+        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
           FROM tasks
          WHERE id = %s
         """
@@ -104,7 +104,7 @@ class TaskRepository:
         按 user_id 查询该用户提交的所有任务，按创建时间倒序返回。
         """
         sql = """
-        SELECT id, user_id, task_type, job_dir, status, started_at, created_at, finished_at
+        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
           FROM tasks
          WHERE user_id = %s
       ORDER BY created_at DESC

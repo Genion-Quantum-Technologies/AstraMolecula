@@ -42,14 +42,14 @@ fi
 # 获取SSH密钥路径
 echo ""
 echo "SSH密钥路径选项:"
-echo "1) 使用您的阿里云密钥: ~/.ssh/pc_wsl2ecs.pem (推荐)"
+echo "1) 使用您的阿里云密钥: ~/.ssh/mac2ec2.pem (推荐)"
 echo "2) 使用默认路径: ~/.ssh/id_rsa"
 echo "3) 自定义路径"
 read -p "请选择 (1-3): " key_choice
 
 case $key_choice in
     1)
-        ssh_key="$HOME/.ssh/pc_wsl2ecs.pem"
+        ssh_key="$HOME/.ssh/mac2ec2.pem"
         ;;
     2)
         ssh_key="$HOME/.ssh/id_rsa"

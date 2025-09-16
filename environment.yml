@@ -1,4 +1,4 @@
-name: AstraMolecula-new
+name: AstraMolecula
 channels:
   - conda-forge
   - pytorch

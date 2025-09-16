@@ -1,10 +1,13 @@
+sudo mysql -u root
 
-CREATE USER 'vina_user'@'%' 
-  IDENTIFIED BY 'Aa7758258123';
 
-GRANT ALL PRIVILEGES 
-  ON project1.* 
-  TO 'vina_user'@'%';
+CREATE DATABASE IF NOT EXISTS project1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 创建用户（允许从任何主机连接）
+CREATE USER 'vina_user'@'%' IDENTIFIED BY 'Aa7758258123';
+
+-- 授权该用户对 project1 数据库的所有权限
+GRANT ALL PRIVILEGES ON project1.* TO 'vina_user'@'%';
 
 FLUSH PRIVILEGES;
 

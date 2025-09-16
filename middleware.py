@@ -143,7 +143,7 @@ async def auth_middleware(request: Request, call_next):
                     return response
                     
                 except Exception as e:
-                    logger.error("Error in service user mapping: %s", e)
+                    logger.error("Error in service user mapping: %s", str(e))
                     return JSONResponse(
                         status_code=500,
                         content={

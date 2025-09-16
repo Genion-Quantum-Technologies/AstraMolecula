@@ -1,21 +1,26 @@
 from database.db import get_connection
 from database.models.upload import UserUpload
 from typing import List
+import uuid
 
 class UploadRepository:
     @staticmethod
-    def create(user_id: str, filename: str, file_path: str) -> None:
+    def create(user_id: str, filename: str, file_path: str) -> str:
+        """创建用户上传记录，返回生成的upload_id"""
+        # user_uploads表的id字段是char(32)，需要生成32字符的UUID（无连字符）
+        upload_id = str(uuid.uuid4()).replace('-', '')
         sql = """
-        INSERT INTO user_uploads (user_id, filename, file_path)
-        VALUES (%s, %s, %s)
+        INSERT INTO user_uploads (id, user_id, filename, file_path)
+        VALUES (%s, %s, %s, %s)
         """
         conn = get_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(sql, (user_id, filename, file_path))
+                cur.execute(sql, (upload_id, user_id, filename, file_path))
             conn.commit()
         finally:
             conn.close()
+        return upload_id
 
     @staticmethod
     def list_by_user(user_id: str) -> List[UserUpload]:

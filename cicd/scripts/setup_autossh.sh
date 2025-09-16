@@ -8,7 +8,7 @@ set -e
 # 配置变量 - 请根据您的实际情况修改
 CLOUD_SERVER="106.14.212.218"       # 云服务器IP地址
 CLOUD_USER="root"                    # 云服务器用户名
-SSH_KEY_PATH="$HOME/.ssh/pc_wsl2ecs.pem"  # SSH私钥路径
+SSH_KEY_PATH="$HOME/.ssh/mac2ec2.pem"  # SSH私钥路径
 
 # 隧道配置
 LOCAL_DOCKING_PORT=8000              # 本地DockingVina服务端口

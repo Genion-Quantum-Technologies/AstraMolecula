@@ -15,7 +15,8 @@ class ServiceUserMappingService:
     @staticmethod
     def create_mapping(service_api_key: str, external_user_id: str, internal_user_id: str) -> ServiceUserMapping:
         """创建服务用户映射"""
-        mapping_id = str(uuid.uuid4())
+        # service_user_mappings表的id字段是char(32)，需要生成32字符的UUID（无连字符）
+        mapping_id = str(uuid.uuid4()).replace('-', '')
         now = datetime.now()
         
         ServiceUserMappingRepository.create(
@@ -27,7 +28,11 @@ class ServiceUserMappingService:
             updated_at=now
         )
         
-        return ServiceUserMappingRepository.get_by_id(mapping_id)
+        # 创建成功后，返回创建的映射对象
+        result = ServiceUserMappingRepository.get_by_id(mapping_id)
+        if result is None:
+            raise Exception(f"Failed to create service user mapping with id: {mapping_id}")
+        return result
     
     @staticmethod
     def update_mapping(service_api_key: str, external_user_id: str, new_internal_user_id: str) -> Optional[ServiceUserMapping]:

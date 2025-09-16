@@ -6,8 +6,8 @@
 set -e  # 遇到错误立即退出
 
 # 配置变量
-PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
-MAMBA_ENV_NAME="AstraMolecula-new"
+PROJECT_DIR="/home/davis/projects/AstraMolecula"
+MAMBA_ENV_NAME="AstraMolecula"
 SERVICE_PORT=8000
 LOG_DIR="/home/davis/projects/serverlogs/AstraMolecula"
 PID_FILE="$LOG_DIR/AstraMolecula.pid"

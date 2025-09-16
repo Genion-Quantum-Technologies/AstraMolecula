@@ -4,11 +4,11 @@ Version: 0.1.0
 Summary: A example Python package
 Home-page: 
 Author: Jie Zhang
-Author-email: jie.zhang@aixplorerbio.com
+Author-email: Jie Zhang <jie.zhang@aixplorerbio.com>
 License: AIXB license
+Project-URL: Homepage, https://github.com/SongyouZhong/AstraMolecula
+Project-URL: Repository, https://github.com/SongyouZhong/AstraMolecula.git
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
 Requires-Dist: numpy
 Dynamic: author
-Dynamic: author-email
-Dynamic: license
-Dynamic: requires-dist
-Dynamic: summary

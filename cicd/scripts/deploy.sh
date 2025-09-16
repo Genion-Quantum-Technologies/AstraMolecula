@@ -6,7 +6,7 @@
 set -e
 
 # 项目路径
-PROJECT_DIR="/home/davis/projects/genion_quantum/AstraMolecula"
+PROJECT_DIR="/home/davis/projects/AstraMolecula"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
@@ -251,10 +251,10 @@ check_environment() {
     
     echo ""
     info "检查micromamba环境:"
-    if micromamba env list | grep -q "AstraMolecula-new"; then
-        echo "   AstraMolecula-new环境:      ✅ 已创建"
+    if micromamba env list | grep -q "AstraMolecula"; then
+        echo "   AstraMolecula环境:      ✅ 已创建"
     else
-        echo "   AstraMolecula-new环境:      ❌ 未创建"
+        echo "   AstraMolecula环境:      ❌ 未创建"
         warn "请创建micromamba环境: micromamba env create -f env.yml"
     fi
     

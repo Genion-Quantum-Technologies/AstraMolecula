@@ -8,7 +8,7 @@ set -e
 # 配置
 CLOUD_SERVER="106.14.212.218"
 CLOUD_USER="root"
-SSH_KEY="$HOME/.ssh/pc_wsl2ecs.pem"
+SSH_KEY="$HOME/.ssh/mac2ec2.pem"
 
 # 颜色定义
 GREEN='\033[0;32m'
@@ -136,8 +136,8 @@ if ssh -i "$SSH_KEY" "$CLOUD_USER@$CLOUD_SERVER" "echo 'test'" >/dev/null 2>&1; 
     echo "1. 运行环境检查: ./deploy.sh check"
     echo "2. 启动WSL服务: ./deploy.sh start"
     echo "3. 配置云服务器Nginx:"
-    echo "   scp -i ~/.ssh/pc_wsl2ecs.pem nginx_setup.sh root@106.14.212.218:/tmp/"
-    echo "   ssh -i ~/.ssh/pc_wsl2ecs.pem root@106.14.212.218 'sudo /tmp/nginx_setup.sh install'"
+    echo "   scp -i ~/.ssh/mac2ec2.pem nginx_setup.sh root@106.14.212.218:/tmp/"
+    echo "   ssh -i ~/.ssh/mac2ec2.pem root@106.14.212.218 'sudo /tmp/nginx_setup.sh install'"
 else
     error "❌ 连接配置存在问题"
     echo ""

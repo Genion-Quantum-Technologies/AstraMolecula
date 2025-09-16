@@ -44,7 +44,7 @@ echo ""
 
 # 检查SSH密钥
 check_ssh_key() {
-    local ssh_key="$HOME/.ssh/pc_wsl2ecs.pem"
+    local ssh_key="$HOME/.ssh/mac2ec2.pem"
     
     if [ ! -f "$ssh_key" ]; then
         warn "阿里云SSH密钥不存在: $ssh_key"
@@ -65,7 +65,7 @@ check_ssh_key() {
 
 # 配置SSH密钥到阿里云服务器
 setup_ssh_key() {
-    local ssh_key="$HOME/.ssh/pc_wsl2ecs.pem"
+    local ssh_key="$HOME/.ssh/mac2ec2.pem"
     
     log "测试阿里云ECS SSH连接..."
     
@@ -95,7 +95,7 @@ apply_configuration() {
 test_ssh_connection() {
     log "测试SSH连接..."
     
-    if ssh -i "$HOME/.ssh/pc_wsl2ecs.pem" -o ConnectTimeout=10 -o BatchMode=yes root@106.14.212.218 "echo 'SSH连接成功'" 2>/dev/null; then
+    if ssh -i "$HOME/.ssh/mac2ec2.pem" -o ConnectTimeout=10 -o BatchMode=yes root@106.14.212.218 "echo 'SSH连接成功'" 2>/dev/null; then
         log "✅ SSH连接测试成功"
         return 0
     else
@@ -109,8 +109,8 @@ test_ssh_connection() {
         echo "解决方案:"
         echo "1. 检查阿里云安全组规则，确保开放22端口"
         echo "2. 确认ECS实例正常运行"
-        echo "3. 验证密钥文件: ls -la ~/.ssh/pc_wsl2ecs.pem"
-        echo "4. 检查密钥权限: chmod 600 ~/.ssh/pc_wsl2ecs.pem"
+        echo "3. 验证密钥文件: ls -la ~/.ssh/mac2ec2.pem"
+        echo "4. 检查密钥权限: chmod 600 ~/.ssh/mac2ec2.pem"
         return 1
     fi
 }
@@ -143,7 +143,7 @@ apply_configuration() {
     # 修改setup_autossh.sh中的配置
     sed -i 's/CLOUD_SERVER=".*"/CLOUD_SERVER="106.14.212.218"/' "$SCRIPT_DIR/setup_autossh.sh"
     sed -i 's/CLOUD_USER=".*"/CLOUD_USER="root"/' "$SCRIPT_DIR/setup_autossh.sh"
-    sed -i "s|SSH_KEY_PATH=\".*\"|SSH_KEY_PATH=\"$HOME/.ssh/pc_wsl2ecs.pem\"|" "$SCRIPT_DIR/setup_autossh.sh"
+    sed -i "s|SSH_KEY_PATH=\".*\"|SSH_KEY_PATH=\"$HOME/.ssh/mac2ec2.pem\"|" "$SCRIPT_DIR/setup_autossh.sh"
     
     log "✅ 配置已应用到 setup_autossh.sh"
 }
@@ -162,8 +162,8 @@ show_next_steps() {
     echo "   $SCRIPT_DIR/deploy.sh start"
     echo ""
     echo "2. 在阿里云服务器上配置Nginx:"
-    echo "   scp -i ~/.ssh/pc_wsl2ecs.pem $SCRIPT_DIR/nginx_setup.sh root@106.14.212.218:/tmp/"
-    echo "   ssh -i ~/.ssh/pc_wsl2ecs.pem root@106.14.212.218 'sudo /tmp/nginx_setup.sh install'"
+    echo "   scp -i ~/.ssh/mac2ec2.pem $SCRIPT_DIR/nginx_setup.sh root@106.14.212.218:/tmp/"
+    echo "   ssh -i ~/.ssh/mac2ec2.pem root@106.14.212.218 'sudo /tmp/nginx_setup.sh install'"
     echo ""
     echo "3. 验证部署:"
     echo "   curl http://106.14.212.218/docs"
