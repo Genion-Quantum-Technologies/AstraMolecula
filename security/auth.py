@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
 from fastapi.security import OAuth2PasswordBearer
 from database.services.user_service import UserService
+from database.models.user import User
 import os
 
 # JWT 配置
@@ -58,3 +59,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if not user:
         raise credentials_exc
     return user
+
+# ---- 管理员权限验证 ----
+async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    获取当前管理员用户，如果不是管理员则抛出权限错误
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator access required"
+        )
+    return current_user
+
+# ---- 管理员或本人权限验证 ----
+def get_admin_or_self_user(user_id: str):
+    """
+    创建一个依赖函数，验证用户是管理员或者是资源的所有者
+    """
+    async def verify_access(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.is_admin or current_user.id == user_id:
+            return current_user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Administrator or resource owner access required"
+        )
+    return verify_access

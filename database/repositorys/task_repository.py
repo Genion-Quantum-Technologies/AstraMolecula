@@ -119,3 +119,47 @@ class TaskRepository:
         finally:
             conn.close()
         return tasks
+
+    @staticmethod
+    def get_all_tasks_with_filters(limit: int = 100, user_id: Optional[str] = None, 
+                                 task_type: Optional[str] = None, status: Optional[str] = None) -> List[Task]:
+        """
+        管理员专用：获取所有任务列表，支持筛选条件
+        """
+        where_clauses = []
+        values = []
+        
+        if user_id:
+            where_clauses.append("user_id = %s")
+            values.append(user_id)
+        
+        if task_type:
+            where_clauses.append("task_type = %s")
+            values.append(task_type)
+        
+        if status:
+            where_clauses.append("status = %s")
+            values.append(status)
+        
+        where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+        
+        sql = f"""
+        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
+          FROM tasks
+         {where_clause}
+      ORDER BY created_at DESC
+         LIMIT %s
+        """
+        
+        values.append(limit)
+        
+        conn = get_connection()
+        tasks: List[Task] = []
+        try:
+            with conn.cursor(dictionary=True) as cur:
+                cur.execute(sql, values)
+                for row in cur.fetchall():
+                    tasks.append(Task(**row))
+        finally:
+            conn.close()
+        return tasks

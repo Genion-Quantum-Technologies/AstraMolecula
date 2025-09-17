@@ -16,3 +16,5 @@ class User:
     created_by_service: Optional[str] = None
     is_shadow_user: bool = False
     migrated_to: Optional[str] = None
+    user_role: str = 'user'  # 'user' or 'admin'
+    is_admin: bool = False

@@ -112,3 +112,18 @@ class TaskService:
             result.append(task_dict)
         
         return result
+
+    @staticmethod
+    def get_all_tasks_for_admin(limit: int = 100, user_id: Optional[str] = None, 
+                               task_type: Optional[str] = None, status: Optional[str] = None) -> List[Task]:
+        """
+        管理员专用：获取所有任务列表，支持筛选条件
+        """
+        logger.info("Admin requesting all tasks with filters: user_id=%s, type=%s, status=%s, limit=%d", 
+                   user_id, task_type, status, limit)
+        return TaskRepository.get_all_tasks_with_filters(
+            limit=limit, 
+            user_id=user_id, 
+            task_type=task_type, 
+            status=status
+        )

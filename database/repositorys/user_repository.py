@@ -5,7 +5,7 @@ from datetime import datetime
 
 class UserRepository:
     @staticmethod
-    def create(uuid: str, username: str, password_hash: str, phone: str = None, email: str = None) -> None:
+    def create(uuid: str, username: str, password_hash: str, phone: Optional[str] = None, email: Optional[str] = None) -> None:
         sql = """
         INSERT INTO users (id, username, password_hash, phone, email)
         VALUES (%s, %s, %s, %s, %s)
@@ -22,7 +22,8 @@ class UserRepository:
     def get_by_username(username: str) -> Optional[User]:
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
-               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to
+               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
+               user_role, is_admin
           FROM users
          WHERE username = %s
         """
@@ -41,7 +42,8 @@ class UserRepository:
     def list_all(limit: int = 100) -> List[User]:
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
-               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to
+               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
+               user_role, is_admin
           FROM users
       ORDER BY created_at DESC
          LIMIT %s
@@ -69,7 +71,7 @@ class UserRepository:
             conn.close()
 
     @staticmethod
-    def update_contact(username: str, phone: str = None, email: str = None) -> None:
+    def update_contact(username: str, phone: Optional[str] = None, email: Optional[str] = None) -> None:
         parts, args = [], []
         if phone is not None:
             parts.append("phone = %s")
@@ -105,7 +107,8 @@ class UserRepository:
         """根据用户ID获取用户"""
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
-               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to
+               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
+               user_role, is_admin
           FROM users
          WHERE id = %s
         """

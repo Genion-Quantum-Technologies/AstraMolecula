@@ -1,9 +1,10 @@
 
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from database.services.user_service import UserService
+from database.models.user import User
 from requests.basic_request import UserCreateRequest, UserLoginRequest
-from security.auth import TokenResponse, create_access_token
+from security.auth import TokenResponse, create_access_token, get_current_user
 
 logger = logging.getLogger("auth_router")
 router = APIRouter(prefix="", tags=["Auth"])
@@ -45,3 +46,24 @@ async def signup_user(request: UserCreateRequest):
     except Exception as e:
         # 你可以根据不同的异常类型返回不同的 status_code
         raise HTTPException(status_code=500, detail=f"Failed to create user: {e}")
+
+@router.get("/me")
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """
+    获取当前登录用户的信息
+    """
+    logger.info("User %s requesting own info", current_user.username)
+    
+    # 返回用户信息，排除敏感字段
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "user_role": current_user.user_role,
+        "is_admin": current_user.is_admin,
+        "is_shadow_user": current_user.is_shadow_user,
+        "source_system": current_user.source_system,
+        "created_at": current_user.created_at,
+        "updated_at": current_user.updated_at
+    }

@@ -656,3 +656,40 @@ async def download_peptide_output_folder(request: Request, task_id: str):
             "ETag": f'"{task_id}-output-archive"'
         },
     )
+
+
+@router.get("/{task_id}/input")
+async def get_task_input_params(request: Request, task_id: str):
+    """
+    获取任务的输入参数，用于重新提交失败的任务
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    
+    logger.info("User %s (%s) requesting input params for task %s", 
+                user.username, user_info['auth_type'], task_id)
+    
+    # 根据任务类型查找不同的输入文件
+    job_dir = Path(task.job_dir)
+    
+    if task.task_type == "docking":
+        input_file = job_dir / "input" / "input.json"
+    elif task.task_type == "generate":
+        input_file = job_dir / "input.json"
+    else:
+        raise HTTPException(status_code=400, detail=f"unsupported task type: {task.task_type}")
+    
+    if not input_file.exists():
+        raise HTTPException(status_code=404, detail="task input parameters not found")
+    
+    try:
+        with open(input_file, 'r', encoding='utf-8') as f:
+            input_params = json.load(f)
+        return input_params
+    except Exception as e:
+        logger.error("Failed to read input params for task %s: %s", task_id, e)
+        raise HTTPException(status_code=500, detail="failed to read task input parameters")
