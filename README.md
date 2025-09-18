@@ -58,3 +58,6 @@ export SERVICE_API_KEYS="service-key-1,service-key-2"
 pip install python-jose[cryptography]
 sudo brew install mysql-server
 pip install mysql-connector-python bcrypt
+
+
+micromamba activate AstraMolecula && micromamba install rdkit=2024.03.5 -c conda-forge
