@@ -693,3 +693,81 @@ async def get_task_input_params(request: Request, task_id: str):
     except Exception as e:
         logger.error("Failed to read input params for task %s: %s", task_id, e)
         raise HTTPException(status_code=500, detail="failed to read task input parameters")
+
+
+@router.get("/{task_id}/peptide/download/{filename}")
+async def download_peptide_file(request: Request, task_id: str, filename: str):
+    """下载肽优化任务生成的单个结构文件 (PDB/SDF/MOL/MOL2 等)
+    前端3D查看功能依赖此端点。在主服务(端口8000)上补充与 peptide_opt 子服务一致的能力，
+    以便统一API_BASE_URL。
+    查找顺序与 peptide_opt/main.py 中实现保持一致，尽可能提升复用体验。
+    """
+    import re, os, mimetypes, io, zipfile
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+    logger.info(f"[peptide-download] task_id={task_id} filename={filename}")
+
+    # 基本校验
+    if not re.match(r'^[\w\-. ]+$', filename):
+        raise HTTPException(status_code=400, detail="invalid filename")
+
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != "peptide_optimization":
+        raise HTTPException(status_code=400, detail="task type mismatch")
+
+    job_dir = task.job_dir
+    if not job_dir:
+        raise HTTPException(status_code=500, detail="task job_dir missing")
+
+    search_paths = [
+        os.path.join(job_dir, "output", filename),
+        os.path.join(job_dir, "output", "complexes", filename),
+        os.path.join(job_dir, "output", "complex", filename),
+        os.path.join(job_dir, "output", "pdb", filename),
+        os.path.join(job_dir, "output", "pdbs", filename),
+        os.path.join(job_dir, "middlefiles", filename),
+        os.path.join(job_dir, "middlefiles", "pdb", filename),
+        os.path.join(job_dir, "input", filename),
+        os.path.join(job_dir, filename),
+    ]
+
+    found_file = None
+    for p in search_paths:
+        if os.path.exists(p) and os.path.isfile(p):
+            found_file = p
+            break
+
+    # 递归浅层扩展搜索
+    if not found_file:
+        for base in [os.path.join(job_dir, "output"), os.path.join(job_dir, "middlefiles")]:
+            if os.path.isdir(base):
+                for root, dirs, files in os.walk(base):
+                    # 限制搜索深度为2
+                    rel_depth = Path(root).relative_to(base).parts
+                    if len(rel_depth) > 2:
+                        continue
+                    if filename in files:
+                        found_file = os.path.join(root, filename)
+                        break
+                if found_file:
+                    break
+
+    if not found_file:
+        raise HTTPException(status_code=404, detail=f"file {filename} not found")
+
+    # MIME 类型
+    mime_map = {
+        '.pdb': 'chemical/x-pdb',
+        '.sdf': 'chemical/x-mdl-sdfile',
+        '.mol': 'chemical/x-mdl-molfile',
+        '.mol2': 'chemical/x-mol2'
+    }
+    ext = os.path.splitext(filename)[1].lower()
+    media_type = mime_map.get(ext) or mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+    return FileResponse(path=found_file, filename=filename, media_type=media_type)
