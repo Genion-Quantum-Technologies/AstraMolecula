@@ -85,6 +85,21 @@ async def list_user_tasks(request: Request):
     try:
         # 使用带成本信息的任务查询
         tasks_with_cost = TaskService.get_tasks_with_cost_info(user.id)
+        # 为 peptide_optimization 任务补充 protein_path 字段（指向标准复制的 5ffg.pdb）
+        for t in tasks_with_cost:
+            try:
+                # 支持 ORM 对象或字典
+                task_type = getattr(t, 'task_type', None) if not isinstance(t, dict) else t.get('task_type')
+                job_dir = getattr(t, 'job_dir', None) if not isinstance(t, dict) else t.get('job_dir')
+                if task_type == 'peptide_optimization' and job_dir:
+                    candidate = Path(job_dir) / 'input' / '5ffg.pdb'
+                    if candidate.exists():
+                        if isinstance(t, dict):
+                            t['protein_path'] = str(candidate)
+                        else:
+                            setattr(t, 'protein_path', str(candidate))
+            except Exception:
+                continue
         return tasks_with_cost
     except Exception as e:
         logger.error("Failed to get tasks with cost info for user %s: %s", user.username, e)
@@ -114,7 +129,14 @@ async def get_task_status(request: Request, task_id: str):
         
         if not task or task.user_id != user.id:
             raise HTTPException(status_code=404, detail="task not found")
-        
+        # 个别任务（peptide_optimization）补充 protein_path
+        try:
+            if getattr(task, 'task_type', None) == 'peptide_optimization' and getattr(task, 'job_dir', None):
+                candidate = Path(task.job_dir) / 'input' / '5ffg.pdb'
+                if candidate.exists():
+                    setattr(task, 'protein_path', str(candidate))
+        except Exception:
+            pass
         return task
     except HTTPException:
         raise
@@ -122,6 +144,23 @@ async def get_task_status(request: Request, task_id: str):
         logger.error("Error fetching task %s for user %s (%s): %s", 
                     task_id, user.username, user_info['auth_type'], e)
         raise HTTPException(status_code=500, detail="Failed to fetch task status")
+
+@router.get("/{task_id}/peptide/protein", summary="获取多肽优化任务受体蛋白文件")
+async def get_peptide_protein_file(request: Request, task_id: str):
+    """返回 peptide_optimization 任务复制进入 input/ 的受体 PDB 文件 (5ffg.pdb)。
+    前端可用此端点在多肽优化 3D 查看中加载 cartoon 模式。
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.task_type != 'peptide_optimization':
+        raise HTTPException(status_code=400, detail="task type mismatch")
+    candidate = Path(task.job_dir) / 'input' / '5ffg.pdb'
+    if not candidate.exists():
+        raise HTTPException(status_code=404, detail="protein file not found")
+    return FileResponse(path=str(candidate), filename=candidate.name, media_type='chemical/x-pdb')
 
 
 @router.get("/{task_id}/status",
