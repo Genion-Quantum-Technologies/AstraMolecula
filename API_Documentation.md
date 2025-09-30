@@ -1,16 +1,16 @@
-# DockingVina API 接口文档
+# AstraMolecula API 接口文档
 
 ## 概述
 
-DockingVina API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
+AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.0.0
+- **API版本**: 2.1.0
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
 
 ## 认证方式说明
 
-DockingVina API 支持两种认证方式，除了登录/注册接口外，**所有业务接口都同时支持这两种认证方式**：
+AstraMolecula API 支持两种认证方式，除了登录/注册接口外，**所有业务接口都同时支持这两种认证方式**：
 
 ### 1. JWT Token 认证（用户认证）
 
@@ -57,6 +57,7 @@ Content-Type: application/json
 - ✅ 自动用户映射，首次访问自动创建内部用户
 - ✅ 支持多种外部用户标识
 - ✅ 适合自动化和批量处理
+- ❌ 不支持管理员接口访问（管理员功能仅限JWT Token）
 
 **支持的API Key列表**:
 - `third-party-service-key-123`
@@ -120,10 +121,43 @@ results = session.get("/tasks/{task_id}/dockRes")
 - [对接计算接口](#对接计算接口)
 - [肽段优化接口](#肽段优化接口)
 - [任务管理接口](#任务管理接口)
+- [管理员接口](#管理员接口)
 - [日志查看接口](#日志查看接口)
 - [数据结构说明](#数据结构说明)
 - [认证说明](#认证说明)
 - [任务状态说明](#任务状态说明)
+
+## 健康检查接口
+
+### 健康检查
+
+**接口地址**: `GET /health`
+
+**描述**: API健康状态检查端点
+
+**认证要求**: 无（开放接口）
+
+**请求参数**: 无
+
+**返回值**:
+```json
+{
+  "status": "healthy",
+  "message": "DockingVina API is running",
+  "timestamp": "2025-08-27T14:40:00Z",
+  "version": "2.0.0"
+}
+```
+
+### 根路径访问
+
+**接口地址**: `GET /`
+
+**描述**: 根路径重定向到日志查看器
+
+**认证要求**: 无（开放接口）
+
+**返回值**: 重定向到 `/static/log-viewer.html`
 
 ## 认证接口
 
@@ -150,6 +184,30 @@ results = session.get("/tasks/{task_id}/dockRes")
 {
   "access_token": "string",
   "token_type": "bearer"
+}
+```
+
+### 获取当前用户信息
+
+**接口地址**: `GET /me`
+
+**描述**: 获取当前登录用户的详细信息
+
+**认证要求**: JWT Token（不支持API Key认证）
+
+**请求参数**: 无
+
+**返回值**:
+```json
+{
+  "id": "string",
+  "username": "string",
+  "email": "string",
+  "phone": "string",
+  "user_role": "string",
+  "is_admin": "boolean",
+  "created_at": "datetime",
+  "updated_at": "datetime"
 }
 ```
 
@@ -207,7 +265,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 **接口地址**: `POST /upload_pdbqt`
 
-**描述**: 上传分子结构文件（PDB/PDBQT格式）
+**描述**: 上传分子结构文件（PDB/PDBQT格式），用于分子对接和肽段优化
 
 **认证要求**: JWT Token 或 API Key
 
@@ -222,6 +280,10 @@ results = session.get("/tasks/{task_id}/dockRes")
   "files": ["filename1.pdbqt", "filename2.pdb"]
 }
 ```
+
+**说明**: 此接口支持上传PDB和PDBQT格式文件，可用于：
+- 分子对接任务的受体文件
+- 肽段优化任务的受体蛋白文件
 
 ## 分子相关接口
 
@@ -296,6 +358,30 @@ results = session.get("/tasks/{task_id}/dockRes")
 ```
 
 ## 对接计算接口
+
+### 分子对接成本估算
+
+**接口地址**: `POST /docking/estimate-cost`
+
+**描述**: 对分子对接任务进行成本预估，不实际提交任务
+
+**认证要求**: JWT Token 或 API Key
+
+**请求参数**: 与`/docking`接口相同的DockingRequest格式
+
+**返回值**:
+```json
+{
+  "status": "success",
+  "message": "成本预估完成",
+  "cost_estimate": {
+    "estimated_compute_units": "float",
+    "n_ligands": "integer",
+    "parameters": "object",
+    "calculation_details": "object"
+  }
+}
+```
 
 ### 分子对接任务
 
@@ -379,7 +465,9 @@ results = session.get("/tasks/{task_id}/dockRes")
   "proteinmpnn_enabled": "boolean (默认true)",
   "n_poses": "integer (默认10)",
   "num_seq_per_target": "integer (默认10)",
-  "proteinmpnn_seed": "integer (默认37)"
+  "proteinmpnn_seed": "integer (默认37)",
+  "n_iterations": "integer (默认5)",
+  "n_rosetta_runs": "integer (默认20)"
 }
 ```
 
@@ -392,7 +480,8 @@ results = session.get("/tasks/{task_id}/dockRes")
   "status": "pending",
   "job_dir": "string",
   "created_at": "datetime",
-  "finished_at": null
+  "finished_at": null,
+  "total_compute_units": "float (可选)"
 }
 ```
 
@@ -430,7 +519,9 @@ results = session.get("/tasks/{task_id}/dockRes")
   "num_seq_per_target": "integer",
   "proteinmpnn_seed": "integer",
   "peptide_sequence": "string",
-  "receptor_pdb_filename": "string"
+  "receptor_pdb_filename": "string",
+  "n_iterations": "integer",
+  "n_rosetta_runs": "integer"
 }
 ```
 
@@ -458,6 +549,31 @@ results = session.get("/tasks/{task_id}/dockRes")
 - `task_id`: 任务ID
 
 **返回值**: TaskResponse对象
+
+### 获取任务详细成本信息
+
+**接口地址**: `GET /tasks/{task_id}/cost`
+
+**描述**: 获取任务的详细成本计算信息和计算单元消耗
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "task_type": "string",
+  "cost_summary": {
+    "total_compute_units": "float",
+    "calculation_details": "object",
+    "parameters": "object"
+  },
+  "created_at": "datetime"
+}
+```
 
 ### 快速获取任务状态
 
@@ -493,6 +609,63 @@ results = session.get("/tasks/{task_id}/dockRes")
 - `task_id`: 任务ID
 
 **返回值**: ZIP文件流
+
+**说明**: 支持所有类型的任务（docking、generate、peptide_optimization）
+
+## 文件下载接口总览
+
+### 通用下载接口
+
+| 接口 | 描述 | 适用任务类型 | 返回格式 |
+|------|------|-------------|---------|
+| `GET /tasks/{task_id}/download` | 下载任务所有结果文件 | 所有类型 | ZIP |
+
+### 对接任务专用下载接口
+
+| 接口 | 描述 | 返回格式 |
+|------|------|---------|
+| `GET /tasks/{task_id}/sdf/{filename}` | 下载特定SDF结构文件 | SDF |
+| `GET /tasks/{task_id}/protein` | 下载蛋白质受体文件 | PDBQT |
+
+### 肽段优化任务专用下载接口
+
+| 接口 | 描述 | 返回格式 |
+|------|------|---------|
+| `GET /tasks/{task_id}/peptide/result/download` | 下载结果CSV文件 | CSV |
+| `GET /tasks/{task_id}/peptide/output` | 下载整个输出文件夹 | ZIP |
+| `GET /tasks/{task_id}/peptide/download/{filename}` | 下载单个结构文件 | PDB/SDF/MOL等 |
+| `GET /tasks/{task_id}/peptide/protein` | 下载受体蛋白文件 | PDB |
+
+### 下载对接任务SDF文件
+
+**接口地址**: `GET /tasks/{task_id}/sdf/{filename}`
+
+**描述**: 下载对接任务生成的特定SDF结构文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: SDF文件名（必须以.sdf结尾）
+
+**返回值**: SDF文件流
+
+**说明**: 仅适用于docking任务，文件位于任务的output/docked目录下
+
+### 下载对接任务蛋白质受体文件
+
+**接口地址**: `GET /tasks/{task_id}/protein`
+
+**描述**: 下载对接任务使用的蛋白质受体文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: PDBQT文件流
+
+**说明**: 仅适用于docking任务，从dockRes.json中获取protein_path
 
 ### 获取分子生成结果
 
@@ -610,7 +783,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 **接口地址**: `GET /tasks/{task_id}/peptide/result/download`
 
-**描述**: 下载肽段优化任务的结果CSV文件
+**描述**: 下载肽段优化任务的结果CSV文件（原始文件下载）
 
 **认证要求**: JWT Token 或 API Key
 
@@ -619,11 +792,13 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 **返回值**: CSV文件流
 
+**说明**: 仅适用于peptide_optimization任务，下载output/result.csv文件
+
 ### 下载肽段优化输出文件夹
 
 **接口地址**: `GET /tasks/{task_id}/peptide/output`
 
-**描述**: 下载肽段优化任务的整个输出文件夹
+**描述**: 下载肽段优化任务的整个输出文件夹（ZIP压缩包）
 
 **认证要求**: JWT Token 或 API Key
 
@@ -631,6 +806,329 @@ results = session.get("/tasks/{task_id}/dockRes")
 - `task_id`: 任务ID
 
 **返回值**: ZIP文件流
+
+**说明**: 仅适用于peptide_optimization任务，递归打包output目录下的所有文件
+
+### 获取任务输入参数
+
+**接口地址**: `GET /tasks/{task_id}/input`
+
+**描述**: 获取任务的原始输入参数，用于重新提交或分析
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**支持的任务类型**: `docking`, `generate`
+
+**返回值**: JSON对象（原始输入参数）
+
+### 下载肽段优化单个文件
+
+**接口地址**: `GET /tasks/{task_id}/peptide/download/{filename}`
+
+**描述**: 下载肽段优化任务生成的单个结构文件（PDB/SDF/MOL/MOL2等）
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: 文件名
+
+**返回值**: 文件流（根据文件类型自动设置MIME类型）
+
+**说明**: 支持多层目录搜索，包括output、middlefiles、input等目录
+
+### 获取肽段优化受体蛋白文件
+
+**接口地址**: `GET /tasks/{task_id}/peptide/protein`
+
+**描述**: 获取肽段优化任务中的受体蛋白文件（5ffg.pdb），用于3D可视化
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: PDB文件流
+
+## 管理员接口
+
+> **注意**: 以下管理员接口仅支持JWT Token认证，不支持API Key认证。需要管理员权限的用户才能访问。
+
+### 获取所有用户列表
+
+**接口地址**: `GET /admin/users`
+
+**描述**: 获取系统中所有用户的详细信息，包括影子用户
+
+**认证要求**: JWT Token（需要管理员权限）
+
+**请求参数**:
+- `limit` (Query, 可选): 返回用户数量限制，默认100，最大1000
+
+**返回值**:
+```json
+[
+  {
+    "id": "string",
+    "username": "string",
+    "email": "string",
+    "phone": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "is_shadow_user": "boolean",
+    "source_system": "string",
+    "external_user_id": "string",
+    "created_by_service": "string",
+    "user_role": "string",
+    "is_admin": "boolean",
+    "migrated_to": "string"
+  }
+]
+```
+
+### 获取所有任务列表
+
+**接口地址**: `GET /admin/tasks`
+
+**描述**: 获取系统中所有任务的详细信息，支持多维度筛选
+
+**认证要求**: JWT Token（需要管理员权限）
+
+**请求参数**:
+- `limit` (Query, 可选): 返回任务数量限制，默认100，最大1000
+- `user_id` (Query, 可选): 筛选特定用户的任务
+- `task_type` (Query, 可选): 筛选特定类型的任务
+- `status` (Query, 可选): 筛选特定状态的任务
+
+**返回值**:
+```json
+[
+  {
+    "id": "string",
+    "user_id": "string",
+    "username": "string",
+    "user_email": "string",
+    "user_type": "string",
+    "source_system": "string",
+    "task_type": "string",
+    "status": "string",
+    "job_dir": "string",
+    "created_at": "datetime",
+    "started_at": "datetime",
+    "finished_at": "datetime",
+    "updated_at": "datetime",
+    "progress_info": "object"
+  }
+]
+```
+
+### 获取系统统计信息
+
+**接口地址**: `GET /admin/statistics`
+
+**描述**: 获取系统整体运行统计数据，包括用户数量、任务分布等
+
+**认证要求**: JWT Token（需要管理员权限）
+
+**请求参数**: 无
+
+**返回值**:
+```json
+{
+  "users": {
+    "total": "integer",
+    "regular_users": "integer",
+    "shadow_users": "integer",
+    "admin_users": "integer"
+  },
+  "tasks": {
+    "total": "integer",
+    "by_status": {
+      "pending": "integer",
+      "processing": "integer",
+      "finished": "integer",
+      "failed": "integer"
+    },
+    "by_type": {
+      "docking": "integer",
+      "generate": "integer",
+      "peptide_optimization": "integer"
+    }
+  }
+}
+```
+
+### 获取任务成本信息
+
+**接口地址**: `GET /tasks/{task_id}/cost`
+
+**描述**: 获取任务的成本计算详情
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "total_compute_units": "float",
+  "cost_breakdown": "object",
+  "calculation_details": "object"
+}
+```
+
+### 下载任务输入文件
+
+**接口地址**: `GET /tasks/{task_id}/input`
+
+**描述**: 下载任务的输入配置文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: JSON文件流
+
+### 获取多肽任务受体蛋白文件
+
+**接口地址**: `GET /tasks/{task_id}/peptide/protein`
+
+**描述**: 获取多肽优化任务使用的受体蛋白文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: PDB文件流
+
+### 下载肽段特定文件
+
+**接口地址**: `GET /tasks/{task_id}/peptide/download/{filename}`
+
+**描述**: 下载肽段优化任务输出目录中的特定文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: 文件名
+
+**返回值**: 文件流
+
+## 管理员接口
+
+> **注意**: 以下接口仅限管理员用户访问，需要JWT Token认证且用户必须具有管理员权限。
+
+### 获取所有用户列表
+
+**接口地址**: `GET /admin/users`
+
+**描述**: 管理员获取系统中所有用户的列表，包括普通用户和影子用户
+
+**认证要求**: JWT Token（仅限管理员）
+
+**请求参数**:
+- `limit` (Query, 可选): 返回用户数量限制，默认100，范围1-1000
+
+**返回值**:
+```json
+[
+  {
+    "id": "string",
+    "username": "string",
+    "email": "string",
+    "phone": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "is_shadow_user": "boolean",
+    "source_system": "string",
+    "external_user_id": "string",
+    "created_by_service": "string",
+    "user_role": "string",
+    "is_admin": "boolean",
+    "migrated_to": "string"
+  }
+]
+```
+
+### 获取所有任务列表
+
+**接口地址**: `GET /admin/tasks`
+
+**描述**: 管理员获取系统中所有任务的列表，支持多种筛选条件
+
+**认证要求**: JWT Token（仅限管理员）
+
+**请求参数**:
+- `limit` (Query, 可选): 返回任务数量限制，默认100，范围1-1000
+- `user_id` (Query, 可选): 筛选特定用户的任务
+- `task_type` (Query, 可选): 筛选特定类型的任务
+- `status` (Query, 可选): 筛选特定状态的任务
+
+**返回值**:
+```json
+[
+  {
+    "id": "string",
+    "user_id": "string",
+    "username": "string",
+    "user_email": "string",
+    "user_type": "string",
+    "source_system": "string",
+    "task_type": "string",
+    "status": "string",
+    "job_dir": "string",
+    "created_at": "datetime",
+    "started_at": "datetime",
+    "finished_at": "datetime",
+    "updated_at": "datetime",
+    "progress_info": "string"
+  }
+]
+```
+
+### 获取系统统计信息
+
+**接口地址**: `GET /admin/statistics`
+
+**描述**: 管理员获取系统的整体统计信息
+
+**认证要求**: JWT Token（仅限管理员）
+
+**请求参数**: 无
+
+**返回值**:
+```json
+{
+  "users": {
+    "total": "integer",
+    "regular_users": "integer",
+    "shadow_users": "integer",
+    "admin_users": "integer"
+  },
+  "tasks": {
+    "total": "integer",
+    "by_status": {
+      "pending": "integer",
+      "processing": "integer",
+      "finished": "integer",
+      "failed": "integer"
+    },
+    "by_type": {
+      "docking": "integer",
+      "generate": "integer",
+      "peptide_optimization": "integer"
+    }
+  }
+}
+```
 
 ## 日志查看接口
 
@@ -779,7 +1277,8 @@ results = session.get("/tasks/{task_id}/dockRes")
   "status": "string",
   "job_dir": "string",
   "created_at": "datetime",
-  "finished_at": "datetime (可选)"
+  "finished_at": "datetime (可选)",
+  "total_compute_units": "float (可选)"
 }
 ```
 
@@ -837,7 +1336,14 @@ results = session.get("/tasks/{task_id}/dockRes")
 部分接口支持API Key认证方式，在Header中添加：
 ```
 X-API-Key: <your_api_key>
+X-External-User-ID: <external_user_identifier>
 ```
+
+**支持的API Key列表**:
+- `third-party-service-key-123`
+- `another-service-key-456`  
+- `test-api-key-789`
+- 环境变量 `SERVICE_API_KEYS` 中配置的其他密钥
 
 ## 任务状态说明
 
@@ -873,6 +1379,7 @@ X-API-Key: <your_api_key>
 | 202 | 任务处理中 |
 | 400 | 请求参数错误 |
 | 401 | 未认证 |
+| 403 | 权限不足（如非管理员访问管理员接口）|
 | 404 | 资源未找到 |
 | 410 | 任务失败 |
 | 422 | 参数验证失败 |
@@ -968,6 +1475,10 @@ print(f"🎉 获取到 {len(results)} 个对接结果")
 
 ✅ **API改进完成**: 除了登录/注册接口外，所有业务接口现在都支持JWT Token和API Key两种认证方式
 
+✅ **管理员功能**: 新增完整的管理员接口，支持用户管理、任务监控和系统统计
+
+✅ **成本计算**: 支持任务成本预估和详细的计算单元追踪
+
 ✅ **向后兼容**: 现有使用JWT Token的客户端完全不受影响，继续正常工作
 
 ✅ **第三方友好**: 第三方服务可以通过API Key直接集成，无需复杂的登录流程
@@ -978,5 +1489,12 @@ print(f"🎉 获取到 {len(results)} 个对接结果")
 
 ---
 
-**文档版本**: v2.0.0  
-**最后更新**: 2025年8月6日
+**文档版本**: v2.1.2  
+**最后更新**: 2025年9月23日
+**校正说明**: 本次更新基于代码分析完成了完整的API文档校正，确保文档与实际实现完全一致。主要更新包括：
+- 修正API版本号和标题
+- 新增健康检查和管理员接口文档  
+- 完善肽段优化和任务管理相关端点
+- 更新认证方式说明和错误代码
+- 补充遗漏的下载和查询接口
+- **新增文件下载接口总览表格，详细说明所有下载选项**
