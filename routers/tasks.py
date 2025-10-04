@@ -1,7 +1,7 @@
 import io
 from pathlib import Path
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import zipfile
 import asyncio
 import pandas as pd
@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from database.services import TaskService
 from database.services.docking_task_params_service import DockingTaskParamsService
 from database.services.peptide_task_params_service import PeptideTaskParamsService
-from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse
+from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse, PaginatedTasksResponse
 from config import ROOT
 from config.api_config import CACHE_SETTINGS, TASK_STATUS_PRIORITY
 from utils.log import get_logger
@@ -67,45 +67,111 @@ async def _get_cached_tasks(user_id: str, max_age: int = 5):
             
         return tasks
     
-@router.get("/", response_model=List[TaskResponse], 
+@router.get("/", response_model=PaginatedTasksResponse,
            summary="高优先级任务列表查询",
-           description="获取用户任务列表，使用缓存优化，减少阻塞")
-async def list_user_tasks(request: Request):
+           description="获取用户任务列表，使用缓存优化，减少阻塞，支持分页")
+async def list_user_tasks(
+    request: Request, 
+    page: int = 1, 
+    page_size: int = 20,
+    task_type: Optional[str] = None,
+    status: Optional[str] = None
+):
     """
     列出当前用户的所有任务。
-    支持用户认证和服务认证，使用缓存机制提供高优先级响应。
+    支持用户认证和服务认证，使用缓存机制提供高优先级响应，支持分页和过滤。
     """
     user_info = get_current_user_info(request)
     user = user_info['user']
     
-    logger.info("User %s (%s) listing tasks (high priority)", 
-                user.username, user_info['auth_type'])
+    logger.info("User %s (%s) listing tasks (page: %d, page_size: %d, type: %s, status: %s)", 
+                user.username, user_info['auth_type'], page, page_size, task_type, status)
     
-    # 使用缓存机制快速响应
+    # 参数验证
+    if page < 1:
+        page = 1
+    if page_size < 1 or page_size > 100:  # 限制最大页面大小
+        page_size = 20
+    
     try:
-        # 使用带成本信息的任务查询
-        tasks_with_cost = TaskService.get_tasks_with_cost_info(user.id)
-        # 为 peptide_optimization 任务补充 protein_path 字段（指向标准复制的 5ffg.pdb）
-        for t in tasks_with_cost:
+        # 使用带成本信息的任务查询，支持分页和过滤
+        result = TaskService.get_tasks_with_cost_info(
+            user.id, page=page, page_size=page_size, 
+            task_type=task_type, status=status
+        )
+        
+        # 为 peptide_optimization 任务补充 protein_path 字段
+        for t in result['tasks']:
             try:
-                # 支持 ORM 对象或字典
-                task_type = getattr(t, 'task_type', None) if not isinstance(t, dict) else t.get('task_type')
-                job_dir = getattr(t, 'job_dir', None) if not isinstance(t, dict) else t.get('job_dir')
-                if task_type == 'peptide_optimization' and job_dir:
-                    candidate = Path(job_dir) / 'input' / '5ffg.pdb'
+                if t.get('task_type') == 'peptide_optimization' and t.get('job_dir'):
+                    candidate = Path(t['job_dir']) / 'input' / '5ffg.pdb'
                     if candidate.exists():
-                        if isinstance(t, dict):
-                            t['protein_path'] = str(candidate)
-                        else:
-                            setattr(t, 'protein_path', str(candidate))
+                        t['protein_path'] = str(candidate)
             except Exception:
                 continue
-        return tasks_with_cost
+        
+        # 将字典转换为TaskResponse对象
+        task_responses = [
+            TaskResponse(
+                id=task['id'],
+                user_id=task['user_id'],
+                task_type=task['task_type'],
+                job_dir=task['job_dir'],
+                status=task['status'],
+                created_at=task['created_at'],
+                finished_at=task['finished_at'],
+                total_compute_units=task.get('total_compute_units')
+            )
+            for task in result['tasks']
+        ]
+        
+        return PaginatedTasksResponse(
+            tasks=task_responses,
+            total=result['total'],
+            page=result['page'],
+            page_size=result['page_size'],
+            total_pages=result['total_pages']
+        )
+        
     except Exception as e:
-        logger.error("Failed to get tasks with cost info for user %s: %s", user.username, e)
-        # 降级到直接数据库查询
-        tasks = TaskService.get_tasks_by_user(user.id)
-        return tasks
+        logger.error("Failed to get paginated tasks for user %s: %s", user.username, e)
+        # 降级到简单分页
+        all_tasks = TaskService.get_tasks_by_user(user.id)
+        
+        # 简单过滤
+        if task_type:
+            all_tasks = [t for t in all_tasks if t.task_type == task_type]
+        if status:
+            all_tasks = [t for t in all_tasks if t.status == status]
+            
+        total = len(all_tasks)
+        total_pages = (total + page_size - 1) // page_size
+        start_idx = (page - 1) * page_size
+        end_idx = min(start_idx + page_size, total)
+        page_tasks = all_tasks[start_idx:end_idx]
+        
+        # 转换为TaskResponse对象
+        task_responses = [
+            TaskResponse(
+                id=task.id,
+                user_id=task.user_id,
+                task_type=task.task_type,
+                job_dir=task.job_dir,
+                status=task.status,
+                created_at=task.created_at,
+                finished_at=task.finished_at,
+                total_compute_units=None
+            )
+            for task in page_tasks
+        ]
+        
+        return PaginatedTasksResponse(
+            tasks=task_responses,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages
+        )
 
 @router.get("/{task_id}", response_model=TaskResponse,
            summary="高优先级任务状态查询", 

@@ -70,21 +70,47 @@ class TaskService:
         return TaskRepository.get_by_user(user_id)
     
     @staticmethod
-    def get_tasks_with_cost_info(user_id: str) -> List[Dict[str, Any]]:
+    def get_tasks_with_cost_info(user_id: str, page: int = 1, page_size: int = 20, 
+                                task_type: Optional[str] = None, status: Optional[str] = None) -> Dict[str, Any]:
         """
-        获取用户任务列表，包含成本信息
+        获取用户任务列表，包含成本信息，支持分页和过滤
         
         Args:
             user_id: 用户ID
+            page: 页码，从1开始
+            page_size: 每页大小
+            task_type: 任务类型过滤
+            status: 状态过滤
             
         Returns:
-            包含成本信息的任务列表
+            包含任务列表和分页信息的字典
         """
         # 获取基础任务列表
-        tasks = TaskRepository.get_by_user(user_id)
+        all_tasks = TaskRepository.get_by_user(user_id)
         
-        result = []
-        for task in tasks:
+        # 过滤任务
+        filtered_tasks = []
+        for task in all_tasks:
+            # 任务类型过滤
+            if task_type and task.task_type != task_type:
+                continue
+            # 状态过滤
+            if status and task.status != status:
+                continue
+            filtered_tasks.append(task)
+        
+        # 计算分页
+        total = len(filtered_tasks)
+        total_pages = (total + page_size - 1) // page_size  # 向上取整
+        start_idx = (page - 1) * page_size
+        end_idx = min(start_idx + page_size, total)
+        
+        # 获取当前页数据
+        page_tasks = filtered_tasks[start_idx:end_idx]
+        
+        # 构建带成本信息的任务列表
+        result_tasks = []
+        for task in page_tasks:
             task_dict = {
                 "id": task.id,
                 "user_id": task.user_id,
@@ -109,9 +135,15 @@ class TaskService:
             except Exception as e:
                 logger.warning("Failed to get cost info for task %s: %s", task.id, e)
             
-            result.append(task_dict)
+            result_tasks.append(task_dict)
         
-        return result
+        return {
+            "tasks": result_tasks,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }
 
     @staticmethod
     def get_all_tasks_for_admin(limit: int = 100, user_id: Optional[str] = None, 

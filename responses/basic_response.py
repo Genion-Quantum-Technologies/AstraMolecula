@@ -59,3 +59,11 @@ class TaskResponse(BaseModel):
     created_at: datetime
     finished_at: Optional[datetime]
     total_compute_units: Optional[float] = None  # 添加计算成本字段
+
+class PaginatedTasksResponse(BaseModel):
+    """分页任务列表响应"""
+    tasks: List[TaskResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
