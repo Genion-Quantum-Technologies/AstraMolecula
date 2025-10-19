@@ -4,9 +4,17 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.1.0
+- **API版本**: 2.2.0
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 新功能亮点 (v2.2.0)
+
+- **服务端CSV生成**: 新增4个专用CSV下载端点，替代前端数据组装
+- **性能优化**: 大数据量处理移至服务端，提升响应速度
+- **安全增强**: 数据处理服务端化，减少敏感信息前端暴露
+- **编码支持**: UTF-8 BOM编码确保中文字符完美显示
+- **标准化**: 统一的CSV格式和文件命名规范
 
 ## 认证方式说明
 
@@ -121,6 +129,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 - [对接计算接口](#对接计算接口)
 - [肽段优化接口](#肽段优化接口)
 - [任务管理接口](#任务管理接口)
+- [新增的CSV下载接口](#新增的csv下载接口)
 - [管理员接口](#管理员接口)
 - [日志查看接口](#日志查看接口)
 - [数据结构说明](#数据结构说明)
@@ -620,6 +629,17 @@ results = session.get("/tasks/{task_id}/dockRes")
 |------|------|-------------|---------|
 | `GET /tasks/{task_id}/download` | 下载任务所有结果文件 | 所有类型 | ZIP |
 
+### 新增的CSV下载接口（服务端生成）
+
+> **⭐ 新功能**: 以下接口替代了前端数据组装的方式，提供更好的性能、安全性和一致性
+
+| 接口 | 描述 | 适用任务类型 | 返回格式 |
+|------|------|-------------|---------|
+| `GET /tasks/{task_id}/generate/results/csv` | 下载分子生成结果CSV | generate | CSV |
+| `GET /tasks/{task_id}/docking/results/csv` | 下载分子对接结果CSV | docking | CSV |
+| `GET /tasks/{task_id}/peptide/optimization/csv` | 下载肽优化详细结果CSV | peptide_optimization | CSV |
+| `GET /tasks/{task_id}/peptide/results/csv` | 下载肽优化简化结果CSV | peptide_optimization | CSV |
+
 ### 对接任务专用下载接口
 
 | 接口 | 描述 | 返回格式 |
@@ -631,7 +651,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 | 接口 | 描述 | 返回格式 |
 |------|------|---------|
-| `GET /tasks/{task_id}/peptide/result/download` | 下载结果CSV文件 | CSV |
+| `GET /tasks/{task_id}/peptide/result/download` | 下载结果CSV文件（原始） | CSV |
 | `GET /tasks/{task_id}/peptide/output` | 下载整个输出文件夹 | ZIP |
 | `GET /tasks/{task_id}/peptide/download/{filename}` | 下载单个结构文件 | PDB/SDF/MOL等 |
 | `GET /tasks/{task_id}/peptide/protein` | 下载受体蛋白文件 | PDB |
@@ -1021,6 +1041,110 @@ results = session.get("/tasks/{task_id}/dockRes")
 - `filename`: 文件名
 
 **返回值**: 文件流
+
+## 新增的CSV下载接口
+
+以下是新增的服务端CSV生成和下载接口，替代了前端数据组装的方式，提供更好的性能和安全性：
+
+### 下载分子生成结果CSV
+
+**接口地址**: `GET /tasks/{task_id}/generate/results/csv`
+
+**描述**: 下载分子生成任务结果的CSV文件，从服务端生成标准格式的CSV数据
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: CSV文件流
+
+**CSV格式**:
+```
+SMILE,MolWt,TPSA,SLogP,SA,QED
+CCO,46.07,20.23,-0.31,2.16,0.73
+...
+```
+
+**说明**: 
+- 仅适用于generate任务类型
+- 从任务的output.json文件中读取分子数据并生成CSV
+- 支持UTF-8 BOM编码，确保中文兼容性
+- 文件命名格式：`generated_analogs_{task_id}.csv`
+
+### 下载分子对接结果CSV
+
+**接口地址**: `GET /tasks/{task_id}/docking/results/csv`
+
+**描述**: 下载分子对接任务结果的CSV文件，从服务端生成标准格式的CSV数据
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: CSV文件流
+
+**CSV格式**:
+```
+Ligand名称,SMILES表达式,对接评分 (Docking Score),SDF文件名
+"ethanol","CCO",-5.20,"ligand_1.sdf"
+...
+```
+
+**说明**: 
+- 仅适用于docking任务类型
+- 从任务的output/dockRes.json文件中读取对接数据并生成CSV
+- 支持UTF-8 BOM编码，确保中文兼容性
+- 文件命名格式：`docking_results_{task_id}.csv`
+- 字符串字段自动添加引号并转义特殊字符
+
+### 下载肽序列优化详细结果CSV
+
+**接口地址**: `GET /tasks/{task_id}/peptide/optimization/csv`
+
+**描述**: 下载肽序列优化任务的详细结果CSV文件，包含完整的优化分析数据
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: CSV文件流
+
+**CSV格式**:
+```
+排名,原始序列,原始序列亲和力评分,原始序列总体评分,最优序列,总体评分,分子量,等电点,芳香性,不稳定指数,疏水性,亲水性,二级结构分数
+1,"ACDEFG",1.23,4.56,"ACDEFH",7.89,750.5,7.2,0.15,25.3,-0.42,0.67,"{'helix': 0.3, 'sheet': 0.2}"
+...
+```
+
+**说明**: 
+- 仅适用于peptide_optimization任务类型
+- 优先从output/result.json读取详细结果数据
+- 如果result.json不存在，则返回现有的result.csv文件
+- 支持UTF-8 BOM编码，确保中文兼容性
+- 文件命名格式：`peptide_optimization_results_{task_id}.csv`
+
+### 下载肽序列优化简化结果CSV
+
+**接口地址**: `GET /tasks/{task_id}/peptide/results/csv`
+
+**描述**: 下载肽序列优化任务的简化结果CSV文件，适用于主页面结果展示
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: CSV文件流
+
+**说明**: 
+- 仅适用于peptide_optimization任务类型
+- 直接返回任务的output/result.csv文件
+- 支持动态列结构，适配不同的结果格式
+- 文件命名格式：`peptide_results_{task_id}.csv`
+- 如果result.csv文件不存在，返回404错误
 
 ## 管理员接口
 
@@ -1469,6 +1593,52 @@ print(f"📊 任务状态: {status_response.json()}")
 results_response = session.get(f"/tasks/{task_id}/dockRes")
 results = results_response.json()
 print(f"🎉 获取到 {len(results)} 个对接结果")
+
+# 5. 🆕 下载CSV结果文件（新功能）
+csv_response = session.get(f"/tasks/{task_id}/docking/results/csv")
+if csv_response.status_code == 200:
+    with open(f"docking_results_{task_id}.csv", "wb") as f:
+        f.write(csv_response.content)
+    print(f"📥 CSV文件下载完成: docking_results_{task_id}.csv")
+else:
+    print(f"❌ CSV下载失败: {csv_response.status_code}")
+```
+
+### 新CSV下载功能示例
+
+```python
+import requests
+
+# 使用JWT Token认证
+headers = {"Authorization": "Bearer <your_jwt_token>"}
+
+# 1. 下载分子生成结果CSV
+response = requests.get("/tasks/{task_id}/generate/results/csv", headers=headers)
+if response.status_code == 200:
+    with open("generated_molecules.csv", "wb") as f:
+        f.write(response.content)
+    print("✅ 分子生成结果CSV下载完成")
+
+# 2. 下载对接结果CSV
+response = requests.get("/tasks/{task_id}/docking/results/csv", headers=headers)
+if response.status_code == 200:
+    with open("docking_results.csv", "wb") as f:
+        f.write(response.content)
+    print("✅ 对接结果CSV下载完成")
+
+# 3. 下载肽优化详细结果CSV
+response = requests.get("/tasks/{task_id}/peptide/optimization/csv", headers=headers)
+if response.status_code == 200:
+    with open("peptide_optimization_detailed.csv", "wb") as f:
+        f.write(response.content)
+    print("✅ 肽优化详细结果CSV下载完成")
+
+# 4. 下载肽优化简化结果CSV
+response = requests.get("/tasks/{task_id}/peptide/results/csv", headers=headers)
+if response.status_code == 200:
+    with open("peptide_results_simple.csv", "wb") as f:
+        f.write(response.content)
+    print("✅ 肽优化简化结果CSV下载完成")
 ```
 
 ## 认证方式总结
@@ -1489,12 +1659,43 @@ print(f"🎉 获取到 {len(results)} 个对接结果")
 
 ---
 
-**文档版本**: v2.1.2  
-**最后更新**: 2025年9月23日
-**校正说明**: 本次更新基于代码分析完成了完整的API文档校正，确保文档与实际实现完全一致。主要更新包括：
+**文档版本**: v2.2.0  
+**最后更新**: 2025年10月19日
+**更新说明**: 本次更新新增了服务端CSV生成和下载功能，提升了系统的性能和安全性。主要更新包括：
+
+### 🆕 新增功能 (v2.2.0)
+- **服务端CSV生成**: 新增4个CSV下载API端点，替代前端数据组装方式
+- **分子生成结果下载**: `GET /tasks/{task_id}/generate/results/csv`
+- **分子对接结果下载**: `GET /tasks/{task_id}/docking/results/csv` 
+- **肽优化详细结果下载**: `GET /tasks/{task_id}/peptide/optimization/csv`
+- **肽优化简化结果下载**: `GET /tasks/{task_id}/peptide/results/csv`
+- **UTF-8 BOM编码支持**: 确保中文字符正确显示
+- **统一文件命名**: 标准化的CSV文件命名格式
+
+### 🔧 技术改进
+- **性能优化**: 大数据量CSV生成移至服务端，避免前端卡顿
+- **安全性提升**: 敏感数据不再在前端明文处理
+- **一致性保证**: 服务端统一控制CSV格式和编码
+- **错误处理**: 完善的异常处理和日志记录
+
+### 📚 文档更新
+- 新增CSV下载接口详细说明
+- 更新文件下载接口总览表格
+- 添加CSV格式示例和使用说明
+
+### 🔄 向后兼容
+- 保持现有API接口完全不变
+- 新API作为额外功能提供
+- 客户端可选择使用新的服务端下载方式
+
+---
+
+**历史版本更新记录**:
+
+**v2.1.2** (2025年9月23日): 完整API文档校正，确保与实际实现一致
 - 修正API版本号和标题
 - 新增健康检查和管理员接口文档  
 - 完善肽段优化和任务管理相关端点
 - 更新认证方式说明和错误代码
 - 补充遗漏的下载和查询接口
-- **新增文件下载接口总览表格，详细说明所有下载选项**
+- 新增文件下载接口总览表格
