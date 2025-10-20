@@ -20,20 +20,24 @@ router = APIRouter(prefix="/peptide", tags=["Peptide Optimization"])
            description="提交蛋白优化任务到队列，peptide_opt服务会定时查询并处理")
 async def create_optimization_task(request: Request, optimization_request: PeptideOptimizationRequest):
     """
-    创建蛋白优化任务。
+    创建肽段优化任务。
     
-    需要提供：
+    系统将自动使用以下固定配置：
+    - cores: 12 (CPU核心数)
+    - cleanup: True (自动清理中间文件)
+    - proteinmpnn_enabled: True (启用ProteinMPNN优化)
+    - n_poses: 10 (对接构象数量)
+    - step: None (执行完整优化流程)
+    
+    必需参数：
     - peptide_sequence: 肽段序列
     - receptor_pdb_filename: 受体蛋白PDB文件名（需要先通过/uploads上传）
-    - cores: CPU核心数（可选，默认12）
-    - cleanup: 是否清理中间文件（可选，默认True）
-    - step: 运行特定步骤（可选，None表示运行完整流程）
-    - proteinmpnn_enabled: 是否启用ProteinMPNN优化（可选，默认True）
-    - n_poses: 生成对接构象数量（可选，默认10）
-    - num_seq_per_target: 每个目标生成的序列数（可选，默认10）
-    - proteinmpnn_seed: ProteinMPNN随机数种子（可选，默认37）
-    - n_iterations: 优化迭代次数（可选，默认5）
-    - n_rosetta_runs: 每次迭代中Rosetta的运行次数（可选，默认20）
+    
+    可配置参数：
+    - num_seq_per_target: 每个目标生成的序列数（默认10）
+    - proteinmpnn_seed: ProteinMPNN随机数种子（默认37）
+    - n_iterations: 优化迭代次数（默认5）
+    - n_rosetta_runs: 每次迭代中Rosetta的运行次数（默认20）
     """
     current_user = request.state.user
     logger.info("User %s creating peptide optimization task", current_user.username)
@@ -45,9 +49,6 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
         
         if not optimization_request.receptor_pdb_filename:
             raise HTTPException(status_code=400, detail="Receptor PDB filename is required")
-        
-        if optimization_request.step and (optimization_request.step < 1 or optimization_request.step > 8):
-            raise HTTPException(status_code=400, detail="Step must be between 1 and 8")
         
         # 检查上传的PDB文件是否存在
         uploads_dir = Path(ROOT) / "uploads" / current_user.id
@@ -77,19 +78,23 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             f.write(">peptide\n")
             f.write(optimization_request.peptide_sequence.strip() + "\n")
         
-        # 创建参数配置文件
+        # 创建参数配置文件（使用系统固定的默认值）
         config_path = job_dir / "optimization_config.txt"
         with open(config_path, 'w') as f:
-            f.write(f"cores={optimization_request.cores}\n")
-            f.write(f"cleanup={optimization_request.cleanup}\n")
-            f.write(f"proteinmpnn_enabled={optimization_request.proteinmpnn_enabled}\n")
-            f.write(f"n_poses={optimization_request.n_poses}\n")
+            # 系统固定参数
+            f.write(f"cores=12\n")  # 固定为12核心
+            f.write(f"cleanup=True\n")  # 固定启用清理
+            f.write(f"proteinmpnn_enabled=True\n")  # 固定启用ProteinMPNN
+            f.write(f"n_poses=10\n")  # 固定对接构象数量
+            # 不写入step参数，表示执行完整流程
+            
+            # 用户可配置参数
             f.write(f"num_seq_per_target={optimization_request.num_seq_per_target}\n")
             f.write(f"proteinmpnn_seed={optimization_request.proteinmpnn_seed}\n")
             f.write(f"n_iterations={optimization_request.n_iterations}\n")
             f.write(f"n_rosetta_runs={optimization_request.n_rosetta_runs}\n")
-            if optimization_request.step:
-                f.write(f"step={optimization_request.step}\n")
+            
+            # 任务信息
             f.write(f"peptide_sequence={optimization_request.peptide_sequence}\n")
             f.write(f"receptor_pdb_filename={optimization_request.receptor_pdb_filename}\n")
         
@@ -114,7 +119,7 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             logger.error("Failed to create peptide task params for task %s: %s", task_id, e)
             # 注意：这里不抛出异常，因为主要任务已经创建，参数记录失败不应该影响任务执行
         
-        logger.info("Peptide optimization task created: task_id=%s, user=%s", 
+        logger.info("Peptide optimization task created with fixed system configuration: task_id=%s, user=%s, cores=12, cleanup=True, proteinmpnn_enabled=True, complete_pipeline=True", 
                    task_id, current_user.username)
         
         # 获取创建的任务对象
@@ -171,11 +176,18 @@ async def get_optimization_task_status(request: Request, task_id: str):
 
 
 @router.get("/optimize/{task_id}/config",
-           summary="获取蛋白优化任务配置",
-           description="查询蛋白优化任务的配置参数")
+           summary="获取肽段优化任务配置",
+           description="查询肽段优化任务的配置参数。注意：系统固定参数（cores、cleanup、proteinmpnn_enabled、n_poses）将显示为固定值，step参数不存在表示执行完整流程")
 async def get_optimization_task_config(request: Request, task_id: str) -> Dict[str, Any]:
     """
-    获取蛋白优化任务的配置参数。
+    获取肽段优化任务的配置参数。
+    
+    返回的配置包括：
+    - 系统固定参数：cores=12, cleanup=True, proteinmpnn_enabled=True, n_poses=10
+    - 用户配置参数：num_seq_per_target, proteinmpnn_seed, n_iterations, n_rosetta_runs
+    - 任务信息：peptide_sequence, receptor_pdb_filename
+    
+    注意：如果没有step参数，表示执行完整优化流程
     """
     current_user = request.state.user
     

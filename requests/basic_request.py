@@ -59,21 +59,24 @@ class PeptideOptimizationRequest(BaseModel):
     # 受体蛋白PDB文件名（用户上传的文件名）
     receptor_pdb_filename: str
     
-    # 可选参数
-    cores: int = 12  # CPU核心数
-    cleanup: bool = True  # 是否清理中间文件
-    step: Optional[int] = None  # 运行特定步骤(1-8)，None表示运行完整流程
+    # 系统固定参数（不再允许用户配置）
+    # cores: 固定为12（服务端自动配置）
+    # cleanup: 固定为True（自动清理中间文件）
+    # step: 固定为None（执行完整优化流程）
+    # proteinmpnn_enabled: 固定为True（始终启用ProteinMPNN）
+    # n_poses: 固定为10（服务端自动配置）
     
-    # ProteinMPNN相关参数
-    proteinmpnn_enabled: bool = True  # 是否启用ProteinMPNN优化
-    
-    # Docking相关参数
-    n_poses: int = 10  # adcp命令中的-N参数，生成对接构象数量
-    
-    # ProteinMPNN序列生成参数
+    # ProteinMPNN序列生成参数（用户可配置）
     num_seq_per_target: int = 10  # 每个目标生成的序列数
     proteinmpnn_seed: int = 37  # ProteinMPNN随机数种子
     
-    # 成本计算参数
+    # 成本计算参数（用户可配置）
     n_iterations: int = 5  # 优化迭代次数（默认5次）
     n_rosetta_runs: int = 20  # 每次迭代中Rosetta的运行次数（默认20次）
+    
+    # 向后兼容性字段（接受但忽略）
+    cores: Optional[int] = None  # 废弃字段，将被忽略
+    cleanup: Optional[bool] = None  # 废弃字段，将被忽略
+    step: Optional[int] = None  # 废弃字段，将被忽略
+    proteinmpnn_enabled: Optional[bool] = None  # 废弃字段，将被忽略
+    n_poses: Optional[int] = None  # 废弃字段，将被忽略
