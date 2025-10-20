@@ -173,6 +173,135 @@ async def list_user_tasks(
             total_pages=total_pages
         )
 
+# ==================== CSV下载路由（必须在/{task_id}之前定义） ====================
+
+@router.get("/{task_id}/peptide/optimization/csv")
+async def download_peptide_optimization_csv(request: Request, task_id: str):
+    """
+    下载肽序列优化任务结果的CSV文件（用于前端组装数据的替代）
+    
+    为前端PeptideOptimizationTaskDetail组件提供CSV下载功能
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    if task.task_type != "peptide_optimization":
+        raise HTTPException(status_code=400, detail="Task type is not peptide_optimization")
+        
+    if task.status != "finished":
+        raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
+    
+    logger.info("User %s (%s) downloading peptide optimization CSV for task %s", 
+                user.username, user_info['auth_type'], task_id)
+    
+    try:
+        # 尝试从result.json获取详细结果
+        result_json_path = Path(task.job_dir) / "output" / "result.json"
+        if result_json_path.exists():
+            result_data = json.loads(result_json_path.read_text(encoding="utf-8"))
+            
+            if 'results' in result_data:
+                results = result_data['results']
+                
+                # 生成CSV内容 - 对应PeptideOptimizationTaskDetail的详细格式
+                csv_lines = [
+                    '排名,原始序列,原始序列亲和力评分,原始序列总体评分,最优序列,总体评分,分子量,等电点,芳香性,不稳定指数,疏水性,亲水性,二级结构分数'
+                ]
+                
+                for index, result in enumerate(results, 1):
+                    original_seq = result.get('originalSequence', '').replace('"', '""')
+                    optimal_seq = result.get('optimalSequence', '').replace('"', '""')
+                    secondary_structure = str(result.get('secondaryStructureFraction', '')).replace('"', '""')
+                    
+                    line = (
+                        f'{index},'
+                        f'"{original_seq}",'
+                        f'{result.get("originalSequenceAffinityScore", "")},'
+                        f'{result.get("originalSequenceGlobalScore", "")},'
+                        f'"{optimal_seq}",'
+                        f'{result.get("globalScore", "")},'
+                        f'{result.get("molecularWeight", "")},'
+                        f'{result.get("isoelectricPoint", "")},'
+                        f'{result.get("aromaticity", "")},'
+                        f'{result.get("instabilityIndex", "")},'
+                        f'{result.get("hydrophobicity", "")},'
+                        f'{result.get("hydrophilicity", "")},'
+                        f'"{secondary_structure}"'
+                    )
+                    csv_lines.append(line)
+                
+                csv_content = '\n'.join(csv_lines)
+                
+                return StreamingResponse(
+                    io.BytesIO(csv_content.encode('utf-8-sig')),  # 使用UTF-8 BOM编码支持中文
+                    media_type="text/csv",
+                    headers={
+                        "Content-Disposition": f"attachment; filename=peptide_optimization_results_{task_id}.csv",
+                        "Cache-Control": "no-cache"
+                    }
+                )
+        
+        # 如果没有找到result.json，尝试使用现有的result.csv文件
+        result_csv_path = Path(task.job_dir) / "output" / "result.csv"
+        if result_csv_path.exists():
+            return FileResponse(
+                path=str(result_csv_path),
+                media_type="text/csv",
+                filename=f"peptide_optimization_results_{task_id}.csv",
+                headers={"Cache-Control": "no-cache"}
+            )
+        
+        raise HTTPException(status_code=404, detail="No peptide optimization results found")
+        
+    except Exception as e:
+        logger.error("Error generating peptide optimization CSV for task %s: %s", task_id, str(e))
+        raise HTTPException(status_code=500, detail=f"Error generating CSV: {str(e)}")
+
+@router.get("/{task_id}/peptide/results/csv")
+async def download_peptide_results_csv(request: Request, task_id: str):
+    """
+    下载肽序列优化结果的CSV文件（简化版本）
+    
+    为前端PeptideOptimization组件的主页面结果下载提供支持
+    对应动态列结构的结果数据
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    if task.task_type != "peptide_optimization":
+        raise HTTPException(status_code=400, detail="Task type is not peptide_optimization")
+        
+    if task.status != "finished":
+        raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
+    
+    logger.info("User %s (%s) downloading peptide results CSV for task %s", 
+                user.username, user_info['auth_type'], task_id)
+    
+    try:
+        # 尝试使用现有的result.csv文件（这是最常见的情况）
+        result_csv_path = Path(task.job_dir) / "output" / "result.csv"
+        if result_csv_path.exists():
+            return FileResponse(
+                path=str(result_csv_path),
+                media_type="text/csv",
+                filename=f"peptide_results_{task_id}.csv",
+                headers={"Cache-Control": "no-cache"}
+            )
+        
+        raise HTTPException(status_code=404, detail="No peptide results found")
+        
+    except Exception as e:
+        logger.error("Error downloading peptide results CSV for task %s: %s", task_id, str(e))
+        raise HTTPException(status_code=500, detail=f"Error downloading CSV: {str(e)}")
+
 @router.get("/{task_id}", response_model=TaskResponse,
            summary="高优先级任务状态查询", 
            description="快速获取任务状态，优化响应速度")
@@ -995,132 +1124,3 @@ async def download_docking_results_csv(request: Request, task_id: str):
     except Exception as e:
         logger.error("Error generating docking CSV for task %s: %s", task_id, str(e))
         raise HTTPException(status_code=500, detail=f"Error generating CSV: {str(e)}")
-
-
-@router.get("/{task_id}/peptide/optimization/csv")
-async def download_peptide_optimization_csv(request: Request, task_id: str):
-    """
-    下载肽序列优化任务结果的CSV文件（用于前端组装数据的替代）
-    
-    为前端PeptideOptimizationTaskDetail组件提供CSV下载功能
-    """
-    user_info = get_current_user_info(request)
-    user = user_info['user']
-    
-    task = TaskService.get_task(task_id)
-    if not task or task.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    if task.task_type != "peptide_optimization":
-        raise HTTPException(status_code=400, detail="Task type is not peptide_optimization")
-        
-    if task.status != "finished":
-        raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
-    
-    logger.info("User %s (%s) downloading peptide optimization CSV for task %s", 
-                user.username, user_info['auth_type'], task_id)
-    
-    try:
-        # 尝试从result.json获取详细结果
-        result_json_path = Path(task.job_dir) / "output" / "result.json"
-        if result_json_path.exists():
-            result_data = json.loads(result_json_path.read_text(encoding="utf-8"))
-            
-            if 'results' in result_data:
-                results = result_data['results']
-                
-                # 生成CSV内容 - 对应PeptideOptimizationTaskDetail的详细格式
-                csv_lines = [
-                    '排名,原始序列,原始序列亲和力评分,原始序列总体评分,最优序列,总体评分,分子量,等电点,芳香性,不稳定指数,疏水性,亲水性,二级结构分数'
-                ]
-                
-                for index, result in enumerate(results, 1):
-                    original_seq = result.get('originalSequence', '').replace('"', '""')
-                    optimal_seq = result.get('optimalSequence', '').replace('"', '""')
-                    secondary_structure = str(result.get('secondaryStructureFraction', '')).replace('"', '""')
-                    
-                    line = (
-                        f'{index},'
-                        f'"{original_seq}",'
-                        f'{result.get("originalSequenceAffinityScore", "")},'
-                        f'{result.get("originalSequenceGlobalScore", "")},'
-                        f'"{optimal_seq}",'
-                        f'{result.get("globalScore", "")},'
-                        f'{result.get("molecularWeight", "")},'
-                        f'{result.get("isoelectricPoint", "")},'
-                        f'{result.get("aromaticity", "")},'
-                        f'{result.get("instabilityIndex", "")},'
-                        f'{result.get("hydrophobicity", "")},'
-                        f'{result.get("hydrophilicity", "")},'
-                        f'"{secondary_structure}"'
-                    )
-                    csv_lines.append(line)
-                
-                csv_content = '\n'.join(csv_lines)
-                
-                return StreamingResponse(
-                    io.BytesIO(csv_content.encode('utf-8-sig')),  # 使用UTF-8 BOM编码支持中文
-                    media_type="text/csv",
-                    headers={
-                        "Content-Disposition": f"attachment; filename=peptide_optimization_results_{task_id}.csv",
-                        "Cache-Control": "no-cache"
-                    }
-                )
-        
-        # 如果没有找到result.json，尝试使用现有的result.csv文件
-        result_csv_path = Path(task.job_dir) / "output" / "result.csv"
-        if result_csv_path.exists():
-            return FileResponse(
-                path=str(result_csv_path),
-                media_type="text/csv",
-                filename=f"peptide_optimization_results_{task_id}.csv",
-                headers={"Cache-Control": "no-cache"}
-            )
-        
-        raise HTTPException(status_code=404, detail="No peptide optimization results found")
-        
-    except Exception as e:
-        logger.error("Error generating peptide optimization CSV for task %s: %s", task_id, str(e))
-        raise HTTPException(status_code=500, detail=f"Error generating CSV: {str(e)}")
-
-
-@router.get("/{task_id}/peptide/results/csv")
-async def download_peptide_results_csv(request: Request, task_id: str):
-    """
-    下载肽序列优化结果的CSV文件（简化版本）
-    
-    为前端PeptideOptimization组件的主页面结果下载提供支持
-    对应动态列结构的结果数据
-    """
-    user_info = get_current_user_info(request)
-    user = user_info['user']
-    
-    task = TaskService.get_task(task_id)
-    if not task or task.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    if task.task_type != "peptide_optimization":
-        raise HTTPException(status_code=400, detail="Task type is not peptide_optimization")
-        
-    if task.status != "finished":
-        raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
-    
-    logger.info("User %s (%s) downloading peptide results CSV for task %s", 
-                user.username, user_info['auth_type'], task_id)
-    
-    try:
-        # 尝试使用现有的result.csv文件（这是最常见的情况）
-        result_csv_path = Path(task.job_dir) / "output" / "result.csv"
-        if result_csv_path.exists():
-            return FileResponse(
-                path=str(result_csv_path),
-                media_type="text/csv",
-                filename=f"peptide_results_{task_id}.csv",
-                headers={"Cache-Control": "no-cache"}
-            )
-        
-        raise HTTPException(status_code=404, detail="No peptide results found")
-        
-    except Exception as e:
-        logger.error("Error accessing peptide results CSV for task %s: %s", task_id, str(e))
-        raise HTTPException(status_code=500, detail=f"Error accessing CSV: {str(e)}")
