@@ -17,15 +17,15 @@ class TaskService:
         task_id = uuid.uuid4().hex
         logger.info("Creating new task: id=%s, user_id=%s, type=%s", 
                    task_id, user_id, task_type)
-        now = datetime.utcnow()
+        # 使用None，让数据库的DEFAULT CURRENT_TIMESTAMP处理时间
         task = Task(
             id=task_id,
             user_id=user_id,
             task_type=task_type,
             job_dir=job_dir,
             status=TaskStatus.PENDING,
-            created_at=now,
-            updated_at=now
+            created_at=None,  # 将由数据库DEFAULT CURRENT_TIMESTAMP设置
+            updated_at=None   # 将由数据库DEFAULT CURRENT_TIMESTAMP设置
         )
         TaskRepository.create(task)
         logger.debug("Task created successfully: %s", task_id)
@@ -39,13 +39,15 @@ class TaskService:
         
         update_data: Dict[str, Any] = {"status": status}
         
-        # 根据状态自动设置时间戳
+        # 根据状态自动设置时间戳 - 使用数据库NOW()保证时区一致
         if status == "running":
             current_task = TaskService.get_task(task_id)
             if current_task and not current_task.started_at:
-                update_data["started_at"] = datetime.utcnow()
+                # 使用特殊标记，让update_task方法使用NOW()
+                update_data["started_at"] = "NOW()"
         elif status in ["finished", "failed", "cancelled"]:
-            update_data["finished_at"] = datetime.utcnow()
+            # 使用特殊标记，让update_task方法使用NOW()
+            update_data["finished_at"] = "NOW()"
             
         TaskRepository.update_task(task_id, update_data)
 

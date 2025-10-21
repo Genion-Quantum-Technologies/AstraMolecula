@@ -22,7 +22,7 @@ class Task(BaseModel):
     task_type: str  # 'generate' or 'docking'
     job_dir: str
     status: str = TaskStatus.PENDING
-    created_at: datetime
+    created_at: Optional[datetime] = None  # 允许为None，由数据库DEFAULT设置
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

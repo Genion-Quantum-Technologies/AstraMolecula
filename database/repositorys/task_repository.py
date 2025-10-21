@@ -6,19 +6,34 @@ from database.models.task import Task
 class TaskRepository:
     @staticmethod
     def create(task: Task) -> None:
-        sql = """
-        INSERT INTO tasks (
-            id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
+        # 如果created_at为None，则让数据库使用DEFAULT CURRENT_TIMESTAMP
+        if task.created_at is None:
+            sql = """
+            INSERT INTO tasks (
+                id, user_id, task_type, job_dir, status, started_at, finished_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (
+                task.id, task.user_id, task.task_type, task.job_dir, 
+                task.status, task.started_at, task.finished_at, task.updated_at
+            )
+        else:
+            sql = """
+            INSERT INTO tasks (
+                id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (
+                task.id, task.user_id, task.task_type, task.job_dir, 
+                task.status, task.created_at, task.started_at, task.finished_at, task.updated_at
+            )
+        
         conn = get_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(sql, (
-                    task.id, task.user_id, task.task_type, task.job_dir, 
-                    task.status, task.created_at, task.started_at, task.finished_at, task.updated_at
-                ))
+                cur.execute(sql, values)
             conn.commit()
         finally:
             conn.close()
@@ -37,6 +52,9 @@ class TaskRepository:
             if key == "metadata" and value is not None:
                 set_clauses.append(f"{key} = %s")
                 values.append(json.dumps(value))
+            elif value == "NOW()":  # 特殊处理NOW()函数
+                set_clauses.append(f"{key} = NOW()")
+                # 不添加到values中，因为NOW()直接在SQL中
             else:
                 set_clauses.append(f"{key} = %s")
                 values.append(value)
