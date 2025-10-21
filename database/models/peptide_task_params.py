@@ -15,9 +15,16 @@ class PeptideTaskParams(BaseModel):
     peptide_sequence: str            # 输入的多肽序列（氨基酸序列）
     peptide_length: int              # 多肽序列长度 = len(peptide_sequence)
     
+    # 受体蛋白参数
+    receptor_pdb_filename: str       # 受体蛋白PDB文件名
+    
     # 优化参数
     n_iterations: int                # 优化迭代总次数
     n_rosetta_runs: int              # 每次迭代中Rosetta的运行次数
+    
+    # ProteinMPNN参数
+    num_seq_per_target: int          # ProteinMPNN每个目标生成的序列数
+    proteinmpnn_seed: int            # ProteinMPNN随机数种子
     
     # 计算量评估结果
     total_calculations: int          # 总计算次数 = n_iterations * n_rosetta_runs

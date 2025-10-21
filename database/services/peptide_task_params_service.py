@@ -19,8 +19,11 @@ class PeptideTaskParamsService:
     def create_task_params(
         task_id: str,
         peptide_sequence: str,
+        receptor_pdb_filename: str,
         n_iterations: int,
-        n_rosetta_runs: int
+        n_rosetta_runs: int,
+        num_seq_per_target: int,
+        proteinmpnn_seed: int
     ) -> PeptideTaskParams:
         """
         创建peptide任务参数
@@ -28,8 +31,11 @@ class PeptideTaskParamsService:
         Args:
             task_id: 任务ID
             peptide_sequence: 多肽序列
+            receptor_pdb_filename: 受体蛋白PDB文件名
             n_iterations: 迭代次数
             n_rosetta_runs: 每次迭代的Rosetta运行次数
+            num_seq_per_target: ProteinMPNN每个目标生成的序列数
+            proteinmpnn_seed: ProteinMPNN随机数种子
             
         Returns:
             创建的PeptideTaskParams对象
@@ -42,8 +48,11 @@ class PeptideTaskParamsService:
             params = PeptideCostCalculator.create_peptide_task_params(
                 task_id=task_id,
                 peptide_sequence=peptide_sequence,
+                receptor_pdb_filename=receptor_pdb_filename,
                 n_iterations=n_iterations,
-                n_rosetta_runs=n_rosetta_runs
+                n_rosetta_runs=n_rosetta_runs,
+                num_seq_per_target=num_seq_per_target,
+                proteinmpnn_seed=proteinmpnn_seed
             )
             
             logger.info("Successfully created peptide task params: %.2f CUs", 
@@ -95,7 +104,10 @@ class PeptideTaskParamsService:
     def estimate_cost_before_submission(
         peptide_sequence: str,
         n_iterations: int,
-        n_rosetta_runs: int
+        n_rosetta_runs: int,
+        receptor_pdb_filename: str = "preview.pdb",
+        num_seq_per_target: int = 10,
+        proteinmpnn_seed: int = 37
     ) -> Dict[str, Any]:
         """
         在提交任务前进行成本预估
@@ -104,6 +116,9 @@ class PeptideTaskParamsService:
             peptide_sequence: 多肽序列
             n_iterations: 迭代次数
             n_rosetta_runs: 每次迭代的Rosetta运行次数
+            receptor_pdb_filename: 受体蛋白PDB文件名
+            num_seq_per_target: ProteinMPNN每个目标生成的序列数
+            proteinmpnn_seed: ProteinMPNN随机数种子
             
         Returns:
             成本预估结果
@@ -116,7 +131,10 @@ class PeptideTaskParamsService:
             return PeptideCostCalculator.estimate_cost_before_submission(
                 peptide_sequence=peptide_sequence,
                 n_iterations=n_iterations,
-                n_rosetta_runs=n_rosetta_runs
+                n_rosetta_runs=n_rosetta_runs,
+                receptor_pdb_filename=receptor_pdb_filename,
+                num_seq_per_target=num_seq_per_target,
+                proteinmpnn_seed=proteinmpnn_seed
             )
         except Exception as e:
             logger.error("Failed to estimate peptide cost: %s", e)

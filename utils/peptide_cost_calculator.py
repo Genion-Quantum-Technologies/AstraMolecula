@@ -68,8 +68,11 @@ class PeptideCostCalculator:
     def create_peptide_task_params(
         task_id: str,
         peptide_sequence: str,
+        receptor_pdb_filename: str,
         n_iterations: int,
-        n_rosetta_runs: int
+        n_rosetta_runs: int,
+        num_seq_per_target: int,
+        proteinmpnn_seed: int
     ) -> PeptideTaskParams:
         """
         创建并保存peptide任务参数记录
@@ -91,8 +94,11 @@ class PeptideCostCalculator:
             task_id=task_id,
             peptide_sequence=peptide_sequence,
             peptide_length=cost_factors["peptide_length"],
+            receptor_pdb_filename=receptor_pdb_filename,
             n_iterations=n_iterations,
             n_rosetta_runs=n_rosetta_runs,
+            num_seq_per_target=num_seq_per_target,
+            proteinmpnn_seed=proteinmpnn_seed,
             total_calculations=cost_factors["total_calculations"],
             complexity_factor=cost_factors["complexity_factor"],
             total_compute_units=cost_factors["total_compute_units"],
@@ -213,7 +219,10 @@ class PeptideCostCalculator:
     def estimate_cost_before_submission(
         peptide_sequence: str,
         n_iterations: int,
-        n_rosetta_runs: int
+        n_rosetta_runs: int,
+        receptor_pdb_filename: str = "preview.pdb",
+        num_seq_per_target: int = 10,
+        proteinmpnn_seed: int = 37
     ) -> Dict[str, Any]:
         """
         在提交任务前进行成本预估（不保存到数据库）
@@ -235,8 +244,11 @@ class PeptideCostCalculator:
             task_id="preview", 
             peptide_sequence=peptide_sequence,
             peptide_length=cost_factors["peptide_length"],
+            receptor_pdb_filename=receptor_pdb_filename,
             n_iterations=n_iterations,
             n_rosetta_runs=n_rosetta_runs,
+            num_seq_per_target=num_seq_per_target,
+            proteinmpnn_seed=proteinmpnn_seed,
             total_calculations=cost_factors["total_calculations"],
             complexity_factor=cost_factors["complexity_factor"],
             total_compute_units=cost_factors["total_compute_units"],

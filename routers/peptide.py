@@ -110,8 +110,11 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             peptide_params = PeptideTaskParamsService.create_task_params(
                 task_id=task_id,
                 peptide_sequence=optimization_request.peptide_sequence,
+                receptor_pdb_filename=optimization_request.receptor_pdb_filename,
                 n_iterations=optimization_request.n_iterations,
-                n_rosetta_runs=optimization_request.n_rosetta_runs
+                n_rosetta_runs=optimization_request.n_rosetta_runs,
+                num_seq_per_target=optimization_request.num_seq_per_target,
+                proteinmpnn_seed=optimization_request.proteinmpnn_seed
             )
             logger.info("Peptide task params created: task_id=%s, total_compute_units=%.2f", 
                        task_id, peptide_params.total_compute_units)

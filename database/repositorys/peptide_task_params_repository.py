@@ -24,8 +24,11 @@ class PeptideTaskParamsRepository:
                 task_id CHAR(32) NOT NULL,
                 peptide_sequence TEXT NOT NULL,
                 peptide_length INT NOT NULL,
+                receptor_pdb_filename VARCHAR(255) NOT NULL,
                 n_iterations INT NOT NULL,
                 n_rosetta_runs INT NOT NULL,
+                num_seq_per_target INT NOT NULL,
+                proteinmpnn_seed INT NOT NULL,
                 total_calculations INT NOT NULL,
                 complexity_factor DECIMAL(15,6) NOT NULL,
                 total_compute_units DECIMAL(20,6) NOT NULL,
@@ -54,14 +57,15 @@ class PeptideTaskParamsRepository:
         try:
             sql = """
             INSERT INTO peptide_task_params (
-                id, task_id, peptide_sequence, peptide_length,
-                n_iterations, n_rosetta_runs, total_calculations,
-                complexity_factor, total_compute_units
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                id, task_id, peptide_sequence, peptide_length, receptor_pdb_filename,
+                n_iterations, n_rosetta_runs, num_seq_per_target, proteinmpnn_seed,
+                total_calculations, complexity_factor, total_compute_units
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(sql, (
                 params.id, params.task_id, params.peptide_sequence, params.peptide_length,
-                params.n_iterations, params.n_rosetta_runs, params.total_calculations,
+                params.receptor_pdb_filename, params.n_iterations, params.n_rosetta_runs,
+                params.num_seq_per_target, params.proteinmpnn_seed, params.total_calculations,
                 params.complexity_factor, params.total_compute_units
             ))
             conn.commit()
@@ -81,9 +85,9 @@ class PeptideTaskParamsRepository:
         cursor = conn.cursor()
         try:
             sql = """
-            SELECT id, task_id, peptide_sequence, peptide_length,
-                   n_iterations, n_rosetta_runs, total_calculations,
-                   complexity_factor, total_compute_units,
+            SELECT id, task_id, peptide_sequence, peptide_length, receptor_pdb_filename,
+                   n_iterations, n_rosetta_runs, num_seq_per_target, proteinmpnn_seed,
+                   total_calculations, complexity_factor, total_compute_units,
                    created_at, updated_at
             FROM peptide_task_params WHERE task_id = %s
             """
@@ -93,9 +97,10 @@ class PeptideTaskParamsRepository:
             if row:
                 return PeptideTaskParams(
                     id=row[0], task_id=row[1], peptide_sequence=row[2], peptide_length=row[3],
-                    n_iterations=row[4], n_rosetta_runs=row[5], total_calculations=row[6],
-                    complexity_factor=row[7], total_compute_units=row[8],
-                    created_at=row[9], updated_at=row[10]
+                    receptor_pdb_filename=row[4], n_iterations=row[5], n_rosetta_runs=row[6],
+                    num_seq_per_target=row[7], proteinmpnn_seed=row[8], total_calculations=row[9],
+                    complexity_factor=row[10], total_compute_units=row[11],
+                    created_at=row[12], updated_at=row[13]
                 )
             return None
         except Exception as e:
@@ -130,9 +135,9 @@ class PeptideTaskParamsRepository:
         cursor = conn.cursor()
         try:
             sql = """
-            SELECT id, task_id, peptide_sequence, peptide_length,
-                   n_iterations, n_rosetta_runs, total_calculations,
-                   complexity_factor, total_compute_units,
+            SELECT id, task_id, peptide_sequence, peptide_length, receptor_pdb_filename,
+                   n_iterations, n_rosetta_runs, num_seq_per_target, proteinmpnn_seed,
+                   total_calculations, complexity_factor, total_compute_units,
                    created_at, updated_at
             FROM peptide_task_params 
             WHERE DATE(created_at) BETWEEN %s AND %s
@@ -145,9 +150,10 @@ class PeptideTaskParamsRepository:
             for row in rows:
                 results.append(PeptideTaskParams(
                     id=row[0], task_id=row[1], peptide_sequence=row[2], peptide_length=row[3],
-                    n_iterations=row[4], n_rosetta_runs=row[5], total_calculations=row[6],
-                    complexity_factor=row[7], total_compute_units=row[8],
-                    created_at=row[9], updated_at=row[10]
+                    receptor_pdb_filename=row[4], n_iterations=row[5], n_rosetta_runs=row[6],
+                    num_seq_per_target=row[7], proteinmpnn_seed=row[8], total_calculations=row[9],
+                    complexity_factor=row[10], total_compute_units=row[11],
+                    created_at=row[12], updated_at=row[13]
                 ))
             return results
         except Exception as e:
