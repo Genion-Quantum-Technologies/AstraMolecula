@@ -7,27 +7,28 @@ class TaskRepository:
     @staticmethod
     def create(task: Task) -> None:
         # 如果created_at为None，则让数据库使用DEFAULT CURRENT_TIMESTAMP
+        # updated_at 字段不在INSERT中指定，让数据库使用DEFAULT CURRENT_TIMESTAMP
         if task.created_at is None:
             sql = """
             INSERT INTO tasks (
-                id, user_id, task_type, job_dir, status, started_at, finished_at, updated_at
+                id, user_id, task_type, job_dir, status, started_at, finished_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (
+                task.id, task.user_id, task.task_type, task.job_dir, 
+                task.status, task.started_at, task.finished_at
+            )
+        else:
+            sql = """
+            INSERT INTO tasks (
+                id, user_id, task_type, job_dir, status, created_at, started_at, finished_at
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 task.id, task.user_id, task.task_type, task.job_dir, 
-                task.status, task.started_at, task.finished_at, task.updated_at
-            )
-        else:
-            sql = """
-            INSERT INTO tasks (
-                id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            values = (
-                task.id, task.user_id, task.task_type, task.job_dir, 
-                task.status, task.created_at, task.started_at, task.finished_at, task.updated_at
+                task.status, task.created_at, task.started_at, task.finished_at
             )
         
         conn = get_connection()
