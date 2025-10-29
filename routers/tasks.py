@@ -1124,3 +1124,73 @@ async def download_docking_results_csv(request: Request, task_id: str):
     except Exception as e:
         logger.error("Error generating docking CSV for task %s: %s", task_id, str(e))
         raise HTTPException(status_code=500, detail=f"Error generating CSV: {str(e)}")
+
+
+@router.get("/{task_id}/docking/binding-analysis/csv/download")
+async def download_all_binding_mode_summary_csv(request: Request, task_id: str):
+    """
+    下载分子对接任务中所有的binding_mode_summary.csv文件（打包为ZIP）
+    
+    从 binding_analysis 文件夹中获取所有的 {compound_id}_binding_mode_summary.csv 文件
+    并将它们打包成一个ZIP文件返回给前端
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    if task.task_type != "docking":
+        raise HTTPException(status_code=400, detail="Task type is not docking")
+        
+    if task.status != "finished":
+        raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
+    
+    logger.info("User %s (%s) downloading binding mode summary CSV files for task %s", 
+                user.username, user_info['auth_type'], task_id)
+    
+    try:
+        # 获取binding_analysis文件夹路径
+        # binding_analysis 文件夹在 output/docked/ 下
+        binding_analysis_dir = Path(task.job_dir) / "output" / "docked" / "binding_analysis"
+        
+        if not binding_analysis_dir.exists():
+            raise HTTPException(status_code=404, detail="Binding analysis directory not found")
+        
+        # 查找所有的binding_mode_summary.csv文件
+        # CSV文件直接在 binding_analysis/ 下 (文件名格式: {compound_id}_binding_mode_summary.csv)
+        csv_files = list(binding_analysis_dir.glob("*_binding_mode_summary.csv"))
+        
+        if not csv_files:
+            raise HTTPException(status_code=404, detail="No binding mode summary CSV files found")
+        
+        # 创建内存中的ZIP文件
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for csv_file in csv_files:
+                # 将CSV文件添加到ZIP中，保持原始文件名
+                zip_file.write(csv_file, arcname=csv_file.name)
+        
+        zip_buffer.seek(0)
+        
+        logger.info("Successfully created ZIP with %d binding mode summary CSV files for task %s", 
+                    len(csv_files), task_id)
+        
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f"attachment; filename=binding_analysis_{task_id}.zip",
+                "Cache-Control": "no-cache"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error creating binding analysis ZIP for task %s: %s", task_id, str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error creating ZIP file: {str(e)}")
