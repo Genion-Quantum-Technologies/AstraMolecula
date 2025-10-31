@@ -1066,12 +1066,20 @@ async def download_generate_results_csv(request: Request, task_id: str):
 
 
 @router.get("/{task_id}/docking/results/csv")
-async def download_docking_results_csv(request: Request, task_id: str):
+async def download_docking_results_csv(
+    request: Request, 
+    task_id: str,
+    indices: Optional[str] = None  # 可选的索引参数，格式如 "0,2,5"
+):
     """
     下载分子对接任务结果的CSV文件
     
     为前端DockingTaskDetail组件提供CSV下载功能
     替代前端组装数据的方式
+    
+    参数:
+        task_id: 任务ID
+        indices: 可选的结果索引，用逗号分隔（如 "0,2,5"），不传则下载所有结果
     """
     user_info = get_current_user_info(request)
     user = user_info['user']
@@ -1086,8 +1094,8 @@ async def download_docking_results_csv(request: Request, task_id: str):
     if task.status != "finished":
         raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
     
-    logger.info("User %s (%s) downloading docking results CSV for task %s", 
-                user.username, user_info['auth_type'], task_id)
+    logger.info("User %s (%s) downloading docking results CSV for task %s (indices: %s)", 
+                user.username, user_info['auth_type'], task_id, indices or "all")
     
     try:
         # 从文件系统获取对接结果数据
@@ -1097,6 +1105,26 @@ async def download_docking_results_csv(request: Request, task_id: str):
         
         # 读取dockRes.json文件
         docking_results = json.loads(dockres_path.read_text(encoding="utf-8"))
+        
+        # 如果提供了索引参数，过滤结果
+        if indices:
+            try:
+                selected_indices = [int(i.strip()) for i in indices.split(',')]
+                # 过滤出选中的结果
+                filtered_results = []
+                for idx in selected_indices:
+                    if 0 <= idx < len(docking_results):
+                        filtered_results.append(docking_results[idx])
+                    else:
+                        logger.warning("Index %d out of range for task %s (total results: %d)", 
+                                     idx, task_id, len(docking_results))
+                
+                docking_results = filtered_results
+                logger.info("Filtered to %d results from indices: %s", 
+                           len(docking_results), indices)
+            except ValueError as e:
+                logger.error("Invalid indices format: %s, error: %s", indices, str(e))
+                raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
         
         # 生成CSV内容
         csv_lines = ['Ligand名称,SMILES表达式,对接评分 (Docking Score),SDF文件名']
@@ -1112,15 +1140,20 @@ async def download_docking_results_csv(request: Request, task_id: str):
         
         csv_content = '\n'.join(csv_lines)
         
+        # 文件名根据是否有选中来区分
+        filename = f"docking_results_{task_id}_selected.csv" if indices else f"docking_results_{task_id}.csv"
+        
         return StreamingResponse(
             io.BytesIO(csv_content.encode('utf-8-sig')),  # 使用UTF-8 BOM编码支持中文
             media_type="text/csv",
             headers={
-                "Content-Disposition": f"attachment; filename=docking_results_{task_id}.csv",
+                "Content-Disposition": f"attachment; filename={filename}",
                 "Cache-Control": "no-cache"
             }
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error generating docking CSV for task %s: %s", task_id, str(e))
         raise HTTPException(status_code=500, detail=f"Error generating CSV: {str(e)}")

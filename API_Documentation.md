@@ -1111,12 +1111,26 @@ CCO,46.07,20.23,-0.31,2.16,0.73
 
 **接口地址**: `GET /tasks/{task_id}/docking/results/csv`
 
-**描述**: 下载分子对接任务结果的CSV文件，从服务端生成标准格式的CSV数据
+**描述**: 下载分子对接任务结果的CSV文件，从服务端生成标准格式的CSV数据。支持下载全部结果或仅下载选中的结果。
 
 **认证要求**: JWT Token 或 API Key
 
 **路径参数**:
 - `task_id`: 任务ID
+
+**查询参数**:
+- `indices` (可选): 选中的结果索引，用逗号分隔（如 "0,2,5"）
+  - 不传此参数：下载所有结果
+  - 传入索引：只下载指定索引的结果
+
+**请求示例**:
+```bash
+# 下载所有结果
+GET /tasks/{task_id}/docking/results/csv
+
+# 只下载索引为 0, 2, 5 的结果
+GET /tasks/{task_id}/docking/results/csv?indices=0,2,5
+```
 
 **返回值**: CSV文件流
 
@@ -1131,8 +1145,11 @@ Ligand名称,SMILES表达式,对接评分 (Docking Score),SDF文件名
 - 仅适用于docking任务类型
 - 从任务的output/dockRes.json文件中读取对接数据并生成CSV
 - 支持UTF-8 BOM编码，确保中文兼容性
-- 文件命名格式：`docking_results_{task_id}.csv`
+- 文件命名格式：
+  - 全部结果：`docking_results_{task_id}.csv`
+  - 选中结果：`docking_results_{task_id}_selected.csv`
 - 字符串字段自动添加引号并转义特殊字符
+- 索引超出范围的会被忽略并记录警告日志
 
 ### 下载肽序列优化详细结果CSV
 
