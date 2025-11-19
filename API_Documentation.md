@@ -4,9 +4,17 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.3.0
+- **API版本**: 2.3.1
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 公开分享功能 (v2.3.1)
+
+- **自动分享链接生成**: Docking和Peptide任务结果自动包含share_url字段
+- **无需认证访问**: 分享链接可公开访问，无需登录或API Key
+- **3D结构查看**: 支持完整的3D分子结构可视化功能
+- **智能文件搜索**: 自动从input.json读取蛋白质文件路径
+- **安全防护**: 文件类型限制、路径验证、任务验证等多重安全措施
 
 ### 🆕 新功能亮点 (v2.2.0)
 
@@ -768,6 +776,7 @@ results = session.get("/tasks/{task_id}/dockRes")
     "smiles": "string", 
     "file": "string",
     "protein_path": "string",
+    "share_url": "string (🆕 v2.3.1)",
     "ligand_properties": "object (可选)",
     "docking_parameters": "object (可选)",
     "file_size": "integer (可选)",
@@ -775,6 +784,12 @@ results = session.get("/tasks/{task_id}/dockRes")
   }
 ]
 ```
+
+**🆕 v2.3.1 新增字段**:
+- `share_url`: 公开分享链接，无需登录即可访问3D结构查看器
+  - 格式示例: `http://106.14.212.218/public/docking-viewer?taskId=xxx&filename=xxx.sdf`
+  - 由后端自动生成，使用前端域名（不含端口号）
+  - 支持通过公开API访问配体和蛋白质文件
 
 ### 下载SDF结构文件
 
@@ -827,12 +842,19 @@ results = session.get("/tasks/{task_id}/dockRes")
     "rows": [
       {
         "index": "string",
-        "values": {"column_name": "value"}
+        "values": {"column_name": "value"},
+        "share_url": "string (🆕 v2.3.1)"
       }
     ]
   }
 }
 ```
+
+**🆕 v2.3.1 新增字段**:
+- `rows[].share_url`: 公开分享链接，无需登录即可访问3D结构查看器
+  - 格式示例: `http://106.14.212.218/public/peptide-viewer?taskId=xxx&filename=complex1.pdb`
+  - 由后端自动生成，使用数字索引（complex1.pdb, complex2.pdb等）
+  - 支持通过公开API访问完整的肽段-蛋白质复合物结构
 
 ### 下载肽段优化结果CSV
 
@@ -1062,6 +1084,214 @@ results = session.get("/tasks/{task_id}/dockRes")
 - `task_id`: 任务ID
 
 **返回值**: PDB文件流
+
+### 下载肽段特定文件
+
+**接口地址**: `GET /tasks/{task_id}/peptide/download/{filename}`
+
+**描述**: 下载肽段优化任务输出目录中的特定文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: 文件名
+
+**返回值**: 文件流
+
+## 🆕 公开分享功能 (v2.3.1)
+
+### 概述
+
+公开分享功能允许用户生成无需登录即可访问的分享链接，方便与他人分享分子对接和肽段优化的3D结构查看结果。
+
+### 特性
+
+- ✅ **无需认证**: 分享链接可以公开访问，接收者无需登录或API Key
+- ✅ **自动生成**: 后端在返回任务结果时自动为每条记录生成share_url
+- ✅ **3D可视化**: 支持完整的3D分子结构查看功能
+- ✅ **安全防护**: 后端验证任务存在性、文件类型、路径安全等
+- ✅ **自动搜索**: 对接任务自动从input.json读取蛋白质文件路径
+
+### 分享链接格式
+
+#### Docking任务分享链接
+```
+http://106.14.212.218/public/docking-viewer?taskId={task_id}&filename={sdf_filename}
+```
+
+**示例**:
+```
+http://106.14.212.218/public/docking-viewer?taskId=7cbd61b3aafb4d4489f4ba1eda58dab4&filename=analog_1-1-p0.sdf
+```
+
+#### Peptide任务分享链接
+```
+http://106.14.212.218/public/peptide-viewer?taskId={task_id}&filename={pdb_filename}
+```
+
+**示例**:
+```
+http://106.14.212.218/public/peptide-viewer?taskId=6295f6e6506442019750e18a89671d6c&filename=complex1.pdb
+```
+
+### 公开访问API端点
+
+以下API端点支持无需认证的公开访问，用于分享链接功能：
+
+#### 获取Docking任务SDF文件
+
+**接口地址**: `GET /public/docking/{task_id}/sdf/{filename}`
+
+**描述**: 获取对接任务的配体SDF文件内容（公开访问）
+
+**认证要求**: 无（公开访问）
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: SDF文件名
+
+**安全措施**:
+- 文件名格式验证（仅允许字母、数字、下划线、连字符、点号）
+- 文件类型限制（仅允许.sdf文件）
+- 路径安全检查（防止路径遍历攻击）
+- 搜索范围限制（仅在output/docked目录）
+
+**返回值**: SDF文件内容（text/plain）
+
+#### 获取Docking任务蛋白质文件
+
+**接口地址**: `GET /public/docking/{task_id}/protein`
+
+**描述**: 获取对接任务的蛋白质受体文件内容（公开访问）
+
+**认证要求**: 无（公开访问）
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**工作流程**:
+1. 验证任务是否存在且类型为docking
+2. 从任务目录的input/input.json文件读取receptor_pdbqt路径
+3. 如果input.json中没有，在任务目录中搜索常见蛋白质文件名
+4. 返回蛋白质文件内容
+
+**安全措施**:
+- 任务类型验证
+- 文件类型限制（仅允许.pdb/.pdbqt文件）
+- 路径安全检查
+- 搜索深度限制（最大深度2层）
+
+**返回值**: 蛋白质文件内容（text/plain）
+
+#### 获取Peptide任务PDB文件
+
+**接口地址**: `GET /public/peptide/{task_id}/complex/{filename}`
+
+**描述**: 获取肽段优化任务的复合物PDB文件内容（公开访问）
+
+**认证要求**: 无（公开访问）
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: PDB文件名（如complex1.pdb）
+
+**安全措施**:
+- 文件名格式验证
+- 文件类型限制（仅允许.pdb文件）
+- 路径安全检查
+- 搜索范围限制（仅在output目录及其子目录）
+
+**搜索目录**:
+- `{job_dir}/output/`
+- `{job_dir}/output/complexes/`
+- `{job_dir}/output/complex/`
+- `{job_dir}/output/pdb/`
+- `{job_dir}/output/pdbs/`
+
+**返回值**: PDB文件内容（text/plain）
+
+### 前端路由
+
+公开访问页面通过以下前端路由访问：
+
+- **Docking查看器**: `/public/docking-viewer`
+- **Peptide查看器**: `/public/peptide-viewer`
+
+### 使用流程
+
+#### 1. 获取任务结果（包含share_url）
+
+**Docking任务**:
+```bash
+curl -X GET "/tasks/{task_id}/dockRes" -H "Authorization: Bearer <token>"
+```
+
+返回示例:
+```json
+[
+  {
+    "title": "analog_1",
+    "pose": 1,
+    "score": -7.5,
+    "smiles": "CCO",
+    "file": "analog_1-1-p0.sdf",
+    "protein_path": "/path/to/protein.pdbqt",
+    "share_url": "http://106.14.212.218/public/docking-viewer?taskId=7cbd61b3&filename=analog_1-1-p0.sdf"
+  }
+]
+```
+
+**Peptide任务**:
+```bash
+curl -X GET "/tasks/{task_id}/peptide/result" -H "Authorization: Bearer <token>"
+```
+
+返回示例:
+```json
+{
+  "data": {
+    "rows": [
+      {
+        "index": "1",
+        "values": {
+          "Optimal sequence": "ACDEFGH",
+          "Global score": 8.5
+        },
+        "share_url": "http://106.14.212.218/public/peptide-viewer?taskId=6295f6e6&filename=complex1.pdb"
+      }
+    ]
+  }
+}
+```
+
+#### 2. 复制并分享链接
+
+前端自动显示Share按钮，用户点击即可复制生成的share_url。
+
+#### 3. 接收者访问
+
+接收者打开分享链接后，无需登录即可：
+- 查看3D分子结构
+- 旋转、缩放、平移视图
+- 切换显示样式（Cartoon、Stick、Surface等）
+- 查看原子和残基详细信息
+
+### 安全注意事项
+
+1. **文件名验证**: 所有文件名经过严格的正则表达式验证，防止路径遍历攻击
+2. **文件类型限制**: 仅允许访问特定类型的文件（SDF、PDB、PDBQT）
+3. **路径安全检查**: 使用`os.path.realpath()`确保文件在任务目录内
+4. **任务验证**: 确认任务存在且类型正确
+5. **CORS支持**: 响应包含适当的CORS头部，支持跨域访问
+6. **缓存优化**: 返回`Cache-Control`头部，提升访问速度
+
+### 限制和注意事项
+
+- 分享链接永久有效（只要任务和文件仍然存在）
+- 不建议分享包含敏感数据的任务结果
+- 公开API不记录访问者信息
+- 文件删除后分享链接将失效（返回404）
 
 ### 下载肽段特定文件
 
@@ -1820,40 +2050,59 @@ if response.status_code == 200:
 
 ✅ **统一架构**: 通过中间件统一处理两种认证方式，代码逻辑清晰
 
+✅ **🆕 公开分享**: 任务结果自动生成分享链接，支持无需登录的3D结构查看
+
 ---
 
-**文档版本**: v2.3.0  
-**最后更新**: 2025年10月20日
-**更新说明**: 本次更新简化了肽段优化接口，使用系统固定的最优配置。主要更新包括：
+**文档版本**: v2.3.1  
+**最后更新**: 2025年11月19日  
+**更新说明**: 本次更新新增公开分享功能，允许用户生成无需登录的分享链接。主要更新包括：
 
-### � 肽段优化简化 (v2.3.0)
+### 🔗 公开分享功能 (v2.3.1)
+- **自动生成分享链接**: 后端在返回任务结果时自动为每条记录生成share_url字段
+- **无需认证访问**: 分享链接可以公开访问，接收者无需登录或API Key
+- **智能URL生成**: 使用前端域名（不含端口号），确保链接正确性
+- **文件名规范化**: Peptide任务使用数字索引（complex1.pdb, complex2.pdb等）
+- **安全防护措施**: 多重验证机制，包括文件类型限制、路径安全检查等
+
+### 🔧 技术实现
+- **后端自动生成**: 修改`/tasks/{task_id}/dockRes`和`/tasks/{task_id}/peptide/result`接口
+- **公开API端点**: 新增3个公开访问端点（无需认证）
+  - `GET /public/docking/{task_id}/sdf/{filename}` - 获取SDF文件
+  - `GET /public/docking/{task_id}/protein` - 获取蛋白质文件
+  - `GET /public/peptide/{task_id}/complex/{filename}` - 获取PDB文件
+- **前端路由**: 新增`/public/docking-viewer`和`/public/peptide-viewer`路由
+- **智能搜索**: Docking任务自动从input.json读取receptor_pdbqt路径
+
+### 📚 文档更新
+- 新增"公开分享功能"章节，详细说明使用方法和安全措施
+- 更新DockResponse和PeptideResult数据结构，添加share_url字段
+- 添加公开API端点文档和使用示例
+- 说明分享链接格式和工作流程
+
+### 🔒 安全措施
+- 文件名正则验证，防止路径遍历攻击
+- 文件类型白名单限制（SDF/PDB/PDBQT）
+- 路径安全检查（realpath验证）
+- 任务类型验证和搜索深度限制
+- CORS支持和缓存优化
+
+### 🔄 向后兼容性
+- 不影响现有API调用
+- share_url为可选字段
+- 前端可选择性使用分享功能
+- 支持降级方案（前端生成链接）
+
+---
+
+**历史版本更新记录**:
+
+**v2.3.0** (2025年10月20日): 肽段优化简化
 - **系统固定配置**: 肽段优化使用预设的最优配置，简化用户决策
 - **自动完整流程**: 默认执行完整优化流程（8个步骤），无需用户选择
 - **最佳实践强制**: cores=12, cleanup=True, proteinmpnn_enabled=True, n_poses=10
 - **参数精简**: 用户只需配置核心参数（序列、文件、迭代参数等）
 - **向后兼容**: 废弃的参数仍被接受但会被忽略
-
-### 🔧 技术改进
-- **减少配置错误**: 消除因错误配置导致的任务失败
-- **提升成功率**: 使用经过验证的最优参数组合
-- **简化维护**: 统一配置降低系统复杂度
-- **增强日志**: 记录系统使用的固定配置信息
-
-### 📚 文档更新
-- 更新肽段优化接口说明
-- 明确系统固定配置和用户可配置参数
-- 添加向后兼容性说明
-- 更新使用示例和集成代码
-
-### 🔄 向后兼容性
-- 旧的API调用格式仍然有效
-- 废弃参数会被安全忽略
-- 客户端无需立即修改代码
-- 推荐逐步迁移到新的简化格式
-
----
-
-**历史版本更新记录**:
 
 **v2.2.0** (2025年8月27日): 新增服务端CSV生成功能，替代前端数据组装方式
 - **服务端CSV生成**: 新增4个专用CSV下载端点，替代前端数据组装
