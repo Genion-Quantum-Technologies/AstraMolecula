@@ -34,6 +34,7 @@ HIGH_PRIORITY_PATHS = {
 OPEN_PATH_PREFIXES = {
     "/logs",
     "/static",
+    "/public",  # 公开访问路径（无需认证）
 }
 
 def is_high_priority_request(path: str) -> bool:
