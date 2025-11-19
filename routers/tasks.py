@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 import zipfile
 import asyncio
 import pandas as pd
+import os
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from database.services import TaskService
@@ -19,6 +20,9 @@ from starlette.responses import FileResponse
 logger = get_logger("tasks_router", str(ROOT / "logs" / "tasks.log"), isMain=True)
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
+
+# 从环境变量获取前端URL，默认为空（将使用请求的origin）
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', '')
 
 def get_current_user_info(request: Request) -> Dict[str, Any]:
     """获取当前用户信息，支持多种认证方式"""
@@ -606,6 +610,21 @@ async def get_docking_results(request: Request, task_id: str):
 
     # 读取并解析 output.json，假设它是 List[dict] 且每个 dict 都符合 MoleculeOutput 的字段
     data = json.loads(output_path.read_text(encoding="utf-8"))
+    
+    # 获取前端基础URL（优先使用环境变量配置）
+    if FRONTEND_BASE_URL:
+        base_url = FRONTEND_BASE_URL
+    else:
+        # 从请求中提取，去除端口号和 /api 路径
+        base_url = f"{request.url.scheme}://{request.url.hostname}"
+    
+    # 为每条记录添加分享链接
+    for item in data:
+        if 'file' in item:
+            from urllib.parse import quote
+            filename = quote(item['file'])
+            item['share_url'] = f"{base_url}/public/docking-viewer?taskId={task_id}&filename={filename}"
+    
     return data
 
 
@@ -759,6 +778,13 @@ async def get_peptide_result_csv(request: Request, task_id: str):
         # 读取CSV文件并转换为JSON格式
         df = pd.read_csv(result_csv_path, index_col=0)
         
+        # 获取前端基础URL（优先使用环境变量配置）
+        if FRONTEND_BASE_URL:
+            base_url = FRONTEND_BASE_URL
+        else:
+            # 从请求中提取，去除端口号和 /api 路径
+            base_url = f"{request.url.scheme}://{request.url.hostname}"
+        
         # 转换为字典格式，保持索引作为行标识
         result_data = {
             "task_id": task_id,
@@ -772,11 +798,12 @@ async def get_peptide_result_csv(request: Request, task_id: str):
             }
         }
         
-        # 逐行转换数据
-        for idx, row in df.iterrows():
+        # 逐行转换数据（使用数字索引生成文件名）
+        for row_num, (idx, row) in enumerate(df.iterrows(), start=1):
             row_data = {
                 "index": idx,
-                "values": {}
+                "values": {},
+                "share_url": f"{base_url}/public/peptide-viewer?taskId={task_id}&filename=complex{row_num}.pdb"  # 使用数字索引
             }
             for col in df.columns:
                 value = row[col]

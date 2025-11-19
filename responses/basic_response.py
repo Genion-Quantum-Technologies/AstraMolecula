@@ -29,6 +29,7 @@ class DockResponse(BaseModel):
     smiles: str
     file: str
     protein_path: Optional[str] = None  # 添加protein路径字段
+    share_url: Optional[str] = None  # 公开分享链接
     
     # 扩展字段，提供更多信息
     ligand_properties: Optional[dict] = None  # 配体属性（分子量、TPSA等）
