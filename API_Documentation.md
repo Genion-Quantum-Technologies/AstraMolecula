@@ -4,9 +4,16 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.3.1
+- **API版本**: 2.3.2
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 下载功能增强 (v2.3.2)
+
+- **单独文件下载**: 支持下载单个对接结果文件（SDF/PDBQT）
+- **选择性CSV下载**: Docking CSV下载支持indices参数，可下载选中结果
+- **Binding Analysis下载**: 批量下载所有结合模式分析CSV文件
+- **完整文档**: 补充所有下载接口的详细API文档
 
 ### 🆕 公开分享功能 (v2.3.1)
 
@@ -426,23 +433,130 @@ results = session.get("/tasks/{task_id}/dockRes")
 {
   "ligands": [
     {
-      "smiles": "string",
-      "title": "string"
+      "smiles": "string",  // 配体的SMILES表达式
+      "title": "string"    // 配体名称/标识符
     }
   ],
-  "receptor_filename": "string (可选)",
-  "center_x": "float",
-  "center_y": "float", 
-  "center_z": "float",
-  "box_size_x": "float",
-  "box_size_y": "float",
-  "box_size_z": "float",
-  "min_ph": "float (默认6.0)",
-  "max_ph": "float (默认8.0)",
-  "n_jobs": "integer (默认8)",
-  "exhaustiveness": "integer (默认4)",
-  "n_poses": "integer (默认20)"
+  "receptor_filename": "string (可选)",  // 用户上传的受体PDBQT文件名，不提供则使用默认
+  
+  // 对接中心坐标 (Docking Center Coordinates) - 必填
+  "center_x": "float",  // X轴坐标 (单位: Å)
+  "center_y": "float",  // Y轴坐标 (单位: Å)
+  "center_z": "float",  // Z轴坐标 (单位: Å)
+  
+  // 搜索盒子尺寸 (Search Box Dimensions) - 必填
+  "box_size_x": "float",  // X轴方向尺寸 (单位: Å)
+  "box_size_y": "float",  // Y轴方向尺寸 (单位: Å)
+  "box_size_z": "float",  // Z轴方向尺寸 (单位: Å)
+  
+  // 配体准备参数
+  "min_ph": "float (默认6.0)",  // 配体质子化pH范围下限
+  "max_ph": "float (默认8.0)",  // 配体质子化pH范围上限
+  
+  // 计算参数
+  "n_jobs": "integer (默认8)",          // 并行作业数
+  "exhaustiveness": "integer (默认4)",  // 搜索彻底程度 (1-8，越高越准确但越慢)
+  "n_poses": "integer (默认20)"         // 生成的配体构象数量
 }
+```
+
+**参数详细说明**:
+
+| 参数组 | 参数名 | 类型 | 必填 | 默认值 | 说明 |
+|--------|--------|------|------|--------|------|
+| **配体信息** | `ligands` | array | ✅ | - | 要对接的配体分子列表 |
+| | `ligands[].smiles` | string | ✅ | - | 配体的SMILES表达式 |
+| | `ligands[].title` | string | ✅ | - | 配体的名称或标识符 |
+| **受体文件** | `receptor_filename` | string | ❌ | protein_7UDP.pdbqt | 用户已上传的受体PDBQT文件名 |
+| **对接中心坐标** | `center_x` | float | ✅ | 61.1053 | 对接盒子中心的X坐标 (单位: Å) |
+| | `center_y` | float | ✅ | 24.3245 | 对接盒子中心的Y坐标 (单位: Å) |
+| | `center_z` | float | ✅ | 17.1610 | 对接盒子中心的Z坐标 (单位: Å) |
+| **搜索盒子尺寸** | `box_size_x` | float | ✅ | 20.0 | X轴方向的盒子尺寸 (单位: Å) |
+| | `box_size_y` | float | ✅ | 25.0 | Y轴方向的盒子尺寸 (单位: Å) |
+| | `box_size_z` | float | ✅ | 30.0 | Z轴方向的盒子尺寸 (单位: Å) |
+| **配体准备** | `min_ph` | float | ❌ | 6.0 | 配体质子化状态的pH下限 |
+| | `max_ph` | float | ❌ | 8.0 | 配体质子化状态的pH上限 |
+| **计算资源** | `n_jobs` | integer | ❌ | 8 | 并行处理的作业数量 |
+| **对接质量** | `exhaustiveness` | integer | ❌ | 4 | 搜索彻底程度 (1-8推荐，越高结果越准确但计算越慢) |
+| | `n_poses` | integer | ❌ | 20 | 每个配体生成的构象数量 (推荐10-20) |
+
+**🎯 重要提示**:
+
+1. **对接中心坐标 (Center Coordinates)**:
+   - 指定对接盒子的中心位置，通常设置在受体的结合口袋中心
+   - 坐标单位为埃（Angstrom, Å）
+   - 可通过分子可视化工具（如PyMOL、Chimera）查看受体结构并确定合适的中心坐标
+   - 建议：基于已知配体或结合位点的坐标来设置
+
+2. **搜索盒子尺寸 (Box Dimensions)**:
+   - 定义配体可以移动的空间范围
+   - 单位为埃（Å），以中心坐标为原点向各方向延伸
+   - 盒子太小可能遗漏正确构象，太大会增加计算时间且降低精度
+   - 建议：
+     * 小分子配体：20×20×20 Å 通常足够
+     * 中等大小分子：25×25×25 Å
+     * 大分子或多个结合位点：30×30×30 Å 或更大
+     * 搜索体积 = box_size_x × box_size_y × box_size_z
+
+3. **Exhaustiveness（搜索彻底程度）**:
+   - 控制AutoDock Vina搜索算法的迭代次数
+   - 推荐值：4-8
+   - 较高值提高准确性但显著增加计算时间
+   - 计算时间与exhaustiveness成线性关系
+
+**请求示例**:
+
+```bash
+# 使用JWT Token认证
+curl -X POST "http://your-server-url/docking" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ligands": [
+      {
+        "smiles": "CC(C)Cc1ccc(cc1)C(C)C(O)=O",
+        "title": "ibuprofen"
+      },
+      {
+        "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+        "title": "aspirin"
+      }
+    ],
+    "receptor_filename": "protein_7UDP.pdbqt",
+    "center_x": 61.1053,
+    "center_y": 24.3245,
+    "center_z": 17.1610,
+    "box_size_x": 20.0,
+    "box_size_y": 25.0,
+    "box_size_z": 30.0,
+    "min_ph": 6.0,
+    "max_ph": 8.0,
+    "n_jobs": 8,
+    "exhaustiveness": 4,
+    "n_poses": 20
+  }'
+
+# 使用API Key认证
+curl -X POST "http://your-server-url/docking" \
+  -H "X-API-Key: third-party-service-key-123" \
+  -H "X-External-User-ID: external_user_123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ligands": [
+      {
+        "smiles": "CC(C)Cc1ccc(cc1)C(C)C(O)=O",
+        "title": "ibuprofen"
+      }
+    ],
+    "center_x": 61.1053,
+    "center_y": 24.3245,
+    "center_z": 17.1610,
+    "box_size_x": 20.0,
+    "box_size_y": 25.0,
+    "box_size_z": 30.0,
+    "exhaustiveness": 6,
+    "n_poses": 15
+  }'
 ```
 
 **返回值**:
@@ -679,7 +793,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 | 接口 | 描述 | 适用任务类型 | 返回格式 | 状态 |
 |------|------|-------------|---------|------|
 | `GET /tasks/{task_id}/generate/results/csv` | 下载分子生成结果CSV | generate | CSV | ✅ 推荐 |
-| `GET /tasks/{task_id}/docking/results/csv` | 下载分子对接结果CSV | docking | CSV | ✅ 推荐 |
+| `GET /tasks/{task_id}/docking/results/csv?indices=0,1,2` | 下载分子对接结果CSV（支持选择性下载） | docking | CSV | ✅ 推荐 |
 | `GET /tasks/{task_id}/peptide/optimization/csv` | 下载肽优化详细结果CSV | peptide_optimization | CSV | ✅ 推荐 |
 | `GET /tasks/{task_id}/peptide/results/csv` | 下载肽优化简化结果CSV | peptide_optimization | CSV | ✅ 推荐 |
 
@@ -687,8 +801,9 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 | 接口 | 描述 | 返回格式 |
 |------|------|---------|
-| `GET /tasks/{task_id}/sdf/{filename}` | 下载特定SDF结构文件 | SDF |
+| `GET /tasks/{task_id}/sdf/{filename}` | 下载单个对接结果文件（SDF/PDBQT格式） | SDF/PDBQT |
 | `GET /tasks/{task_id}/protein` | 下载蛋白质受体文件 | PDBQT |
+| `GET /tasks/{task_id}/docking/binding-analysis/csv/download` | 下载所有结合模式分析CSV文件 | ZIP |
 
 ### 肽段优化任务专用下载接口
 
@@ -699,21 +814,131 @@ results = session.get("/tasks/{task_id}/dockRes")
 | `GET /tasks/{task_id}/peptide/download/{filename}` | 下载单个结构文件 | PDB/SDF/MOL等 |
 | `GET /tasks/{task_id}/peptide/protein` | 下载受体蛋白文件 | PDB |
 
-### 下载对接任务SDF文件
+### 下载单个对接结果文件（SDF/PDBQT）
 
 **接口地址**: `GET /tasks/{task_id}/sdf/{filename}`
 
-**描述**: 下载对接任务生成的特定SDF结构文件
+**描述**: 下载对接任务生成的单个结构文件，支持SDF和PDBQT格式
 
 **认证要求**: JWT Token 或 API Key
 
 **路径参数**:
 - `task_id`: 任务ID
-- `filename`: SDF文件名（必须以.sdf结尾）
+- `filename`: 文件名（支持.sdf和.pdbqt后缀）
 
-**返回值**: SDF文件流
+**返回值**: 文件流（SDF或PDBQT格式）
+
+**使用场景**:
+- 下载单个对接结果的SDF文件（如 `ligand_001.sdf`）
+- 下载单个对接结果的PDBQT文件（如 `ligand_001.pdbqt`）
+- 支持前端单独下载功能
 
 **说明**: 仅适用于docking任务，文件位于任务的output/docked目录下
+
+**示例**:
+```bash
+# 下载SDF文件
+curl -X GET "/tasks/{task_id}/sdf/ligand_001.sdf" \
+  -H "Authorization: Bearer <token>" \
+  -o ligand_001.sdf
+
+# 下载PDBQT文件
+curl -X GET "/tasks/{task_id}/sdf/ligand_001.pdbqt" \
+  -H "Authorization: Bearer <token>" \
+  -o ligand_001.pdbqt
+```
+
+### 下载分子对接结果CSV（支持选择性下载）
+
+**接口地址**: `GET /tasks/{task_id}/docking/results/csv`
+
+**描述**: 下载分子对接任务的结果CSV文件，支持下载全部结果或选中的结果
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**查询参数**:
+- `indices` (可选): 结果索引，用逗号分隔（如 "0,2,5"），不传则下载所有结果
+
+**返回值**: CSV文件流（UTF-8 BOM编码）
+
+**CSV格式**:
+```csv
+Rank,Name,SMILES,Docking Score,File,Protein Path
+1,ligand_001,CC(C)CC1=CC=C(C=C1)C(C)C(=O)O,-8.5,ligand_001.sdf,/path/to/protein.pdbqt
+2,ligand_002,CC1=CC=C(C=C1)C(C)C,-7.8,ligand_002.sdf,/path/to/protein.pdbqt
+```
+
+**使用场景**:
+- 下载所有对接结果: `GET /tasks/{task_id}/docking/results/csv`
+- 下载选中结果: `GET /tasks/{task_id}/docking/results/csv?indices=0,2,5`
+- 支持前端批量选择下载功能
+
+**文件命名**:
+- 下载全部: `docking_results_{task_id}.csv`
+- 下载选中: `docking_results_{task_id}_selected.csv`
+
+**示例**:
+```bash
+# 下载所有结果
+curl -X GET "/tasks/{task_id}/docking/results/csv" \
+  -H "Authorization: Bearer <token>" \
+  -o docking_results.csv
+
+# 下载索引为0,2,5的结果
+curl -X GET "/tasks/{task_id}/docking/results/csv?indices=0,2,5" \
+  -H "Authorization: Bearer <token>" \
+  -o docking_results_selected.csv
+```
+
+### 下载结合模式分析文件
+
+**接口地址**: `GET /tasks/{task_id}/docking/binding-analysis/csv/download`
+
+**描述**: 下载分子对接任务中所有的结合模式分析CSV文件（打包为ZIP）
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: ZIP文件流，包含所有 `*_binding_mode_summary.csv` 文件
+
+**ZIP内容**:
+```
+binding_analysis_{task_id}.zip
+├── ligand_001_binding_mode_summary.csv
+├── ligand_002_binding_mode_summary.csv
+└── ligand_003_binding_mode_summary.csv
+```
+
+**CSV文件内容**:
+每个CSV文件包含该化合物的结合模式分析结果，包括：
+- 氢键信息
+- 疏水相互作用
+- π-π堆积
+- 盐桥
+- 其他相互作用类型
+
+**使用场景**:
+- 批量分析多个对接结果的结合模式
+- 比较不同化合物的相互作用模式
+- 导出用于发表或报告的分析数据
+
+**说明**: 
+- 仅适用于docking任务
+- 需要任务状态为 `finished`
+- CSV文件位于 `output/docked/binding_analysis/` 目录
+- 使用BINANA工具生成的结合分析结果
+
+**示例**:
+```bash
+curl -X GET "/tasks/{task_id}/docking/binding-analysis/csv/download" \
+  -H "Authorization: Bearer <token>" \
+  -o binding_analysis.zip
+```
 
 ### 下载对接任务蛋白质受体文件
 
@@ -2054,11 +2279,38 @@ if response.status_code == 200:
 
 ---
 
-**文档版本**: v2.3.1  
-**最后更新**: 2025年11月19日  
-**更新说明**: 本次更新新增公开分享功能，允许用户生成无需登录的分享链接。主要更新包括：
+**文档版本**: v2.3.2  
+**最后更新**: 2025年12月9日  
+**更新说明**: 本次更新补充完善下载接口文档，支持更灵活的文件下载功能。主要更新包括：
 
-### 🔗 公开分享功能 (v2.3.1)
+### 📥 下载功能增强 (v2.3.2)
+- **单独文件下载**: 新增单个对接结果文件下载功能
+  - `GET /tasks/{task_id}/sdf/{filename}` 支持下载SDF和PDBQT格式
+  - 前端实现每个结果行的独立下载按钮
+- **选择性CSV下载**: Docking CSV下载接口支持indices参数
+  - `GET /tasks/{task_id}/docking/results/csv?indices=0,2,5` 
+  - 支持前端批量选择下载功能
+  - 自动区分文件命名（全部 vs 选中）
+- **Binding Analysis下载**: 新增结合模式分析批量下载
+  - `GET /tasks/{task_id}/docking/binding-analysis/csv/download`
+  - 打包所有binding_mode_summary.csv为ZIP
+  - 便于批量分析和比较
+- **文档完善**: 补充所有下载接口的详细说明
+  - 接口参数、返回格式、使用场景
+  - 示例代码和最佳实践
+  - 更新接口总览表格
+
+### 🔧 技术细节
+- **统一接口**: 所有下载接口遵循相同的认证和错误处理机制
+- **灵活参数**: 支持可选参数实现不同下载场景
+- **文件命名**: 智能文件命名，区分不同下载类型
+- **向后兼容**: 不影响现有功能，纯新增接口
+
+---
+
+**历史版本更新记录**:
+
+**v2.3.1** (2025年11月19日): 公开分享功能
 - **自动生成分享链接**: 后端在返回任务结果时自动为每条记录生成share_url字段
 - **无需认证访问**: 分享链接可以公开访问，接收者无需登录或API Key
 - **智能URL生成**: 使用前端域名（不含端口号），确保链接正确性
