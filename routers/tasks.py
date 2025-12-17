@@ -306,6 +306,58 @@ async def download_peptide_results_csv(request: Request, task_id: str):
         logger.error("Error downloading peptide results CSV for task %s: %s", task_id, str(e))
         raise HTTPException(status_code=500, detail=f"Error downloading CSV: {str(e)}")
 
+@router.get("/{task_id}/docking/params",
+           summary="获取对接任务参数",
+           description="获取对接任务的配置参数，包括中心坐标和盒子尺寸")
+async def get_docking_task_params(request: Request, task_id: str):
+    """
+    获取指定对接任务的配置参数。
+    返回中心坐标、盒子尺寸等对接参数，用于3D可视化中显示搜索盒子。
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+    
+    logger.info("User %s (%s) requesting docking params for task %s", 
+                user.username, user_info['auth_type'], task_id)
+    
+    try:
+        task = TaskService.get_task(task_id)
+        
+        if not task or task.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        if task.task_type != "docking":
+            raise HTTPException(status_code=400, detail="Task type is not docking")
+        
+        # 获取对接参数
+        params = DockingTaskParamsService.get_task_params(task_id)
+        
+        if not params:
+            raise HTTPException(status_code=404, detail="Docking parameters not found")
+        
+        return {
+            "success": True,
+            "params": {
+                "center_x": params.center_x,
+                "center_y": params.center_y,
+                "center_z": params.center_z,
+                "box_size_x": params.box_size_x,
+                "box_size_y": params.box_size_y,
+                "box_size_z": params.box_size_z,
+                "exhaustiveness": params.exhaustiveness,
+                "n_poses": params.n_poses,
+                "n_ligands": params.n_ligands,
+                "min_ph": params.min_ph,
+                "max_ph": params.max_ph,
+                "n_jobs": params.n_jobs
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching docking params for task %s: %s", task_id, str(e))
+        raise HTTPException(status_code=500, detail="Failed to fetch docking parameters")
+
 @router.get("/{task_id}", response_model=TaskResponse,
            summary="高优先级任务状态查询", 
            description="快速获取任务状态，优化响应速度")
@@ -963,10 +1015,9 @@ async def download_peptide_file(request: Request, task_id: str, filename: str):
     以便统一API_BASE_URL。
     查找顺序与 peptide_opt/main.py 中实现保持一致，尽可能提升复用体验。
     """
-    import re, os, mimetypes, io, zipfile
-    from fastapi import HTTPException
-    from fastapi.responses import FileResponse
-    from pathlib import Path
+    import re
+    import mimetypes
+    
     logger.info(f"[peptide-download] task_id={task_id} filename={filename}")
 
     # 基本校验
