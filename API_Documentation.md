@@ -4,9 +4,15 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.3.2
+- **API版本**: 2.3.3
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 3D可视化增强 (v2.3.3)
+
+- **Search Box可视化**: 3D查看器新增"Search Box"按钮，可视化显示对接搜索盒子
+- **对接参数接口**: 新增 `GET /tasks/{task_id}/docking/params` 接口获取对接任务参数
+- **盒子尺寸显示**: 在3D视图中显示对接盒子的中心坐标和尺寸信息
 
 ### 🆕 下载功能增强 (v2.3.2)
 
@@ -759,6 +765,69 @@ curl -X POST "http://your-server-url/docking" \
   "poll_interval": "integer",
   "can_download": "boolean"
 }
+```
+
+### 获取对接任务参数（Search Box可视化）
+
+**接口地址**: `GET /tasks/{task_id}/docking/params`
+
+**描述**: 获取指定对接任务的配置参数，包括对接盒子的中心坐标和尺寸。用于前端3D可视化中显示Search Box（搜索盒子）
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "success": true,
+  "params": {
+    "center_x": 61.1053,
+    "center_y": 24.3245,
+    "center_z": 17.1610,
+    "box_size_x": 20.0,
+    "box_size_y": 25.0,
+    "box_size_z": 30.0,
+    "exhaustiveness": 4,
+    "n_poses": 20,
+    "n_ligands": 5,
+    "min_ph": 6.0,
+    "max_ph": 8.0,
+    "n_jobs": 8
+  }
+}
+```
+
+**返回字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `center_x` | float | 对接盒子中心X坐标 (Å) |
+| `center_y` | float | 对接盒子中心Y坐标 (Å) |
+| `center_z` | float | 对接盒子中心Z坐标 (Å) |
+| `box_size_x` | float | 对接盒子X轴尺寸 (Å) |
+| `box_size_y` | float | 对接盒子Y轴尺寸 (Å) |
+| `box_size_z` | float | 对接盒子Z轴尺寸 (Å) |
+| `exhaustiveness` | int | 搜索彻底程度参数 |
+| `n_poses` | int | 生成的配体构象数量 |
+| `n_ligands` | int | 配体分子数量 |
+| `min_ph` / `max_ph` | float | pH范围 |
+| `n_jobs` | int | 并行作业数 |
+
+**前端使用场景**:
+- 3D分子查看器中的"Search Box"按钮使用此接口获取参数
+- 在蛋白质-配体3D视图中绘制对接搜索区域的边界框
+- 显示对接盒子的尺寸信息（如 "20.0×25.0×30.0 Å"）
+
+**错误响应**:
+- `404`: 任务不存在或对接参数未找到
+- `400`: 任务类型不是docking
+
+**示例**:
+```bash
+curl -X GET "/tasks/{task_id}/docking/params" \
+  -H "Authorization: Bearer <token>"
 ```
 
 ### 下载任务结果文件
