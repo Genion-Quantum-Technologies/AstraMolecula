@@ -328,6 +328,81 @@ async def get_public_docking_task_info(task_id: str):
     return public_info
 
 
+@router.get("/docking/{task_id}/params")
+async def get_public_docking_params(task_id: str):
+    """
+    公开访问的对接参数（用于显示 Search Box）
+    
+    允许未登录用户获取对接盒子参数，用于3D可视化中显示搜索区域
+    
+    参数：
+    - task_id: 任务ID
+    
+    返回：
+    - success: 是否成功
+    - params: 对接参数
+        - center_x, center_y, center_z: 对接盒子中心坐标
+        - box_size_x, box_size_y, box_size_z: 对接盒子尺寸
+        - exhaustiveness, n_poses 等其他参数
+    """
+    import json
+    
+    logger.info(f"[public-docking-params] task_id={task_id}")
+    
+    # 1. 验证任务是否存在
+    task = TaskService.get_task(task_id)
+    if not task:
+        logger.warning(f"Task not found: {task_id}")
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # 2. 验证任务类型
+    if task.task_type != "docking":
+        logger.warning(f"Invalid task type: {task.task_type}")
+        raise HTTPException(status_code=400, detail="Not a docking task")
+    
+    # 3. 获取任务目录
+    job_dir = task.job_dir
+    if not job_dir:
+        logger.error(f"Task job_dir is missing: {task_id}")
+        raise HTTPException(status_code=500, detail="Task directory not found")
+    
+    # 4. 读取 input.json 获取对接参数
+    input_json_path = os.path.join(job_dir, "input", "input.json")
+    if not os.path.exists(input_json_path):
+        logger.warning(f"input.json not found: {input_json_path}")
+        raise HTTPException(status_code=404, detail="Docking parameters not found")
+    
+    try:
+        with open(input_json_path, 'r', encoding='utf-8') as f:
+            input_data = json.load(f)
+        
+        # 5. 提取对接盒子参数
+        params = {
+            "center_x": input_data.get("center_x"),
+            "center_y": input_data.get("center_y"),
+            "center_z": input_data.get("center_z"),
+            "box_size_x": input_data.get("box_size_x"),
+            "box_size_y": input_data.get("box_size_y"),
+            "box_size_z": input_data.get("box_size_z"),
+            "exhaustiveness": input_data.get("exhaustiveness"),
+            "n_poses": input_data.get("n_poses"),
+            "n_ligands": len(input_data.get("ligands", [])),
+            "min_ph": input_data.get("min_ph"),
+            "max_ph": input_data.get("max_ph"),
+            "n_jobs": input_data.get("n_jobs"),
+        }
+        
+        logger.info(f"Successfully served public docking params: {task_id}")
+        return {
+            "success": True,
+            "params": params
+        }
+        
+    except Exception as e:
+        logger.error(f"Error reading input.json: {e}")
+        raise HTTPException(status_code=500, detail="Failed to read docking parameters")
+
+
 @router.get("/docking/{task_id}/protein")
 async def get_public_docking_protein(task_id: str):
     """

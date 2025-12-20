@@ -31,6 +31,7 @@ class DockingLigand(BaseModel):
 
 class DockingRequest(BaseModel):
     ligands: List[DockingLigand]
+    receptor_filename: str  # 必填：用户上传的受体PDBQT文件名
     min_ph: float = 6.0
     max_ph: float = 8.0
     n_jobs: int = 8

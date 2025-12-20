@@ -194,10 +194,8 @@ stop_tunnel() {
                 kill -9 $pid
             fi
             
-            # 只清理与本服务相关的SSH进程（使用特定的监控端口和远程端口来识别）
-            # 避免杀死其他autossh隧道连接
-            pkill -f "autossh.*-M.*$AUTOSSH_MONITOR_PORT" 2>/dev/null || true
-            pkill -f "ssh.*-R.*${REMOTE_DOCKING_PORT}:localhost:${LOCAL_DOCKING_PORT}.*$CLOUD_SERVER" 2>/dev/null || true
+            # 清理相关进程
+            pkill -f "ssh.*$CLOUD_USER@$CLOUD_SERVER" 2>/dev/null || trueill -f "ssh.*-R.*${REMOTE_DOCKING_PORT}:localhost:${LOCAL_DOCKING_PORT}.*$CLOUD_SERVER" 2>/dev/null || true
             
             rm -f "$PID_FILE"
             log "✅ AutoSSH隧道已停止"

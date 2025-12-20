@@ -4,7 +4,7 @@ import shutil
 import uuid
 import logging
 
-from fastapi import APIRouter, Request, HTTPException, Query
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 
 from database.services.task_service import TaskService
@@ -21,14 +21,12 @@ router = APIRouter(tags=["Smiles"])
 async def docking_endpoint(
     request: Request,
     docking_request: DockingRequest,
-    receptor_filename: str = Query(
-        ...,
-        description="用户在上传历史中已有的受体 pdbqt 文件名（必填）",
-        regex=r"^[a-zA-Z0-9_.-]+\.pdbqt$"
-    ),
 ):
     # 从中间件注入的 state 中取出已验证的用户
     current_user = request.state.user
+    
+    # 从Body中获取receptor_filename
+    receptor_filename = docking_request.receptor_filename
     
     # 详细日志：记录提交的任务参数
     ligand_info = [{"smiles": lig.smiles, "title": lig.title} for lig in docking_request.ligands]
@@ -45,7 +43,7 @@ async def docking_endpoint(
 
     try:
         # —— 1) 验证并确定受体文件路径 —— #
-        # receptor_filename 现在是必填参数，直接验证
+        # receptor_filename 从Body中获取，已经是必填参数
         # 验证文件名格式
         if not receptor_filename.endswith('.pdbqt'):
             raise HTTPException(
