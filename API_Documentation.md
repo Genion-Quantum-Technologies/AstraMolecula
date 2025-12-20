@@ -4,9 +4,15 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.3.3
+- **API版本**: 2.3.4
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 受体文件必填与日志增强 (v2.3.4)
+
+- **受体文件必填**: `POST /docking` 接口的 `receptor_filename` 参数现在是必填项
+- **详细日志输出**: 第三方用户上传文件和提交任务时，输出详细的配置参数和文件名信息
+- **上传响应增强**: 文件上传接口返回更完整的信息，包含单文件的name字段
 
 ### 🆕 3D可视化增强 (v2.3.3)
 
@@ -434,6 +440,8 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 **认证要求**: JWT Token 或 API Key
 
+**⚠️ 重要变更 (v2.3.4)**: `receptor_filename` 参数现在是**必填项**！用户必须先通过 `/upload_pdbqt` 接口上传受体PDBQT文件，然后在提交对接任务时指定该文件名。
+
 **请求参数**:
 ```json
 {
@@ -443,7 +451,7 @@ results = session.get("/tasks/{task_id}/dockRes")
       "title": "string"    // 配体名称/标识符
     }
   ],
-  "receptor_filename": "string (可选)",  // 用户上传的受体PDBQT文件名，不提供则使用默认
+  "receptor_filename": "string (必填)",  // 用户上传的受体PDBQT文件名，必须先通过/upload_pdbqt接口上传
   
   // 对接中心坐标 (Docking Center Coordinates) - 必填
   "center_x": "float",  // X轴坐标 (单位: Å)
@@ -473,7 +481,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 | **配体信息** | `ligands` | array | ✅ | - | 要对接的配体分子列表 |
 | | `ligands[].smiles` | string | ✅ | - | 配体的SMILES表达式 |
 | | `ligands[].title` | string | ✅ | - | 配体的名称或标识符 |
-| **受体文件** | `receptor_filename` | string | ❌ | protein_7UDP.pdbqt | 用户已上传的受体PDBQT文件名 |
+| **受体文件** | `receptor_filename` | string | ✅ | - | 用户已上传的受体PDBQT文件名（必须先通过/upload_pdbqt接口上传） |
 | **对接中心坐标** | `center_x` | float | ✅ | 61.1053 | 对接盒子中心的X坐标 (单位: Å) |
 | | `center_y` | float | ✅ | 24.3245 | 对接盒子中心的Y坐标 (单位: Å) |
 | | `center_z` | float | ✅ | 17.1610 | 对接盒子中心的Z坐标 (单位: Å) |
@@ -488,13 +496,18 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 **🎯 重要提示**:
 
-1. **对接中心坐标 (Center Coordinates)**:
+1. **受体文件 (Receptor File) - 必填**:
+   - 必须先通过 `POST /upload_pdbqt` 接口上传PDBQT格式的受体文件
+   - 上传成功后，使用返回的文件名作为 `receptor_filename` 参数
+   - 可通过 `GET /users/me/uploads` 接口查看已上传的文件列表
+
+2. **对接中心坐标 (Center Coordinates)**:
    - 指定对接盒子的中心位置，通常设置在受体的结合口袋中心
    - 坐标单位为埃（Angstrom, Å）
    - 可通过分子可视化工具（如PyMOL、Chimera）查看受体结构并确定合适的中心坐标
    - 建议：基于已知配体或结合位点的坐标来设置
 
-2. **搜索盒子尺寸 (Box Dimensions)**:
+3. **搜索盒子尺寸 (Box Dimensions)**:
    - 定义配体可以移动的空间范围
    - 单位为埃（Å），以中心坐标为原点向各方向延伸
    - 盒子太小可能遗漏正确构象，太大会增加计算时间且降低精度

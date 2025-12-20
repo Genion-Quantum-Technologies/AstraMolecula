@@ -3,7 +3,6 @@ from pathlib import Path
 import shutil
 import uuid
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -22,102 +21,99 @@ router = APIRouter(tags=["Smiles"])
 async def docking_endpoint(
     request: Request,
     docking_request: DockingRequest,
-    receptor_filename: Optional[str] = Query(
-        None,
-        description="用户在上传历史中已有的受体 pdbqt 文件名",
+    receptor_filename: str = Query(
+        ...,
+        description="用户在上传历史中已有的受体 pdbqt 文件名（必填）",
         regex=r"^[a-zA-Z0-9_.-]+\.pdbqt$"
     ),
 ):
     # 从中间件注入的 state 中取出已验证的用户
     current_user = request.state.user
-    logger.info("User %s submit docking task", current_user.username)
+    
+    # 详细日志：记录提交的任务参数
+    ligand_info = [{"smiles": lig.smiles, "title": lig.title} for lig in docking_request.ligands]
+    logger.info("User %s (user_id: %s) submit docking task with params: "
+                "receptor_filename=%s, n_ligands=%d, ligands=%s, "
+                "center=(%.2f, %.2f, %.2f), box_size=(%.2f, %.2f, %.2f), "
+                "exhaustiveness=%d, n_poses=%d, n_jobs=%d, ph_range=(%.1f, %.1f)",
+                current_user.username, current_user.id,
+                receptor_filename, len(docking_request.ligands), ligand_info,
+                docking_request.center_x, docking_request.center_y, docking_request.center_z,
+                docking_request.box_size_x, docking_request.box_size_y, docking_request.box_size_z,
+                docking_request.exhaustiveness, docking_request.n_poses, docking_request.n_jobs,
+                docking_request.min_ph, docking_request.max_ph)
 
     try:
         # —— 1) 验证并确定受体文件路径 —— #
-        if receptor_filename:
-            # 验证文件名格式
-            if not receptor_filename.endswith('.pdbqt'):
-                raise HTTPException(
-                    status_code=400,
-                    detail={
-                        "error": "invalid_receptor_filename",
-                        "message": f"受体文件必须是.pdbqt格式，当前文件: {receptor_filename}",
-                        "details": {
-                            "provided_filename": receptor_filename,
-                            "required_extension": ".pdbqt",
-                            "valid_example": "protein_7UDP.pdbqt"
-                        }
+        # receptor_filename 现在是必填参数，直接验证
+        # 验证文件名格式
+        if not receptor_filename.endswith('.pdbqt'):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "invalid_receptor_filename",
+                    "message": f"受体文件必须是.pdbqt格式，当前文件: {receptor_filename}",
+                    "details": {
+                        "provided_filename": receptor_filename,
+                        "required_extension": ".pdbqt",
+                        "valid_example": "protein_7UDP.pdbqt"
                     }
-                )
+                }
+            )
+        
+        # 检查是否包含非法字符
+        if any(char in receptor_filename for char in ['/', '\\', '..', '<', '>', ':', '"', '|', '?', '*']):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "invalid_receptor_filename",
+                    "message": "文件名包含非法字符",
+                    "details": {
+                        "provided_filename": receptor_filename,
+                        "forbidden_chars": ['/', '\\', '..', '<', '>', ':', '"', '|', '?', '*'],
+                        "suggestion": "请使用只包含字母、数字、下划线、点号和短横线的文件名"
+                    }
+                }
+            )
             
-            # 检查是否包含非法字符
-            if any(char in receptor_filename for char in ['/', '\\', '..', '<', '>', ':', '"', '|', '?', '*']):
-                raise HTTPException(
-                    status_code=400,
-                    detail={
-                        "error": "invalid_receptor_filename",
-                        "message": "文件名包含非法字符",
-                        "details": {
-                            "provided_filename": receptor_filename,
-                            "forbidden_chars": ['/', '\\', '..', '<', '>', ':', '"', '|', '?', '*'],
-                            "suggestion": "请使用只包含字母、数字、下划线、点号和短横线的文件名"
-                        }
+        # 查找用户上传的文件
+        uploads = UploadService.list_by_user(current_user.id)
+        match = next((u for u in uploads if u.filename == receptor_filename), None)
+        
+        if not match:
+            available_files = [u.filename for u in uploads if u.filename.endswith('.pdbqt')]
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": "receptor_file_not_found",
+                    "message": f"受体文件 '{receptor_filename}' 不在你的上传记录中",
+                    "details": {
+                        "requested_file": receptor_filename,
+                        "available_pdbqt_files": available_files,
+                        "total_uploaded_files": len(uploads),
+                        "suggestion": "请先上传PDBQT文件或使用已上传的文件" if available_files else "请先上传PDBQT文件"
                     }
-                )
-                
-            # 查找用户上传的文件
-            uploads = UploadService.list_by_user(current_user.id)
-            match = next((u for u in uploads if u.filename == receptor_filename), None)
-            
-            if not match:
-                available_files = [u.filename for u in uploads if u.filename.endswith('.pdbqt')]
-                raise HTTPException(
-                    status_code=404,
-                    detail={
-                        "error": "receptor_file_not_found",
-                        "message": f"受体文件 '{receptor_filename}' 不在你的上传记录中",
-                        "details": {
-                            "requested_file": receptor_filename,
-                            "available_pdbqt_files": available_files,
-                            "total_uploaded_files": len(uploads),
-                            "suggestion": "请先上传PDBQT文件或使用已上传的文件" if available_files else "请先上传PDBQT文件"
-                        }
+                }
+            )
+        
+        # 验证文件是否实际存在
+        receptor_path = Path(match.file_path)
+        if not receptor_path.exists():
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "receptor_file_missing",
+                    "message": f"受体文件 '{receptor_filename}' 在服务器上不存在",
+                    "details": {
+                        "expected_path": str(receptor_path),
+                        "file_record_exists": True,
+                        "suggestion": "请重新上传该文件"
                     }
-                )
-            
-            # 验证文件是否实际存在
-            receptor_path = Path(match.file_path)
-            if not receptor_path.exists():
-                raise HTTPException(
-                    status_code=500,
-                    detail={
-                        "error": "receptor_file_missing",
-                        "message": f"受体文件 '{receptor_filename}' 在服务器上不存在",
-                        "details": {
-                            "expected_path": str(receptor_path),
-                            "file_record_exists": True,
-                            "suggestion": "请重新上传该文件"
-                        }
-                    }
-                )
-            
-            receptor_path = str(receptor_path)
-        else:
-            # 使用默认受体文件
-            default_receptor_path = ROOT / "resource" / "protein_7UDP.pdbqt"
-            if not default_receptor_path.exists():
-                raise HTTPException(
-                    status_code=500,
-                    detail={
-                        "error": "default_receptor_missing",
-                        "message": "默认受体文件不存在",
-                        "details": {
-                            "expected_path": str(default_receptor_path),
-                            "suggestion": "请提供receptor_filename参数指定自定义受体文件"
-                        }
-                    }
-                )
-            receptor_path = str(default_receptor_path)
+                }
+            )
+        
+        receptor_path = str(receptor_path)
+        logger.info("User %s using receptor file: %s", current_user.username, receptor_path)
 
         # —— 2) 创建作业目录 —— #
         JOBS_DOCK_DIR = ROOT / "jobs" / "docking"

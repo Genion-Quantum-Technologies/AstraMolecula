@@ -23,7 +23,12 @@ async def upload_pdbqt(
 ):
     current_user = request.state.user
     user_id = current_user.id
-    logger.info("User %s uploading %d PDBQT files", current_user.username, len(files))
+    
+    # 详细日志：记录上传请求信息
+    filenames = [f.filename for f in files]
+    logger.info("User %s (user_id: %s) uploading %d PDBQT files: %s", 
+                current_user.username, user_id, len(files), filenames)
+    
     UPLOAD_DIR = ROOT / "uploads" / user_id
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -31,14 +36,22 @@ async def upload_pdbqt(
     for f in files:
         allowed_extensions = [".pdb", ".pdbqt"]
         if not any(f.filename.endswith(ext) for ext in allowed_extensions):
+            logger.warning("User %s upload rejected - unsupported file type: %s", 
+                          current_user.username, f.filename)
             raise HTTPException(status_code=400, detail=f"不支持的文件类型: {f.filename}")
         dest = UPLOAD_DIR / f.filename
         with open(dest, "wb") as fh:
-            fh.write(await f.read())
+            content = await f.read()
+            fh.write(content)
         saved.append(dest.name)
         UploadService.record_upload(
             user_id=user_id,
             filename=dest.name,
             file_path=str(dest)
         )
-    return {"message": "上传成功", "user_id": user_id, "files": saved}
+        logger.info("User %s uploaded file: %s (size: %d bytes, path: %s)", 
+                   current_user.username, dest.name, len(content), str(dest))
+    
+    logger.info("User %s upload complete - %d files saved: %s", 
+               current_user.username, len(saved), saved)
+    return {"message": "上传成功", "user_id": user_id, "files": saved, "name": saved[0] if len(saved) == 1 else saved}
