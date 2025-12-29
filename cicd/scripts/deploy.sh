@@ -81,9 +81,9 @@ start_all() {
 stop_all() {
     log "🛑 停止AstraMolecula所有服务..."
     
-    # 1. 停止AutoSSH隧道
-    log "1. 停止AutoSSH隧道..."
-    "$SCRIPT_DIR/setup_autossh.sh" stop
+    # 1. 跳过停止AutoSSH隧道
+    log "1. 跳过停止AutoSSH隧道..."
+    # "$SCRIPT_DIR/setup_autossh.sh" stop
     
     # 2. 停止AstraMolecula服务
     log "2. 停止AstraMolecula API服务..."

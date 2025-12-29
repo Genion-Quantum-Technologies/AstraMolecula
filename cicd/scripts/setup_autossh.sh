@@ -90,14 +90,6 @@ check_existing_tunnel() {
         local old_pid=$(cat "$PID_FILE")
         if ps -p $old_pid > /dev/null 2>&1; then
             warn "发现运行中的AutoSSH隧道 (PID: $old_pid)"
-            read -p "是否要停止现有隧道? (y/N): " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                stop_tunnel
-            else
-                error "隧道已在运行，退出启动"
-                exit 1
-            fi
         else
             warn "PID文件存在但进程已死，清理PID文件"
             rm -f "$PID_FILE"
