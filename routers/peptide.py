@@ -26,7 +26,6 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
     - cores: 12 (CPU核心数)
     - cleanup: True (自动清理中间文件)
     - proteinmpnn_enabled: True (启用ProteinMPNN优化)
-    - n_poses: 10 (对接构象数量)
     - step: None (执行完整优化流程)
     
     必需参数：
@@ -34,6 +33,7 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
     - receptor_pdb_filename: 受体蛋白PDB文件名（需要先通过/uploads上传）
     
     可配置参数：
+    - n_poses: 对接构象数量，决定最终输出的优化序列数量（默认10，范围1-50）
     - num_seq_per_target: 每个目标生成的序列数（默认10）
     - proteinmpnn_seed: ProteinMPNN随机数种子（默认37）
     - n_iterations: 优化迭代次数（默认5）
@@ -78,6 +78,9 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             f.write(">peptide\n")
             f.write(optimization_request.peptide_sequence.strip() + "\n")
         
+        # 验证n_poses参数范围
+        n_poses = optimization_request.n_poses
+        
         # 创建参数配置文件（使用系统固定的默认值）
         config_path = job_dir / "optimization_config.txt"
         with open(config_path, 'w') as f:
@@ -85,10 +88,10 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             f.write(f"cores=12\n")  # 固定为12核心
             f.write(f"cleanup=True\n")  # 固定启用清理
             f.write(f"proteinmpnn_enabled=True\n")  # 固定启用ProteinMPNN
-            f.write(f"n_poses=10\n")  # 固定对接构象数量
             # 不写入step参数，表示执行完整流程
             
             # 用户可配置参数
+            f.write(f"n_poses={n_poses}\n")  # 对接构象数量（用户可配置）
             f.write(f"num_seq_per_target={optimization_request.num_seq_per_target}\n")
             f.write(f"proteinmpnn_seed={optimization_request.proteinmpnn_seed}\n")
             f.write(f"n_iterations={optimization_request.n_iterations}\n")
@@ -122,8 +125,8 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             logger.error("Failed to create peptide task params for task %s: %s", task_id, e)
             # 注意：这里不抛出异常，因为主要任务已经创建，参数记录失败不应该影响任务执行
         
-        logger.info("Peptide optimization task created with fixed system configuration: task_id=%s, user=%s, cores=12, cleanup=True, proteinmpnn_enabled=True, complete_pipeline=True", 
-                   task_id, current_user.username)
+        logger.info("Peptide optimization task created: task_id=%s, user=%s, n_poses=%d, cores=12, cleanup=True, proteinmpnn_enabled=True, complete_pipeline=True", 
+                   task_id, current_user.username, n_poses)
         
         # 获取创建的任务对象
         created_task = TaskService.get_task(task_id)

@@ -65,7 +65,9 @@ class PeptideOptimizationRequest(BaseModel):
     # cleanup: 固定为True（自动清理中间文件）
     # step: 固定为None（执行完整优化流程）
     # proteinmpnn_enabled: 固定为True（始终启用ProteinMPNN）
-    # n_poses: 固定为10（服务端自动配置）
+    
+    # 对接构象参数（用户可配置）
+    n_poses: int = 10  # 对接构象数量，决定最终输出的优化序列数量
     
     # ProteinMPNN序列生成参数（用户可配置）
     num_seq_per_target: int = 10  # 每个目标生成的序列数
@@ -80,4 +82,3 @@ class PeptideOptimizationRequest(BaseModel):
     cleanup: Optional[bool] = None  # 废弃字段，将被忽略
     step: Optional[int] = None  # 废弃字段，将被忽略
     proteinmpnn_enabled: Optional[bool] = None  # 废弃字段，将被忽略
-    n_poses: Optional[int] = None  # 废弃字段，将被忽略
