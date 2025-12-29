@@ -211,9 +211,9 @@ async def download_peptide_optimization_csv(request: Request, task_id: str):
             if 'results' in result_data:
                 results = result_data['results']
                 
-                # 生成CSV内容 - 对应PeptideOptimizationTaskDetail的详细格式
+                # Generate CSV content with English headers
                 csv_lines = [
-                    '排名,原始序列,原始序列亲和力评分,原始序列总体评分,最优序列,总体评分,分子量,等电点,芳香性,不稳定指数,疏水性,亲水性,二级结构分数'
+                    'Rank,Original Sequence,Original Sequence Affinity Score,Original Sequence Global Score,Optimal Sequence,Global Score,Molecular Weight,Isoelectric Point,Aromaticity,Instability Index,Hydrophobicity,Hydrophilicity,Secondary Structure Fraction'
                 ]
                 
                 for index, result in enumerate(results, 1):
@@ -850,12 +850,15 @@ async def get_peptide_result_csv(request: Request, task_id: str):
             }
         }
         
-        # 逐行转换数据（使用数字索引生成文件名）
-        for row_num, (idx, row) in enumerate(df.iterrows(), start=1):
+        # 逐行转换数据
+        # 注意：CSV第一行是"Input peptide property"（原始序列属性），没有对应的PDB文件
+        # 只有后续的"Docking result rank X"行才有对应的complex{X}.pdb文件
+        for row_idx, (idx, row) in enumerate(df.iterrows()):
             row_data = {
                 "index": idx,
                 "values": {},
-                "share_url": f"{base_url}/public/peptide-viewer?taskId={task_id}&filename=complex{row_num}.pdb"  # 使用数字索引
+                # row_idx=0 是原始序列，没有PDB文件；row_idx>=1 对应 complex{row_idx}.pdb
+                "share_url": f"{base_url}/public/peptide-viewer?taskId={task_id}&filename=complex{row_idx}.pdb" if row_idx > 0 else None
             }
             for col in df.columns:
                 value = row[col]
@@ -1204,8 +1207,8 @@ async def download_docking_results_csv(
                 logger.error("Invalid indices format: %s, error: %s", indices, str(e))
                 raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
         
-        # 生成CSV内容
-        csv_lines = ['Ligand名称,SMILES表达式,对接评分 (Docking Score),SDF文件名']
+        # Generate CSV content with English headers
+        csv_lines = ['Ligand Name,SMILES,Docking Score,SDF Filename']
         
         for result in docking_results:
             title = result.get('title', '').replace('"', '""')  # 转义双引号
