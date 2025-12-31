@@ -180,11 +180,19 @@ async def list_user_tasks(
 # ==================== CSV下载路由（必须在/{task_id}之前定义） ====================
 
 @router.get("/{task_id}/peptide/optimization/csv")
-async def download_peptide_optimization_csv(request: Request, task_id: str):
+async def download_peptide_optimization_csv(
+    request: Request, 
+    task_id: str,
+    indices: Optional[str] = None  # 可选的索引参数，格式如 "1,3,5"（从1开始的排名）
+):
     """
     下载肽序列优化任务结果的CSV文件（用于前端组装数据的替代）
     
     为前端PeptideOptimizationTaskDetail组件提供CSV下载功能
+    
+    参数:
+        task_id: 任务ID
+        indices: 可选的结果排名索引，用逗号分隔（如 "1,3,5"，从1开始），不传则下载所有结果
     """
     user_info = get_current_user_info(request)
     user = user_info['user']
@@ -199,10 +207,20 @@ async def download_peptide_optimization_csv(request: Request, task_id: str):
     if task.status != "finished":
         raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
     
-    logger.info("User %s (%s) downloading peptide optimization CSV for task %s", 
-                user.username, user_info['auth_type'], task_id)
+    logger.info("User %s (%s) downloading peptide optimization CSV for task %s (indices: %s)", 
+                user.username, user_info['auth_type'], task_id, indices or "all")
     
     try:
+        # 解析选中的索引（从1开始的排名）
+        selected_indices = None
+        if indices:
+            try:
+                selected_indices = set(int(i.strip()) for i in indices.split(','))
+                logger.info("Filtering peptide results to indices: %s", selected_indices)
+            except ValueError as e:
+                logger.error("Invalid indices format: %s, error: %s", indices, str(e))
+                raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
+        
         # 尝试从result.json获取详细结果
         result_json_path = Path(task.job_dir) / "output" / "result.json"
         if result_json_path.exists():
@@ -217,6 +235,10 @@ async def download_peptide_optimization_csv(request: Request, task_id: str):
                 ]
                 
                 for index, result in enumerate(results, 1):
+                    # 如果指定了索引，跳过未选中的结果
+                    if selected_indices is not None and index not in selected_indices:
+                        continue
+                        
                     original_seq = result.get('originalSequence', '').replace('"', '""')
                     optimal_seq = result.get('optimalSequence', '').replace('"', '""')
                     secondary_structure = str(result.get('secondaryStructureFraction', '')).replace('"', '""')
@@ -240,11 +262,14 @@ async def download_peptide_optimization_csv(request: Request, task_id: str):
                 
                 csv_content = '\n'.join(csv_lines)
                 
+                # 文件名根据是否有选中来区分
+                filename = f"peptide_optimization_results_{task_id}_selected.csv" if indices else f"peptide_optimization_results_{task_id}.csv"
+                
                 return StreamingResponse(
                     io.BytesIO(csv_content.encode('utf-8-sig')),  # 使用UTF-8 BOM编码支持中文
                     media_type="text/csv",
                     headers={
-                        "Content-Disposition": f"attachment; filename=peptide_optimization_results_{task_id}.csv",
+                        "Content-Disposition": f"attachment; filename={filename}",
                         "Cache-Control": "no-cache"
                     }
                 )
@@ -252,6 +277,38 @@ async def download_peptide_optimization_csv(request: Request, task_id: str):
         # 如果没有找到result.json，尝试使用现有的result.csv文件
         result_csv_path = Path(task.job_dir) / "output" / "result.csv"
         if result_csv_path.exists():
+            # 如果有索引过滤，需要读取CSV并过滤
+            if selected_indices:
+                import csv as csv_module
+                with open(result_csv_path, 'r', encoding='utf-8') as f:
+                    reader = csv_module.reader(f)
+                    rows = list(reader)
+                
+                if rows:
+                    # 保留表头
+                    filtered_rows = [rows[0]]
+                    # 过滤数据行（跳过表头，索引从1开始对应第2行）
+                    for i, row in enumerate(rows[1:], 1):
+                        if i in selected_indices:
+                            filtered_rows.append(row)
+                    
+                    # 生成CSV内容
+                    output = io.StringIO()
+                    writer = csv_module.writer(output)
+                    writer.writerows(filtered_rows)
+                    csv_content = output.getvalue()
+                    
+                    filename = f"peptide_optimization_results_{task_id}_selected.csv"
+                    return StreamingResponse(
+                        io.BytesIO(csv_content.encode('utf-8-sig')),
+                        media_type="text/csv",
+                        headers={
+                            "Content-Disposition": f"attachment; filename={filename}",
+                            "Cache-Control": "no-cache"
+                        }
+                    )
+            
+            # 没有索引过滤，直接返回文件
             return FileResponse(
                 path=str(result_csv_path),
                 media_type="text/csv",
@@ -261,17 +318,27 @@ async def download_peptide_optimization_csv(request: Request, task_id: str):
         
         raise HTTPException(status_code=404, detail="No peptide optimization results found")
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error generating peptide optimization CSV for task %s: %s", task_id, str(e))
         raise HTTPException(status_code=500, detail=f"Error generating CSV: {str(e)}")
 
 @router.get("/{task_id}/peptide/results/csv")
-async def download_peptide_results_csv(request: Request, task_id: str):
+async def download_peptide_results_csv(
+    request: Request, 
+    task_id: str,
+    indices: Optional[str] = None  # 可选的索引参数，格式如 "1,3,5"（从1开始的排名）
+):
     """
     下载肽序列优化结果的CSV文件（简化版本）
     
     为前端PeptideOptimization组件的主页面结果下载提供支持
     对应动态列结构的结果数据
+    
+    参数:
+        task_id: 任务ID
+        indices: 可选的结果排名索引，用逗号分隔（如 "1,3,5"，从1开始），不传则下载所有结果
     """
     user_info = get_current_user_info(request)
     user = user_info['user']
@@ -286,13 +353,55 @@ async def download_peptide_results_csv(request: Request, task_id: str):
     if task.status != "finished":
         raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
     
-    logger.info("User %s (%s) downloading peptide results CSV for task %s", 
-                user.username, user_info['auth_type'], task_id)
+    logger.info("User %s (%s) downloading peptide results CSV for task %s (indices: %s)", 
+                user.username, user_info['auth_type'], task_id, indices or "all")
     
     try:
         # 尝试使用现有的result.csv文件（这是最常见的情况）
         result_csv_path = Path(task.job_dir) / "output" / "result.csv"
         if result_csv_path.exists():
+            # 如果有索引过滤，需要读取CSV并过滤
+            if indices:
+                try:
+                    selected_indices = set(int(i.strip()) for i in indices.split(','))
+                    logger.info("Filtering peptide results to indices: %s", selected_indices)
+                except ValueError as e:
+                    logger.error("Invalid indices format: %s, error: %s", indices, str(e))
+                    raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
+                
+                import csv as csv_module
+                with open(result_csv_path, 'r', encoding='utf-8') as f:
+                    reader = csv_module.reader(f)
+                    rows = list(reader)
+                
+                if rows:
+                    # 保留表头
+                    filtered_rows = [rows[0]]
+                    # 过滤数据行（跳过表头，索引从1开始对应第2行）
+                    for i, row in enumerate(rows[1:], 1):
+                        if i in selected_indices:
+                            filtered_rows.append(row)
+                    
+                    # 生成CSV内容
+                    output = io.StringIO()
+                    writer = csv_module.writer(output)
+                    writer.writerows(filtered_rows)
+                    csv_content = output.getvalue()
+                    
+                    logger.info("Filtered to %d results from indices: %s", 
+                               len(filtered_rows) - 1, indices)
+                    
+                    filename = f"peptide_results_{task_id}_selected.csv"
+                    return StreamingResponse(
+                        io.BytesIO(csv_content.encode('utf-8-sig')),
+                        media_type="text/csv",
+                        headers={
+                            "Content-Disposition": f"attachment; filename={filename}",
+                            "Cache-Control": "no-cache"
+                        }
+                    )
+            
+            # 没有索引过滤，直接返回文件
             return FileResponse(
                 path=str(result_csv_path),
                 media_type="text/csv",
@@ -302,6 +411,8 @@ async def download_peptide_results_csv(request: Request, task_id: str):
         
         raise HTTPException(status_code=404, detail="No peptide results found")
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error downloading peptide results CSV for task %s: %s", task_id, str(e))
         raise HTTPException(status_code=500, detail=f"Error downloading CSV: {str(e)}")
