@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from middleware import auth_middleware
-from routers import auth, tasks, uploads, smiles, docking, peptide, logs, admin, public
+from routers import auth, tasks, uploads, smiles, docking, peptide, logs, admin, public, payments
 from config.logging_config import setup_logging
 from async_task_processor import AsyncTaskProcessor
 
@@ -142,6 +142,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # 注册路由 - 按优先级顺序排列，tasks路由优先
 app.include_router(public.router)     # 公开访问路由（无需认证，最先注册）
+app.include_router(payments.router)   # 支付接口
 app.include_router(tasks.router)      # 最高优先级，任务查询接口
 app.include_router(auth.router)       # 认证接口
 app.include_router(admin.router)      # 管理员接口
