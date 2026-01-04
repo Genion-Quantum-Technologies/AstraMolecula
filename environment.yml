@@ -7,7 +7,7 @@ dependencies:
   - cpuonly
   - fastapi
   - mamba
-  - mysql-connector-python
+  - psycopg2
   - pip
   - python=3.10
   - python-jose
@@ -19,4 +19,3 @@ dependencies:
   - uvicorn
   - pip:
     - mmpdb==2.1
-    - my_toolset==0.1.0
