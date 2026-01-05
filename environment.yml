@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - pytorch
 dependencies:
+  - aiohttp
   - bcrypt
   - cpuonly
   - fastapi

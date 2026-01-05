@@ -7,11 +7,13 @@ import asyncio
 import pandas as pd
 import os
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from database.services import TaskService
 from database.services.docking_task_params_service import DockingTaskParamsService
 from database.services.peptide_task_params_service import PeptideTaskParamsService
 from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse, PaginatedTasksResponse
+from services.storage import get_storage
+from services.storage.config import StorageConfig
 from config import ROOT
 from config.api_config import CACHE_SETTINGS, TASK_STATUS_PRIORITY
 from utils.log import get_logger
@@ -23,6 +25,51 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 # 从环境变量获取前端URL，默认为空（将使用请求的origin）
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', '')
+
+
+async def get_file_from_storage_or_local(job_dir: str, relative_path: str) -> Optional[Path]:
+    """
+    尝试从本地临时目录或 SeaweedFS 获取文件
+    
+    Args:
+        job_dir: 任务目录（可能是本地路径或存储前缀）
+        relative_path: 相对于 job_dir 的文件路径
+    
+    Returns:
+        本地文件路径（如果从存储下载，会先下载到临时目录）
+    """
+    local_path = Path(job_dir) / relative_path
+    
+    # 优先使用本地文件
+    if local_path.exists():
+        return local_path
+    
+    # 尝试从 SeaweedFS 获取
+    storage = get_storage()
+    
+    # 构建 storage key
+    if job_dir.startswith('/'):
+        # 本地路径格式，转换为存储路径
+        # 假设格式为 /tmp/astramolecula/jobs/docking/{job_id}
+        parts = Path(job_dir).parts
+        try:
+            jobs_idx = parts.index('jobs')
+            storage_prefix = '/'.join(parts[jobs_idx:])
+        except ValueError:
+            return None
+    else:
+        storage_prefix = job_dir
+    
+    remote_key = f"{storage_prefix}/{relative_path}".replace('//', '/')
+    
+    if await storage.file_exists(remote_key):
+        # 下载到本地临时目录
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        await storage.download_file(remote_key, local_path)
+        return local_path
+    
+    return None
+
 
 def get_current_user_info(request: Request) -> Dict[str, Any]:
     """获取当前用户信息，支持多种认证方式"""
@@ -519,8 +566,10 @@ async def get_peptide_protein_file(request: Request, task_id: str):
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != 'peptide_optimization':
         raise HTTPException(status_code=400, detail="task type mismatch")
-    candidate = Path(task.job_dir) / 'input' / '5ffg.pdb'
-    if not candidate.exists():
+    
+    # 尝试从本地或 SeaweedFS 获取文件
+    candidate = await get_file_from_storage_or_local(task.job_dir, 'input/5ffg.pdb')
+    if not candidate:
         raise HTTPException(status_code=404, detail="protein file not found")
     return FileResponse(path=str(candidate), filename=candidate.name, media_type='chemical/x-pdb')
 

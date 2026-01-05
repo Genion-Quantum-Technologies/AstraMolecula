@@ -3,6 +3,7 @@ import logging
 from typing import List
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from database.services.upload_service import UploadService
+from services.storage import get_storage
 from config import ROOT
 
 logger = logging.getLogger("uploads_router")
@@ -29,8 +30,8 @@ async def upload_pdbqt(
     logger.info("User %s (user_id: %s) uploading %d PDBQT files: %s", 
                 current_user.username, user_id, len(files), filenames)
     
-    UPLOAD_DIR = ROOT / "uploads" / user_id
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    # 获取存储服务
+    storage = get_storage()
 
     saved = []
     for f in files:
@@ -39,18 +40,26 @@ async def upload_pdbqt(
             logger.warning("User %s upload rejected - unsupported file type: %s", 
                           current_user.username, f.filename)
             raise HTTPException(status_code=400, detail=f"不支持的文件类型: {f.filename}")
-        dest = UPLOAD_DIR / f.filename
-        with open(dest, "wb") as fh:
-            content = await f.read()
-            fh.write(content)
-        saved.append(dest.name)
+        
+        # 读取文件内容
+        content = await f.read()
+        
+        # 上传到 SeaweedFS
+        remote_key = f"uploads/{user_id}/{f.filename}"
+        await storage.upload_bytes(content, remote_key)
+        
+        saved.append(f.filename)
+        
+        # 记录上传信息（storage_key 替代 file_path）
         UploadService.record_upload(
             user_id=user_id,
-            filename=dest.name,
-            file_path=str(dest)
+            filename=f.filename,
+            file_path=remote_key,  # 现在存储的是 remote_key
+            file_size=len(content),
+            content_type=f.content_type
         )
-        logger.info("User %s uploaded file: %s (size: %d bytes, path: %s)", 
-                   current_user.username, dest.name, len(content), str(dest))
+        logger.info("User %s uploaded file: %s (size: %d bytes, storage_key: %s)", 
+                   current_user.username, f.filename, len(content), remote_key)
     
     logger.info("User %s upload complete - %d files saved: %s", 
                current_user.username, len(saved), saved)
