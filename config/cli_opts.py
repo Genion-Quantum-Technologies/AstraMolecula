@@ -1,8 +1,12 @@
-""" Implementation of all available options """
+"""
+命令行参数定义
+用于训练、生成、评估等命令行工具
+"""
 from __future__ import print_function
 
 
 def train_opts(parser):
+    """训练参数"""
     # Transformer or Seq2Seq
     parser.add_argument('--model-choice', required=True, help="transformer or seq2seq")
     # Common training options
@@ -27,7 +31,9 @@ def train_opts(parser):
     seq2seq_parser = subparsers.add_parser('seq2seq')
     train_opts_seq2seq(seq2seq_parser)
 
+
 def train_opts_transformer(parser):
+    """Transformer 模型训练参数"""
     # Model architecture options
     group = parser.add_argument_group('Model')
     group.add_argument('--vocab-path', required=False, default='',
@@ -69,6 +75,7 @@ def train_opts_transformer(parser):
 
 
 def train_opts_seq2seq(parser):
+    """Seq2Seq 模型训练参数"""
     # Model architecture options
     group = parser.add_argument_group('Model')
     group.add_argument("--num-layers", "-l", help="Number of RNN layers of the model",
@@ -97,6 +104,7 @@ def train_opts_seq2seq(parser):
 
 
 def generate_opts(parser):
+    """生成参数"""
     # Transformer or Seq2Seq
     parser.add_argument('--model-choice', required=True, help="transformer or seq2seq")
     """Input output settings"""
@@ -125,7 +133,7 @@ def generate_opts(parser):
 
 
 def evaluation_opts(parser):
-    """Evaluation options (compute properties)"""
+    """评估参数（计算属性）"""
     group = parser.add_argument_group('General')
     group.add_argument('--data-path', required=True,
                        help="""Input data path for generated molecules""")

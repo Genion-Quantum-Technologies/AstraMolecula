@@ -15,8 +15,7 @@ from database.services import TaskService
 from database.models.task import Task, TaskStatus
 from utils.tools import run_generate_runner
 from services.storage import get_storage
-from services.storage.config import StorageConfig
-from config import ROOT
+from config import ROOT, storage as storage_config
 
 logger = logging.getLogger("async_task_processor")
 

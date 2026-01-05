@@ -10,10 +10,10 @@ import utils.chem as uc
 import utils.torch_util as ut
 import utils.log as ul
 import utils.plot as up
-import configuration.config_default as cfgd
+import config.ml_config as cfgd
 import models.dataset as md
 import preprocess.vocabulary as mv
-import configuration.opts as opts
+import config.cli_opts as opts
 from models.transformer.module.decode import decode
 from models.transformer.encode_decode.model import EncoderDecoder
 # from models.seq2seq.model import Model

@@ -33,7 +33,7 @@ import logging
 from typing import Optional
 
 from .seaweed_storage import SeaweedStorage
-from .config import StorageConfig
+from config import storage as storage_config
 
 logger = logging.getLogger("storage")
 
@@ -64,4 +64,4 @@ def reset_storage():
     _storage_instance = None
 
 
-__all__ = ['get_storage', 'reset_storage', 'SeaweedStorage', 'StorageConfig']
+__all__ = ['get_storage', 'reset_storage', 'SeaweedStorage', 'storage_config']

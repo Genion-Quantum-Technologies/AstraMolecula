@@ -7,7 +7,7 @@ import aiohttp
 from pathlib import Path
 from typing import List, AsyncIterator, Optional
 
-from .config import StorageConfig
+from config import storage as storage_config
 
 logger = logging.getLogger("seaweed_storage")
 
@@ -16,9 +16,9 @@ class SeaweedStorage:
     """SeaweedFS Filer API 存储实现"""
     
     def __init__(self):
-        self.filer_endpoint = StorageConfig.SEAWEED_FILER_ENDPOINT
-        self.bucket = StorageConfig.SEAWEED_BUCKET
-        self.base_url = StorageConfig.get_filer_base_url()
+        self.filer_endpoint = storage_config.filer_endpoint
+        self.bucket = storage_config.bucket
+        self.base_url = storage_config.get_filer_base_url()
         
         logger.info("SeaweedStorage initialized: filer=%s, bucket=%s", 
                    self.filer_endpoint, self.bucket)

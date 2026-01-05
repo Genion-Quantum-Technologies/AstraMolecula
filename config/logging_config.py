@@ -58,3 +58,16 @@ def setup_logging(level: str = "INFO", log_file: str = None):
     logger.info(f"Logging configured with level: {level}")
     
     return root_logger
+
+
+def get_module_logger(module_name: str):
+    """
+    获取模块专用日志器
+    
+    Args:
+        module_name: 模块名称
+    
+    Returns:
+        logging.Logger: 配置好的日志器
+    """
+    return logging.getLogger(module_name)

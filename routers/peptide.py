@@ -10,9 +10,8 @@ from database.services.peptide_task_params_service import PeptideTaskParamsServi
 from requests.basic_request import PeptideOptimizationRequest
 from responses.basic_response import TaskResponse
 from services.storage import get_storage
-from services.storage.config import StorageConfig
 from utils.log import get_logger
-from config import ROOT
+from config import ROOT, storage as storage_config
 
 logger = get_logger("peptide_router", str(ROOT / "logs" / "tasks.log"), isMain=True)
 
@@ -80,7 +79,7 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
         job_prefix = f"jobs/peptide_optimization/{task_id}"
         
         # 本地临时目录用于 peptide_opt 服务处理（共享目录模式）
-        local_job_dir = StorageConfig.TEMP_DIR / "jobs" / "peptide_optimization" / task_id
+        local_job_dir = storage_config.temp_dir / "jobs" / "peptide_optimization" / task_id
         local_input_dir = local_job_dir / "input"
         local_output_dir = local_job_dir / "output"
         local_input_dir.mkdir(parents=True, exist_ok=True)

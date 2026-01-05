@@ -12,8 +12,7 @@ from database.services.upload_service import UploadService
 from database.services.docking_task_params_service import DockingTaskParamsService
 from requests.basic_request import DockingRequest
 from services.storage import get_storage
-from services.storage.config import StorageConfig
-from config import ROOT
+from config import ROOT, storage as storage_config
 
 logger = logging.getLogger("docking_router")
 
@@ -122,7 +121,7 @@ async def docking_endpoint(
         job_prefix = f"jobs/docking/{job_id}"
         
         # 本地临时目录用于计算（计算节点需要本地文件访问）
-        local_job_dir = StorageConfig.TEMP_DIR / "jobs" / "docking" / job_id
+        local_job_dir = storage_config.temp_dir / "jobs" / "docking" / job_id
         local_input_dir = local_job_dir / "input"
         local_output_dir = local_job_dir / "output"
         local_input_dir.mkdir(parents=True, exist_ok=True)

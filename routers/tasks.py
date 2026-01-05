@@ -5,7 +5,6 @@ from typing import List, Dict, Any, Optional
 import zipfile
 import asyncio
 import pandas as pd
-import os
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse, RedirectResponse
 from database.services import TaskService
@@ -13,8 +12,7 @@ from database.services.docking_task_params_service import DockingTaskParamsServi
 from database.services.peptide_task_params_service import PeptideTaskParamsService
 from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse, PaginatedTasksResponse
 from services.storage import get_storage
-from services.storage.config import StorageConfig
-from config import ROOT
+from config import ROOT, api as api_config
 from config.api_config import CACHE_SETTINGS, TASK_STATUS_PRIORITY
 from utils.log import get_logger
 from starlette.responses import FileResponse
@@ -23,8 +21,8 @@ logger = get_logger("tasks_router", str(ROOT / "logs" / "tasks.log"), isMain=Tru
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
-# 从环境变量获取前端URL，默认为空（将使用请求的origin）
-FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', '')
+# 从统一配置获取前端URL
+FRONTEND_BASE_URL = api_config.frontend_base_url
 
 
 async def get_file_from_storage_or_local(job_dir: str, relative_path: str) -> Optional[Path]:

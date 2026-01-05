@@ -3,7 +3,7 @@ from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 import logging
 
-from database.config import DB_CONFIG, POOL_CONFIG
+from config.database_config import DB_CONFIG, POOL_CONFIG
 
 logger = logging.getLogger(__name__)
 
