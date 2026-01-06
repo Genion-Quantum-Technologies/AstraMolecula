@@ -8,8 +8,8 @@ class UploadRepository:
     def create(user_id: str, filename: str, file_path: str, 
                file_size: Optional[int] = None, content_type: Optional[str] = None) -> str:
         """创建用户上传记录，返回生成的upload_id"""
-        # user_uploads表的id字段是char(32)，需要生成32字符的UUID（无连字符）
-        upload_id = str(uuid.uuid4()).replace('-', '')
+        # user_uploads表的id字段统一使用36位UUID
+        upload_id = str(uuid.uuid4())
         sql = """
         INSERT INTO user_uploads (id, user_id, filename, file_path, file_size, content_type)
         VALUES (%s, %s, %s, %s, %s, %s)

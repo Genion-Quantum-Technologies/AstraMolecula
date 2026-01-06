@@ -117,7 +117,7 @@ async def docking_endpoint(
                    current_user.username, receptor_filename, remote_key)
 
         # —— 2) 创建作业目录结构（在 SeaweedFS 中） —— #
-        job_id = uuid.uuid4().hex
+        job_id = str(uuid.uuid4())
         job_prefix = f"jobs/docking/{job_id}"
         
         # 本地临时目录用于计算（计算节点需要本地文件访问）
@@ -168,11 +168,12 @@ async def docking_endpoint(
         await storage.upload_file(local_input_json, f"{job_prefix}/input/input.json")
 
         # —— 4) 创建任务 —— #
-        # job_dir 现在存储的是 SeaweedFS 的路径前缀，同时在 storage_prefix 字段中也记录
+        # job_dir 存储 SeaweedFS 路径前缀（统一存储方案）
+        # 所有文件访问都通过 SeaweedFS，不再依赖本地路径
         task_id = TaskService.create_task(
             user_id=current_user.id,
             task_type="docking",
-            job_dir=str(local_job_dir)  # 本地临时目录，用于计算节点访问
+            job_dir=job_prefix  # SeaweedFS 路径前缀：jobs/docking/{job_id}
         )
 
         # —— 4.1) 创建任务参数记录并计算成本 —— #

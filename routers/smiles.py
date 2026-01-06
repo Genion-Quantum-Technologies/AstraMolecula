@@ -65,7 +65,7 @@ async def generate_molecules(
         JOBS_DIR = ROOT / "jobs" / "generate"
         JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
-        job_id = uuid.uuid4().hex
+        job_id = str(uuid.uuid4())
         job_dir = JOBS_DIR / job_id
         job_dir.mkdir()
 

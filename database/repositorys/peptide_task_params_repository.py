@@ -20,8 +20,8 @@ class PeptideTaskParamsRepository:
         try:
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS peptide_task_params (
-                id CHAR(32) NOT NULL PRIMARY KEY,
-                task_id CHAR(32) NOT NULL,
+                id CHAR(36) NOT NULL PRIMARY KEY,
+                task_id CHAR(36) NOT NULL,
                 peptide_sequence TEXT NOT NULL,
                 peptide_length INT NOT NULL,
                 receptor_pdb_filename VARCHAR(255) NOT NULL,

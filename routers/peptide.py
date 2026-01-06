@@ -75,7 +75,7 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
             )
         
         # 创建任务ID和存储路径
-        task_id = uuid.uuid4().hex
+        task_id = str(uuid.uuid4())
         job_prefix = f"jobs/peptide_optimization/{task_id}"
         
         # 本地临时目录用于 peptide_opt 服务处理（共享目录模式）
@@ -226,23 +226,40 @@ async def get_optimization_task_config(request: Request, task_id: str) -> Dict[s
         if task.task_type != "peptide_optimization":
             raise HTTPException(status_code=400, detail="Task is not a peptide optimization task")
         
-        # 读取配置文件
-        config_path = Path(task.job_dir) / "optimization_config.txt"
-        if not config_path.exists():
+        # 从 SeaweedFS 读取配置文件
+        # 需要先判断 job_dir 格式并标准化
+        job_dir = task.job_dir
+        if job_dir.startswith('/'):
+            # 旧格式本地路径，转换为存储路径
+            parts = Path(job_dir).parts
+            try:
+                jobs_idx = parts.index('jobs')
+                storage_prefix = '/'.join(parts[jobs_idx:])
+            except ValueError:
+                storage_prefix = '/'.join(parts[-3:]) if len(parts) >= 3 else job_dir
+        else:
+            storage_prefix = job_dir
+        
+        storage = get_storage()
+        config_key = f"{storage_prefix}/optimization_config.txt"
+        
+        try:
+            content = await storage.download_bytes(config_key)
+            config_text = content.decode('utf-8')
+        except FileNotFoundError:
             raise HTTPException(status_code=404, detail="Task configuration not found")
         
         config = {}
-        with open(config_path, 'r') as f:
-            for line in f:
-                if '=' in line:
-                    key, value = line.strip().split('=', 1)
-                    # 尝试转换数据类型
-                    if value.lower() in ('true', 'false'):
-                        config[key] = value.lower() == 'true'
-                    elif value.isdigit():
-                        config[key] = int(value)
-                    else:
-                        config[key] = value
+        for line in config_text.split('\n'):
+            if '=' in line:
+                key, value = line.strip().split('=', 1)
+                # 尝试转换数据类型
+                if value.lower() in ('true', 'false'):
+                    config[key] = value.lower() == 'true'
+                elif value.isdigit():
+                    config[key] = int(value)
+                else:
+                    config[key] = value
         
         return config
         

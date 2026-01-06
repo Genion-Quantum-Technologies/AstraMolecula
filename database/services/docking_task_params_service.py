@@ -126,7 +126,7 @@ class DockingTaskParamsService:
         import uuid
         
         temp_params = DockingTaskParams(
-            id=uuid.uuid4().hex,
+            id=str(uuid.uuid4()),
             task_id="preview",
             n_ligands=n_ligands,
             min_ph=min_ph,
