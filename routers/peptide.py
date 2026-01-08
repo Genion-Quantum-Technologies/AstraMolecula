@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Dict, Any
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File
 from database.services import TaskService
+from database.services.upload_service import UploadService
 from database.services.peptide_task_params_service import PeptideTaskParamsService
 from requests.basic_request import PeptideOptimizationRequest
 from responses.basic_response import TaskResponse
+from services.storage import get_storage
 from utils.log import get_logger
-from config import ROOT
+from config import ROOT, storage as storage_config
 
 logger = get_logger("peptide_router", str(ROOT / "logs" / "tasks.log"), isMain=True)
 
@@ -50,62 +52,80 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
         if not optimization_request.receptor_pdb_filename:
             raise HTTPException(status_code=400, detail="Receptor PDB filename is required")
         
-        # 检查上传的PDB文件是否存在
-        uploads_dir = Path(ROOT) / "uploads" / current_user.id
-        receptor_pdb_path = uploads_dir / optimization_request.receptor_pdb_filename
+        # 获取存储服务
+        storage = get_storage()
         
-        if not receptor_pdb_path.exists():
+        # 从上传记录中查找受体PDB文件
+        uploads = UploadService.list_by_user(current_user.id)
+        match = next((u for u in uploads if u.filename == optimization_request.receptor_pdb_filename), None)
+        
+        if not match:
+            available_files = [u.filename for u in uploads if u.filename.endswith('.pdb')]
             raise HTTPException(
                 status_code=404, 
-                detail=f"Receptor PDB file '{optimization_request.receptor_pdb_filename}' not found. Please upload it first."
+                detail=f"Receptor PDB file '{optimization_request.receptor_pdb_filename}' not found. Please upload it first. Available PDB files: {available_files}"
             )
         
-        # 创建任务目录
-        task_id = uuid.uuid4().hex
-        job_dir = Path(ROOT) / "jobs" / "peptide_optimization" / task_id
-        job_dir.mkdir(parents=True, exist_ok=True)
+        # 验证文件在 SeaweedFS 中存在
+        remote_key = match.file_path
+        if not await storage.file_exists(remote_key):
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Receptor PDB file '{optimization_request.receptor_pdb_filename}' not found in storage. Please re-upload it."
+            )
         
-        # 创建input子目录
-        input_dir = job_dir / "input"
-        input_dir.mkdir(exist_ok=True)
+        # 创建任务ID和存储路径
+        task_id = str(uuid.uuid4())
+        job_prefix = f"jobs/peptide_optimization/{task_id}"
         
-        # 复制受体PDB文件到input目录，重命名为标准名称
-        shutil.copy2(receptor_pdb_path, input_dir / "5ffg.pdb")
+        # 本地临时目录用于 peptide_opt 服务处理（共享目录模式）
+        local_job_dir = storage_config.temp_dir / "jobs" / "peptide_optimization" / task_id
+        local_input_dir = local_job_dir / "input"
+        local_output_dir = local_job_dir / "output"
+        local_input_dir.mkdir(parents=True, exist_ok=True)
+        local_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 下载受体PDB文件到本地临时目录，重命名为标准名称
+        local_receptor_path = local_input_dir / "5ffg.pdb"
+        await storage.download_file(remote_key, local_receptor_path)
         
         # 创建peptide.fasta文件
-        peptide_fasta_path = input_dir / "peptide.fasta"
+        peptide_fasta_content = f">peptide\n{optimization_request.peptide_sequence.strip()}\n"
+        peptide_fasta_path = local_input_dir / "peptide.fasta"
         with open(peptide_fasta_path, 'w') as f:
-            f.write(">peptide\n")
-            f.write(optimization_request.peptide_sequence.strip() + "\n")
+            f.write(peptide_fasta_content)
         
         # 验证n_poses参数范围
         n_poses = optimization_request.n_poses
         
         # 创建参数配置文件（使用系统固定的默认值）
-        config_path = job_dir / "optimization_config.txt"
+        config_content = f"""cores=12
+cleanup=True
+proteinmpnn_enabled=True
+n_poses={n_poses}
+num_seq_per_target={optimization_request.num_seq_per_target}
+proteinmpnn_seed={optimization_request.proteinmpnn_seed}
+n_iterations={optimization_request.n_iterations}
+n_rosetta_runs={optimization_request.n_rosetta_runs}
+peptide_sequence={optimization_request.peptide_sequence}
+receptor_pdb_filename={optimization_request.receptor_pdb_filename}
+storage_prefix={job_prefix}
+receptor_storage_key={remote_key}
+"""
+        config_path = local_job_dir / "optimization_config.txt"
         with open(config_path, 'w') as f:
-            # 系统固定参数
-            f.write(f"cores=12\n")  # 固定为12核心
-            f.write(f"cleanup=True\n")  # 固定启用清理
-            f.write(f"proteinmpnn_enabled=True\n")  # 固定启用ProteinMPNN
-            # 不写入step参数，表示执行完整流程
-            
-            # 用户可配置参数
-            f.write(f"n_poses={n_poses}\n")  # 对接构象数量（用户可配置）
-            f.write(f"num_seq_per_target={optimization_request.num_seq_per_target}\n")
-            f.write(f"proteinmpnn_seed={optimization_request.proteinmpnn_seed}\n")
-            f.write(f"n_iterations={optimization_request.n_iterations}\n")
-            f.write(f"n_rosetta_runs={optimization_request.n_rosetta_runs}\n")
-            
-            # 任务信息
-            f.write(f"peptide_sequence={optimization_request.peptide_sequence}\n")
-            f.write(f"receptor_pdb_filename={optimization_request.receptor_pdb_filename}\n")
+            f.write(config_content)
+        
+        # 上传输入文件到 SeaweedFS
+        await storage.upload_file(local_receptor_path, f"{job_prefix}/input/5ffg.pdb")
+        await storage.upload_bytes(peptide_fasta_content.encode(), f"{job_prefix}/input/peptide.fasta")
+        await storage.upload_file(config_path, f"{job_prefix}/optimization_config.txt")
         
         # 在数据库中创建任务记录
         task_id = TaskService.create_task(
             user_id=current_user.id,
             task_type="peptide_optimization",
-            job_dir=str(job_dir)
+            job_dir=str(local_job_dir)  # 本地临时目录，用于 peptide_opt 服务访问
         )
         
         # 创建peptide任务参数记录到peptide_task_params表
@@ -206,23 +226,40 @@ async def get_optimization_task_config(request: Request, task_id: str) -> Dict[s
         if task.task_type != "peptide_optimization":
             raise HTTPException(status_code=400, detail="Task is not a peptide optimization task")
         
-        # 读取配置文件
-        config_path = Path(task.job_dir) / "optimization_config.txt"
-        if not config_path.exists():
+        # 从 SeaweedFS 读取配置文件
+        # 需要先判断 job_dir 格式并标准化
+        job_dir = task.job_dir
+        if job_dir.startswith('/'):
+            # 旧格式本地路径，转换为存储路径
+            parts = Path(job_dir).parts
+            try:
+                jobs_idx = parts.index('jobs')
+                storage_prefix = '/'.join(parts[jobs_idx:])
+            except ValueError:
+                storage_prefix = '/'.join(parts[-3:]) if len(parts) >= 3 else job_dir
+        else:
+            storage_prefix = job_dir
+        
+        storage = get_storage()
+        config_key = f"{storage_prefix}/optimization_config.txt"
+        
+        try:
+            content = await storage.download_bytes(config_key)
+            config_text = content.decode('utf-8')
+        except FileNotFoundError:
             raise HTTPException(status_code=404, detail="Task configuration not found")
         
         config = {}
-        with open(config_path, 'r') as f:
-            for line in f:
-                if '=' in line:
-                    key, value = line.strip().split('=', 1)
-                    # 尝试转换数据类型
-                    if value.lower() in ('true', 'false'):
-                        config[key] = value.lower() == 'true'
-                    elif value.isdigit():
-                        config[key] = int(value)
-                    else:
-                        config[key] = value
+        for line in config_text.split('\n'):
+            if '=' in line:
+                key, value = line.strip().split('=', 1)
+                # 尝试转换数据类型
+                if value.lower() in ('true', 'false'):
+                    config[key] = value.lower() == 'true'
+                elif value.isdigit():
+                    config[key] = int(value)
+                else:
+                    config[key] = value
         
         return config
         

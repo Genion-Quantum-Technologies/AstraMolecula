@@ -5,14 +5,14 @@ from typing import List, Dict, Any, Optional
 import zipfile
 import asyncio
 import pandas as pd
-import os
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from database.services import TaskService
 from database.services.docking_task_params_service import DockingTaskParamsService
 from database.services.peptide_task_params_service import PeptideTaskParamsService
 from responses.basic_response import DockResponse, MoleculeResponse, TaskResponse, PaginatedTasksResponse
-from config import ROOT
+from services.storage import get_storage
+from config import ROOT, api as api_config
 from config.api_config import CACHE_SETTINGS, TASK_STATUS_PRIORITY
 from utils.log import get_logger
 from starlette.responses import FileResponse
@@ -21,8 +21,206 @@ logger = get_logger("tasks_router", str(ROOT / "logs" / "tasks.log"), isMain=Tru
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
-# 从环境变量获取前端URL，默认为空（将使用请求的origin）
-FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', '')
+# 从统一配置获取前端URL
+FRONTEND_BASE_URL = api_config.frontend_base_url
+
+
+# ==== SeaweedFS 存储辅助函数 ====
+
+def normalize_storage_prefix(job_dir: str) -> str:
+    """
+    标准化 job_dir 为存储前缀
+    
+    支持两种格式：
+    1. 新格式（SeaweedFS 路径）: jobs/docking/{job_id}
+    2. 旧格式（本地路径）: /tmp/astramolecula/jobs/docking/{job_id}
+    
+    返回统一的 SeaweedFS 路径前缀
+    """
+    if job_dir.startswith('/'):
+        # 旧格式本地路径，转换为存储路径
+        parts = Path(job_dir).parts
+        try:
+            jobs_idx = parts.index('jobs')
+            return '/'.join(parts[jobs_idx:])
+        except ValueError:
+            # 无法解析，返回原路径最后三部分作为 fallback
+            return '/'.join(parts[-3:]) if len(parts) >= 3 else job_dir
+    else:
+        # 新格式，直接返回
+        return job_dir
+
+
+async def read_json_from_storage(storage_prefix: str, relative_path: str) -> dict | list:
+    """
+    从 SeaweedFS 读取并解析 JSON 文件
+    
+    Args:
+        storage_prefix: 存储路径前缀（如 jobs/docking/{job_id}）
+        relative_path: 相对于 storage_prefix 的文件路径
+        
+    Returns:
+        解析后的 JSON 对象
+        
+    Raises:
+        FileNotFoundError: 文件不存在
+        json.JSONDecodeError: JSON 解析失败
+    """
+    storage = get_storage()
+    remote_key = f"{storage_prefix}/{relative_path}".replace('//', '/')
+    
+    content = await storage.download_bytes(remote_key)
+    return json.loads(content.decode('utf-8'))
+
+
+async def get_file_download_url(storage_prefix: str, relative_path: str, expires_in: int = 3600) -> str:
+    """
+    获取文件的预签名下载 URL
+    
+    Args:
+        storage_prefix: 存储路径前缀
+        relative_path: 相对于 storage_prefix 的文件路径
+        expires_in: URL 有效期（秒），默认 1 小时
+        
+    Returns:
+        预签名下载 URL
+    """
+    storage = get_storage()
+    remote_key = f"{storage_prefix}/{relative_path}".replace('//', '/')
+    
+    if not await storage.file_exists(remote_key):
+        raise FileNotFoundError(f"File not found: {remote_key}")
+    
+    return await storage.get_presigned_url(remote_key, expires=expires_in)
+
+
+async def download_file_content(storage_prefix: str, relative_path: str) -> bytes:
+    """
+    从 SeaweedFS 下载文件内容
+    
+    Args:
+        storage_prefix: 存储路径前缀
+        relative_path: 相对于 storage_prefix 的文件路径
+        
+    Returns:
+        文件内容的字节数据
+    """
+    storage = get_storage()
+    remote_key = f"{storage_prefix}/{relative_path}".replace('//', '/')
+    return await storage.download_bytes(remote_key)
+
+
+async def check_file_exists_in_storage(storage_prefix: str, relative_path: str) -> bool:
+    """
+    检查 SeaweedFS 中文件是否存在
+    
+    Args:
+        storage_prefix: 存储路径前缀
+        relative_path: 相对于 storage_prefix 的文件路径
+        
+    Returns:
+        文件是否存在
+    """
+    storage = get_storage()
+    remote_key = f"{storage_prefix}/{relative_path}".replace('//', '/')
+    return await storage.file_exists(remote_key)
+
+
+async def list_storage_files(storage_prefix: str, relative_path: str = "") -> List[str]:
+    """
+    列出 SeaweedFS 中指定路径下的文件
+    
+    Args:
+        storage_prefix: 存储路径前缀
+        relative_path: 相对于 storage_prefix 的子目录路径
+        
+    Returns:
+        文件路径列表
+    """
+    storage = get_storage()
+    prefix = f"{storage_prefix}/{relative_path}".replace('//', '/').rstrip('/') + '/'
+    return await storage.list_files(prefix)
+
+
+async def create_zip_from_storage(storage_prefix: str, relative_path: str, file_filter: callable = None) -> io.BytesIO:
+    """
+    从 SeaweedFS 中的文件创建 ZIP 压缩包（内存中）
+    
+    Args:
+        storage_prefix: 存储路径前缀
+        relative_path: 要打包的相对目录路径
+        file_filter: 可选的文件过滤函数，接受文件名返回 bool
+        
+    Returns:
+        内存中的 ZIP 文件 BytesIO 对象
+    """
+    storage = get_storage()
+    prefix = f"{storage_prefix}/{relative_path}".replace('//', '/').rstrip('/') + '/'
+    
+    files = await storage.list_files(prefix)
+    
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for file_key in files:
+            # 提取文件名
+            filename = file_key.split('/')[-1]
+            
+            # 应用过滤器
+            if file_filter and not file_filter(filename):
+                continue
+            
+            # 跳过目录
+            if file_key.endswith('/'):
+                continue
+            
+            try:
+                content = await storage.download_bytes(file_key)
+                # 计算相对于 prefix 的路径作为 arcname
+                arcname = file_key[len(prefix):] if file_key.startswith(prefix) else filename
+                zf.writestr(arcname, content)
+            except Exception as e:
+                logger.warning(f"Failed to add file to ZIP: {file_key}, error: {e}")
+    
+    zip_buffer.seek(0)
+    return zip_buffer
+
+
+async def get_file_from_storage_or_local(job_dir: str, relative_path: str) -> Optional[Path]:
+    """
+    尝试从本地临时目录或 SeaweedFS 获取文件（向后兼容）
+    
+    注意：此函数保留用于向后兼容，新代码应直接使用 SeaweedFS API
+    
+    Args:
+        job_dir: 任务目录（可能是本地路径或存储前缀）
+        relative_path: 相对于 job_dir 的文件路径
+    
+    Returns:
+        本地文件路径（如果从存储下载，会先下载到临时目录）
+    """
+    from config import storage as storage_config
+    
+    local_path = Path(job_dir) / relative_path
+    
+    # 优先使用本地文件
+    if local_path.exists():
+        return local_path
+    
+    # 尝试从 SeaweedFS 获取
+    storage = get_storage()
+    storage_prefix = normalize_storage_prefix(job_dir)
+    remote_key = f"{storage_prefix}/{relative_path}".replace('//', '/')
+    
+    if await storage.file_exists(remote_key):
+        # 下载到本地临时目录
+        temp_dir = storage_config.temp_dir / "downloads"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        local_path = temp_dir / Path(relative_path).name
+        await storage.download_file(remote_key, local_path)
+        return local_path
+    
+    return None
+
 
 def get_current_user_info(request: Request) -> Dict[str, Any]:
     """获取当前用户信息，支持多种认证方式"""
@@ -221,68 +419,69 @@ async def download_peptide_optimization_csv(
                 logger.error("Invalid indices format: %s, error: %s", indices, str(e))
                 raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
         
-        # 尝试从result.json获取详细结果
-        result_json_path = Path(task.job_dir) / "output" / "result.json"
-        if result_json_path.exists():
-            result_data = json.loads(result_json_path.read_text(encoding="utf-8"))
+        # 尝试从 SeaweedFS 获取 result.json 详细结果
+        storage_prefix = normalize_storage_prefix(task.job_dir)
+        result_data = None
+        try:
+            result_data = await read_json_from_storage(storage_prefix, "output/result.json")
+        except FileNotFoundError:
+            pass  # 文件不存在，继续尝试 result.csv
+        
+        if result_data and 'results' in result_data:
+            results = result_data['results']
             
-            if 'results' in result_data:
-                results = result_data['results']
-                
-                # Generate CSV content with English headers
-                csv_lines = [
-                    'Rank,Original Sequence,Original Sequence Affinity Score,Original Sequence Global Score,Optimal Sequence,Global Score,Molecular Weight,Isoelectric Point,Aromaticity,Instability Index,Hydrophobicity,Hydrophilicity,Secondary Structure Fraction'
-                ]
-                
-                for index, result in enumerate(results, 1):
-                    # 如果指定了索引，跳过未选中的结果
-                    if selected_indices is not None and index not in selected_indices:
-                        continue
-                        
-                    original_seq = result.get('originalSequence', '').replace('"', '""')
-                    optimal_seq = result.get('optimalSequence', '').replace('"', '""')
-                    secondary_structure = str(result.get('secondaryStructureFraction', '')).replace('"', '""')
+            # Generate CSV content with English headers
+            csv_lines = ['Rank,Original Sequence,Original Sequence Affinity Score,Original Sequence Global Score,Optimal Sequence,Global Score,Molecular Weight,Isoelectric Point,Aromaticity,Instability Index,Hydrophobicity,Hydrophilicity,Secondary Structure Fraction']
+            
+            for index, result in enumerate(results, 1):
+                # 如果指定了索引，跳过未选中的结果
+                if selected_indices is not None and index not in selected_indices:
+                    continue
                     
-                    line = (
-                        f'{index},'
-                        f'"{original_seq}",'
-                        f'{result.get("originalSequenceAffinityScore", "")},'
-                        f'{result.get("originalSequenceGlobalScore", "")},'
-                        f'"{optimal_seq}",'
-                        f'{result.get("globalScore", "")},'
-                        f'{result.get("molecularWeight", "")},'
-                        f'{result.get("isoelectricPoint", "")},'
-                        f'{result.get("aromaticity", "")},'
-                        f'{result.get("instabilityIndex", "")},'
-                        f'{result.get("hydrophobicity", "")},'
-                        f'{result.get("hydrophilicity", "")},'
-                        f'"{secondary_structure}"'
-                    )
-                    csv_lines.append(line)
+                original_seq = result.get('originalSequence', '').replace('"', '""')
+                optimal_seq = result.get('optimalSequence', '').replace('"', '""')
+                secondary_structure = str(result.get('secondaryStructureFraction', '')).replace('"', '""')
                 
-                csv_content = '\n'.join(csv_lines)
-                
-                # 文件名根据是否有选中来区分
-                filename = f"peptide_optimization_results_{task_id}_selected.csv" if indices else f"peptide_optimization_results_{task_id}.csv"
-                
-                return StreamingResponse(
-                    io.BytesIO(csv_content.encode('utf-8-sig')),  # 使用UTF-8 BOM编码支持中文
-                    media_type="text/csv",
-                    headers={
-                        "Content-Disposition": f"attachment; filename={filename}",
-                        "Cache-Control": "no-cache"
-                    }
+                line = (
+                    f'{index},'
+                    f'"{original_seq}",'
+                    f'{result.get("originalSequenceAffinityScore", "")},'
+                    f'{result.get("originalSequenceGlobalScore", "")},'
+                    f'"{optimal_seq}",'
+                    f'{result.get("globalScore", "")},'
+                    f'{result.get("molecularWeight", "")},'
+                    f'{result.get("isoelectricPoint", "")},'
+                    f'{result.get("aromaticity", "")},'
+                    f'{result.get("instabilityIndex", "")},'
+                    f'{result.get("hydrophobicity", "")},'
+                    f'{result.get("hydrophilicity", "")},'
+                    f'"{secondary_structure}"'
                 )
+                csv_lines.append(line)
+            
+            csv_content = '\n'.join(csv_lines)
+            
+            # 文件名根据是否有选中来区分
+            filename = f"peptide_optimization_results_{task_id}_selected.csv" if indices else f"peptide_optimization_results_{task_id}.csv"
+            
+            return StreamingResponse(
+                io.BytesIO(csv_content.encode('utf-8-sig')),  # 使用UTF-8 BOM编码支持中文
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}",
+                    "Cache-Control": "no-cache"
+                }
+            )
         
         # 如果没有找到result.json，尝试使用现有的result.csv文件
-        result_csv_path = Path(task.job_dir) / "output" / "result.csv"
-        if result_csv_path.exists():
-            # 如果有索引过滤，需要读取CSV并过滤
+        try:
+            csv_content_bytes = await download_file_content(storage_prefix, "output/result.csv")
+            
+            # 如果有索引过滤，需要解析CSV并过滤
             if selected_indices:
                 import csv as csv_module
-                with open(result_csv_path, 'r', encoding='utf-8') as f:
-                    reader = csv_module.reader(f)
-                    rows = list(reader)
+                reader = csv_module.reader(io.StringIO(csv_content_bytes.decode('utf-8')))
+                rows = list(reader)
                 
                 if rows:
                     # 保留表头
@@ -308,15 +507,12 @@ async def download_peptide_optimization_csv(
                         }
                     )
             
-            # 没有索引过滤，直接返回文件
-            return FileResponse(
-                path=str(result_csv_path),
-                media_type="text/csv",
-                filename=f"peptide_optimization_results_{task_id}.csv",
-                headers={"Cache-Control": "no-cache"}
-            )
+            # 没有索引过滤，直接返回预签名 URL
+            url = await get_file_download_url(storage_prefix, "output/result.csv")
+            return RedirectResponse(url)
         
-        raise HTTPException(status_code=404, detail="No peptide optimization results found")
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="No peptide optimization results found")
         
     except HTTPException:
         raise
@@ -357,59 +553,57 @@ async def download_peptide_results_csv(
                 user.username, user_info['auth_type'], task_id, indices or "all")
     
     try:
-        # 尝试使用现有的result.csv文件（这是最常见的情况）
-        result_csv_path = Path(task.job_dir) / "output" / "result.csv"
-        if result_csv_path.exists():
-            # 如果有索引过滤，需要读取CSV并过滤
-            if indices:
-                try:
-                    selected_indices = set(int(i.strip()) for i in indices.split(','))
-                    logger.info("Filtering peptide results to indices: %s", selected_indices)
-                except ValueError as e:
-                    logger.error("Invalid indices format: %s, error: %s", indices, str(e))
-                    raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
-                
-                import csv as csv_module
-                with open(result_csv_path, 'r', encoding='utf-8') as f:
-                    reader = csv_module.reader(f)
-                    rows = list(reader)
-                
-                if rows:
-                    # 保留表头
-                    filtered_rows = [rows[0]]
-                    # 过滤数据行（跳过表头，索引从1开始对应第2行）
-                    for i, row in enumerate(rows[1:], 1):
-                        if i in selected_indices:
-                            filtered_rows.append(row)
-                    
-                    # 生成CSV内容
-                    output = io.StringIO()
-                    writer = csv_module.writer(output)
-                    writer.writerows(filtered_rows)
-                    csv_content = output.getvalue()
-                    
-                    logger.info("Filtered to %d results from indices: %s", 
-                               len(filtered_rows) - 1, indices)
-                    
-                    filename = f"peptide_results_{task_id}_selected.csv"
-                    return StreamingResponse(
-                        io.BytesIO(csv_content.encode('utf-8-sig')),
-                        media_type="text/csv",
-                        headers={
-                            "Content-Disposition": f"attachment; filename={filename}",
-                            "Cache-Control": "no-cache"
-                        }
-                    )
-            
-            # 没有索引过滤，直接返回文件
-            return FileResponse(
-                path=str(result_csv_path),
-                media_type="text/csv",
-                filename=f"peptide_results_{task_id}.csv",
-                headers={"Cache-Control": "no-cache"}
-            )
+        # 从 SeaweedFS 获取 result.csv 文件
+        storage_prefix = normalize_storage_prefix(task.job_dir)
         
-        raise HTTPException(status_code=404, detail="No peptide results found")
+        try:
+            csv_content_bytes = await download_file_content(storage_prefix, "output/result.csv")
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="No peptide results found")
+        
+        # 如果有索引过滤，需要解析CSV并过滤
+        if indices:
+            try:
+                selected_indices = set(int(i.strip()) for i in indices.split(','))
+                logger.info("Filtering peptide results to indices: %s", selected_indices)
+            except ValueError as e:
+                logger.error("Invalid indices format: %s, error: %s", indices, str(e))
+                raise HTTPException(status_code=400, detail=f"Invalid indices format: {indices}")
+            
+            import csv as csv_module
+            reader = csv_module.reader(io.StringIO(csv_content_bytes.decode('utf-8')))
+            rows = list(reader)
+            
+            if rows:
+                # 保留表头
+                filtered_rows = [rows[0]]
+                # 过滤数据行（跳过表头，索引从1开始对应第2行）
+                for i, row in enumerate(rows[1:], 1):
+                    if i in selected_indices:
+                        filtered_rows.append(row)
+                
+                # 生成CSV内容
+                output = io.StringIO()
+                writer = csv_module.writer(output)
+                writer.writerows(filtered_rows)
+                csv_content = output.getvalue()
+                
+                logger.info("Filtered to %d results from indices: %s", 
+                           len(filtered_rows) - 1, indices)
+                
+                filename = f"peptide_results_{task_id}_selected.csv"
+                return StreamingResponse(
+                    io.BytesIO(csv_content.encode('utf-8-sig')),
+                    media_type="text/csv",
+                    headers={
+                        "Content-Disposition": f"attachment; filename={filename}",
+                        "Cache-Control": "no-cache"
+                    }
+                )
+        
+        # 没有索引过滤，直接返回预签名 URL
+        url = await get_file_download_url(storage_prefix, "output/result.csv")
+        return RedirectResponse(url)
         
     except HTTPException:
         raise
@@ -492,13 +686,8 @@ async def get_task_status(request: Request, task_id: str):
         if not task or task.user_id != user.id:
             raise HTTPException(status_code=404, detail="task not found")
         # 个别任务（peptide_optimization）补充 protein_path
-        try:
-            if getattr(task, 'task_type', None) == 'peptide_optimization' and getattr(task, 'job_dir', None):
-                candidate = Path(task.job_dir) / 'input' / '5ffg.pdb'
-                if candidate.exists():
-                    setattr(task, 'protein_path', str(candidate))
-        except Exception:
-            pass
+        # 注意：现在 job_dir 是 SeaweedFS 路径前缀，无法直接检查本地文件
+        # 前端应该通过专门的 API 获取 protein 文件
         return task
     except HTTPException:
         raise
@@ -519,8 +708,10 @@ async def get_peptide_protein_file(request: Request, task_id: str):
         raise HTTPException(status_code=404, detail="task not found")
     if task.task_type != 'peptide_optimization':
         raise HTTPException(status_code=400, detail="task type mismatch")
-    candidate = Path(task.job_dir) / 'input' / '5ffg.pdb'
-    if not candidate.exists():
+    
+    # 尝试从本地或 SeaweedFS 获取文件
+    candidate = await get_file_from_storage_or_local(task.job_dir, 'input/5ffg.pdb')
+    if not candidate:
         raise HTTPException(status_code=404, detail="protein file not found")
     return FileResponse(path=str(candidate), filename=candidate.name, media_type='chemical/x-pdb')
 
@@ -674,16 +865,36 @@ async def download_task_files(request: Request, task_id: str):
     logger.info("User %s (%s) downloading files for task %s", 
                 user.username, user_info['auth_type'], task_id)
 
-    job_dir = Path(task.job_dir)
-    if not job_dir.exists():
-        raise HTTPException(status_code=404, detail="job directory missing")
-
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, "w") as zf:
-        for item in job_dir.iterdir():
-            if item.is_file():
-                zf.write(item, arcname=item.name)
-    memory_file.seek(0)
+    # 从 SeaweedFS 创建 ZIP 压缩包
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    storage = get_storage()
+    
+    try:
+        # 列出所有输出文件
+        output_files = await storage.list_files(f"{storage_prefix}/output/")
+        
+        if not output_files:
+            raise HTTPException(status_code=404, detail="No output files found")
+        
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
+            for file_key in output_files:
+                if file_key.endswith('/'):
+                    continue
+                try:
+                    content = await storage.download_bytes(file_key)
+                    # 提取相对路径作为 arcname
+                    arcname = file_key.split('/output/')[-1] if '/output/' in file_key else file_key.split('/')[-1]
+                    zf.writestr(arcname, content)
+                except Exception as e:
+                    logger.warning(f"Failed to add file to ZIP: {file_key}, error: {e}")
+        
+        memory_file.seek(0)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating ZIP for task {task_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create download archive")
 
     filename = f"{task_id}.zip"
     return StreamingResponse(
@@ -723,12 +934,13 @@ async def get_generated_molecules(request: Request, task_id: str):
     logger.info("User %s (%s) requesting generated molecules for task %s", 
                 user.username, user_info['auth_type'], task_id)
     
-    output_path = Path(task.job_dir) / "output.json"
-    if not output_path.exists():
+    # 从 SeaweedFS 读取 output.json
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    try:
+        data = await read_json_from_storage(storage_prefix, "output.json")
+    except FileNotFoundError:
         raise HTTPException(status_code=500, detail="output not found")
-
-    # 读取并解析 output.json，假设它是 List[dict] 且每个 dict 都符合 MoleculeOutput 的字段
-    data = json.loads(output_path.read_text(encoding="utf-8"))
+    
     return data
 
 
@@ -767,12 +979,14 @@ async def get_docking_results(request: Request, task_id: str):
 
     logger.info("User %s (%s) requesting docking results for task %s", user.username, user_info['auth_type'], task_id)
 
-    output_path = Path(task.job_dir) / "output" / "dockRes.json"
-    if not output_path.exists():
+    # 从 SeaweedFS 读取 dockRes.json
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    try:
+        data = await read_json_from_storage(storage_prefix, "output/dockRes.json")
+    except FileNotFoundError:
         raise HTTPException(status_code=500, detail="dockRes not found")
-
-    # 读取并解析 output.json，假设它是 List[dict] 且每个 dict 都符合 MoleculeOutput 的字段
-    data = json.loads(output_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="dockRes format invalid")
     
     # 获取前端基础URL（优先使用环境变量配置）
     if FRONTEND_BASE_URL:
@@ -822,21 +1036,15 @@ async def get_sdf_file(request: Request, task_id: str, filename: str):
     if not filename.endswith('.sdf') or '/' in filename or '\\' in filename:
         raise HTTPException(status_code=400, detail="invalid filename")
     
-    # 构建SDF文件路径
-    sdf_path = Path(task.job_dir) / "output" / "docked" / filename
-    if not sdf_path.exists():
+    # 从 SeaweedFS 获取文件 URL
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    try:
+        url = await get_file_download_url(storage_prefix, f"output/docked/{filename}")
+        return RedirectResponse(url, headers={
+            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+        })
+    except FileNotFoundError:
         raise HTTPException(status_code=404, detail="SDF file not found")
-    
-    # 返回SDF文件内容，添加缓存头
-    return FileResponse(
-        path=str(sdf_path),
-        media_type="chemical/x-mdl-sdfile",
-        filename=filename,
-        headers={
-            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}",
-            "ETag": f'"{task_id}-{filename}"'
-        }
-    )
 
 
 @router.get("/{task_id}/protein")
@@ -866,40 +1074,49 @@ async def get_protein_file(request: Request, task_id: str):
     # 减少日志频率 - 只在成功访问时记录
     logger.info("User %s (%s) downloading protein file for task %s", user.username, user_info['auth_type'], task_id)
     
-    # 从dockRes.json中获取protein路径
-    dock_res_path = Path(task.job_dir) / "output" / "dockRes.json"
-    if not dock_res_path.exists():
-        raise HTTPException(status_code=404, detail="dockRes not found")
+    # 从 SeaweedFS 获取 dockRes.json 来读取 protein 信息
+    storage_prefix = normalize_storage_prefix(task.job_dir)
     
     try:
-        with open(dock_res_path, 'r', encoding='utf-8') as f:
-            dock_results = json.loads(f.read())
+        dock_results = await read_json_from_storage(storage_prefix, "output/dockRes.json")
         
         if not dock_results or not isinstance(dock_results, list) or len(dock_results) == 0:
             raise HTTPException(status_code=404, detail="no docking results found")
         
-        # 获取第一个结果中的protein_path
-        protein_path = dock_results[0].get('protein_path')
-        if not protein_path:
-            raise HTTPException(status_code=404, detail="protein_path not found in results")
+        # 获取第一个结果中的 receptor_storage_key（存储在上传时的键）
+        # 或者从 input.json 获取 receptor_storage_key
+        try:
+            input_config = await read_json_from_storage(storage_prefix, "input/input.json")
+            receptor_storage_key = input_config.get('receptor_storage_key')
+            if receptor_storage_key:
+                url = await get_file_download_url("", receptor_storage_key.lstrip('/'))
+                return RedirectResponse(url, headers={
+                    "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+                })
+        except FileNotFoundError:
+            pass
         
-        protein_file_path = Path(protein_path)
-        if not protein_file_path.exists():
-            raise HTTPException(status_code=404, detail="protein file not found")
+        # Fallback: 尝试从 input 目录获取 receptor 文件
+        try:
+            storage = get_storage()
+            input_files = await storage.list_files(f"{storage_prefix}/input/")
+            for f in input_files:
+                if f.endswith('.pdbqt'):
+                    url = await storage.get_presigned_url(f)
+                    return RedirectResponse(url, headers={
+                        "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+                    })
+        except Exception:
+            pass
         
-        # 返回protein文件内容，添加缓存头
-        return FileResponse(
-            path=str(protein_file_path),
-            media_type="chemical/x-pdbqt",
-            filename=protein_file_path.name,
-            headers={
-                "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}",
-                "ETag": f'"{task_id}-protein"'
-            }
-        )
+        raise HTTPException(status_code=404, detail="protein file not found")
         
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="dockRes not found")
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="invalid dockRes format")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Error getting protein file: %s", e)
         raise HTTPException(status_code=500, detail=f"error getting protein file: {e}")
@@ -932,14 +1149,15 @@ async def get_peptide_result_csv(request: Request, task_id: str):
     # 记录获取操作
     logger.info("User %s (%s) requesting peptide result data for task %s", user.username, user_info['auth_type'], task_id)
     
-    # 构建result.csv文件路径
-    result_csv_path = Path(task.job_dir) / "output" / "result.csv"
-    if not result_csv_path.exists():
+    # 从 SeaweedFS 读取 result.csv
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    try:
+        csv_content = await download_file_content(storage_prefix, "output/result.csv")
+        df = pd.read_csv(io.BytesIO(csv_content), index_col=0)
+    except FileNotFoundError:
         raise HTTPException(status_code=404, detail="result.csv file not found")
     
     try:
-        # 读取CSV文件并转换为JSON格式
-        df = pd.read_csv(result_csv_path, index_col=0)
         
         # 获取前端基础URL（优先使用环境变量配置）
         if FRONTEND_BASE_URL:
@@ -1014,21 +1232,15 @@ async def download_peptide_result_csv(request: Request, task_id: str):
     # 记录下载操作
     logger.info("User %s (%s) downloading peptide result CSV file for task %s", user.username, user_info['auth_type'], task_id)
     
-    # 构建result.csv文件路径
-    result_csv_path = Path(task.job_dir) / "output" / "result.csv"
-    if not result_csv_path.exists():
+    # 从 SeaweedFS 获取文件 URL 并重定向
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    try:
+        url = await get_file_download_url(storage_prefix, "output/result.csv")
+        return RedirectResponse(url, headers={
+            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+        })
+    except FileNotFoundError:
         raise HTTPException(status_code=404, detail="result.csv file not found")
-    
-    # 返回CSV文件内容，添加缓存头
-    return FileResponse(
-        path=str(result_csv_path),
-        media_type="text/csv",
-        filename="result.csv",
-        headers={
-            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}",
-            "ETag": f'"{task_id}-result-csv"'
-        }
-    )
 
 
 @router.get("/{task_id}/peptide/output")
@@ -1057,25 +1269,17 @@ async def download_peptide_output_folder(request: Request, task_id: str):
 
     logger.info("User %s (%s) downloading peptide output folder for task %s", user.username, user_info['auth_type'], task_id)
 
-    output_dir = Path(task.job_dir) / "output"
-    if not output_dir.exists():
+    # 从 SeaweedFS 创建 ZIP 压缩包
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    try:
+        zip_buffer = await create_zip_from_storage(storage_prefix, "output")
+    except Exception as e:
+        logger.error(f"Error creating ZIP for task {task_id}: {e}")
         raise HTTPException(status_code=404, detail="output directory not found")
-
-    # 创建内存中的ZIP文件
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
-        # 递归添加output目录下的所有文件
-        for item in output_dir.rglob("*"):
-            if item.is_file():
-                # 计算相对路径，保持目录结构
-                arcname = item.relative_to(output_dir)
-                zf.write(item, arcname=str(arcname))
-    
-    memory_file.seek(0)
 
     filename = f"peptide_optimization_{task_id}_output.zip"
     return StreamingResponse(
-        memory_file,
+        zip_buffer,
         media_type="application/zip",
         headers={
             "Content-Disposition": f"attachment; filename={filename}",
@@ -1100,23 +1304,21 @@ async def get_task_input_params(request: Request, task_id: str):
     logger.info("User %s (%s) requesting input params for task %s", 
                 user.username, user_info['auth_type'], task_id)
     
-    # 根据任务类型查找不同的输入文件
-    job_dir = Path(task.job_dir)
+    # 从 SeaweedFS 获取输入参数
+    storage_prefix = normalize_storage_prefix(task.job_dir)
     
     if task.task_type == "docking":
-        input_file = job_dir / "input" / "input.json"
+        input_path = "input/input.json"
     elif task.task_type == "generate":
-        input_file = job_dir / "input.json"
+        input_path = "input.json"
     else:
         raise HTTPException(status_code=400, detail=f"unsupported task type: {task.task_type}")
     
-    if not input_file.exists():
-        raise HTTPException(status_code=404, detail="task input parameters not found")
-    
     try:
-        with open(input_file, 'r', encoding='utf-8') as f:
-            input_params = json.load(f)
+        input_params = await read_json_from_storage(storage_prefix, input_path)
         return input_params
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="task input parameters not found")
     except Exception as e:
         logger.error("Failed to read input params for task %s: %s", task_id, e)
         raise HTTPException(status_code=500, detail="failed to read task input parameters")
@@ -1135,7 +1337,7 @@ async def download_peptide_file(request: Request, task_id: str, filename: str):
     logger.info(f"[peptide-download] task_id={task_id} filename={filename}")
 
     # 基本校验
-    if not re.match(r'^[\w\-. ]+$', filename):
+    if not re.match(r'^[\w\\-. ]+$', filename):
         raise HTTPException(status_code=400, detail="invalid filename")
 
     user_info = get_current_user_info(request)
@@ -1146,57 +1348,53 @@ async def download_peptide_file(request: Request, task_id: str, filename: str):
     if task.task_type != "peptide_optimization":
         raise HTTPException(status_code=400, detail="task type mismatch")
 
-    job_dir = task.job_dir
-    if not job_dir:
-        raise HTTPException(status_code=500, detail="task job_dir missing")
-
+    storage_prefix = normalize_storage_prefix(task.job_dir)
+    storage = get_storage()
+    
+    # 搜索路径（相对于 storage_prefix）
     search_paths = [
-        os.path.join(job_dir, "output", filename),
-        os.path.join(job_dir, "output", "complexes", filename),
-        os.path.join(job_dir, "output", "complex", filename),
-        os.path.join(job_dir, "output", "pdb", filename),
-        os.path.join(job_dir, "output", "pdbs", filename),
-        os.path.join(job_dir, "middlefiles", filename),
-        os.path.join(job_dir, "middlefiles", "pdb", filename),
-        os.path.join(job_dir, "input", filename),
-        os.path.join(job_dir, filename),
+        f"output/{filename}",
+        f"output/complexes/{filename}",
+        f"output/complex/{filename}",
+        f"output/pdb/{filename}",
+        f"output/pdbs/{filename}",
+        f"middlefiles/{filename}",
+        f"middlefiles/pdb/{filename}",
+        f"input/{filename}",
+        filename,
     ]
 
-    found_file = None
-    for p in search_paths:
-        if os.path.exists(p) and os.path.isfile(p):
-            found_file = p
+    found_key = None
+    for relative_path in search_paths:
+        remote_key = f"{storage_prefix}/{relative_path}"
+        if await storage.file_exists(remote_key):
+            found_key = remote_key
             break
 
-    # 递归浅层扩展搜索
-    if not found_file:
-        for base in [os.path.join(job_dir, "output"), os.path.join(job_dir, "middlefiles")]:
-            if os.path.isdir(base):
-                for root, dirs, files in os.walk(base):
-                    # 限制搜索深度为2
-                    rel_depth = Path(root).relative_to(base).parts
-                    if len(rel_depth) > 2:
-                        continue
-                    if filename in files:
-                        found_file = os.path.join(root, filename)
+    # 递归搜索 output 和 middlefiles 目录
+    if not found_key:
+        for base_dir in ["output", "middlefiles"]:
+            try:
+                files = await storage.list_files(f"{storage_prefix}/{base_dir}/")
+                for f in files:
+                    if f.endswith(f"/{filename}") or f.split('/')[-1] == filename:
+                        found_key = f
                         break
-                if found_file:
+                if found_key:
                     break
+            except Exception:
+                continue
 
-    if not found_file:
+    if not found_key:
         raise HTTPException(status_code=404, detail=f"file {filename} not found")
 
-    # MIME 类型
-    mime_map = {
-        '.pdb': 'chemical/x-pdb',
-        '.sdf': 'chemical/x-mdl-sdfile',
-        '.mol': 'chemical/x-mdl-molfile',
-        '.mol2': 'chemical/x-mol2'
-    }
-    ext = os.path.splitext(filename)[1].lower()
-    media_type = mime_map.get(ext) or mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-
-    return FileResponse(path=found_file, filename=filename, media_type=media_type)
+    # 获取预签名 URL 并重定向
+    try:
+        url = await storage.get_presigned_url(found_key)
+        return RedirectResponse(url)
+    except Exception as e:
+        logger.error(f"Error getting presigned URL: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get file URL")
 
 
 # ==================== 新增的CSV下载API端点 ====================
@@ -1226,13 +1424,12 @@ async def download_generate_results_csv(request: Request, task_id: str):
                 user.username, user_info['auth_type'], task_id)
     
     try:
-        # 从文件系统获取结果数据
-        output_path = Path(task.job_dir) / "output.json"
-        if not output_path.exists():
+        # 从 SeaweedFS 获取结果数据
+        storage_prefix = normalize_storage_prefix(task.job_dir)
+        try:
+            result_data = await read_json_from_storage(storage_prefix, "output.json")
+        except FileNotFoundError:
             raise HTTPException(status_code=404, detail="Results file not found")
-        
-        # 读取output.json文件
-        result_data = json.loads(output_path.read_text(encoding="utf-8"))
         
         # 生成CSV内容
         csv_lines = ['SMILE,MolWt,TPSA,SLogP,SA,QED']
@@ -1290,13 +1487,12 @@ async def download_docking_results_csv(
                 user.username, user_info['auth_type'], task_id, indices or "all")
     
     try:
-        # 从文件系统获取对接结果数据
-        dockres_path = Path(task.job_dir) / "output" / "dockRes.json"
-        if not dockres_path.exists():
+        # 从 SeaweedFS 获取对接结果数据
+        storage_prefix = normalize_storage_prefix(task.job_dir)
+        try:
+            docking_results = await read_json_from_storage(storage_prefix, "output/dockRes.json")
+        except FileNotFoundError:
             raise HTTPException(status_code=404, detail="Docking results file not found")
-        
-        # 读取dockRes.json文件
-        docking_results = json.loads(dockres_path.read_text(encoding="utf-8"))
         
         # 如果提供了索引参数，过滤结果
         if indices:
@@ -1376,16 +1572,16 @@ async def download_all_binding_mode_summary_csv(request: Request, task_id: str):
                 user.username, user_info['auth_type'], task_id)
     
     try:
-        # 获取binding_analysis文件夹路径
-        # binding_analysis 文件夹在 output/docked/ 下
-        binding_analysis_dir = Path(task.job_dir) / "output" / "docked" / "binding_analysis"
+        # 从 SeaweedFS 获取 binding_analysis 文件夹中的 CSV 文件
+        storage_prefix = normalize_storage_prefix(task.job_dir)
+        storage = get_storage()
         
-        if not binding_analysis_dir.exists():
-            raise HTTPException(status_code=404, detail="Binding analysis directory not found")
+        # 列出 binding_analysis 目录下的文件
+        binding_analysis_prefix = f"{storage_prefix}/output/docked/binding_analysis/"
+        all_files = await storage.list_files(binding_analysis_prefix)
         
-        # 查找所有的binding_mode_summary.csv文件
-        # CSV文件直接在 binding_analysis/ 下 (文件名格式: {compound_id}_binding_mode_summary.csv)
-        csv_files = list(binding_analysis_dir.glob("*_binding_mode_summary.csv"))
+        # 过滤出 binding_mode_summary.csv 文件
+        csv_files = [f for f in all_files if f.endswith('_binding_mode_summary.csv')]
         
         if not csv_files:
             raise HTTPException(status_code=404, detail="No binding mode summary CSV files found")
@@ -1394,9 +1590,13 @@ async def download_all_binding_mode_summary_csv(request: Request, task_id: str):
         zip_buffer = io.BytesIO()
         
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for csv_file in csv_files:
-                # 将CSV文件添加到ZIP中，保持原始文件名
-                zip_file.write(csv_file, arcname=csv_file.name)
+            for csv_key in csv_files:
+                try:
+                    content = await storage.download_bytes(csv_key)
+                    filename = csv_key.split('/')[-1]
+                    zip_file.writestr(filename, content)
+                except Exception as e:
+                    logger.warning(f"Failed to add file to ZIP: {csv_key}, error: {e}")
         
         zip_buffer.seek(0)
         

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-import configuration.config_default as cfgd
+import config.ml_config as cfgd
 
 STEP_pki = 1
 

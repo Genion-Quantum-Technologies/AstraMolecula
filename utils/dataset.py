@@ -9,7 +9,7 @@ import torch
 import torch.utils.data as tud
 from torch.autograd import Variable
 
-import configuration.config_default as cfgd
+import config.ml_config as cfgd
 from models.transformer.module.subsequent_mask import subsequent_mask
 
 class Dataset(tud.Dataset):

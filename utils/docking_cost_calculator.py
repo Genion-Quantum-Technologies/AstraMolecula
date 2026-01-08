@@ -129,7 +129,7 @@ class CostCalculator:
         
         # 创建参数对象
         params = DockingTaskParams(
-            id=uuid.uuid4().hex,
+            id=str(uuid.uuid4()),
             task_id=task_id,
             n_ligands=n_ligands,
             min_ph=min_ph,

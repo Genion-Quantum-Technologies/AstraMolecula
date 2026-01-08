@@ -20,8 +20,8 @@ class PeptideTaskParamsRepository:
         try:
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS peptide_task_params (
-                id CHAR(32) NOT NULL PRIMARY KEY,
-                task_id CHAR(32) NOT NULL,
+                id CHAR(36) NOT NULL PRIMARY KEY,
+                task_id CHAR(36) NOT NULL,
                 peptide_sequence TEXT NOT NULL,
                 peptide_length INT NOT NULL,
                 receptor_pdb_filename VARCHAR(255) NOT NULL,
@@ -33,10 +33,10 @@ class PeptideTaskParamsRepository:
                 complexity_factor DECIMAL(15,6) NOT NULL,
                 total_compute_units DECIMAL(20,6) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_task_id (task_id),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            );
+            CREATE INDEX IF NOT EXISTS idx_peptide_task_id ON peptide_task_params(task_id);
             """
             cursor.execute(create_table_sql)
             conn.commit()
@@ -140,7 +140,7 @@ class PeptideTaskParamsRepository:
                    total_calculations, complexity_factor, total_compute_units,
                    created_at, updated_at
             FROM peptide_task_params 
-            WHERE DATE(created_at) BETWEEN %s AND %s
+            WHERE created_at::date BETWEEN %s AND %s
             ORDER BY created_at DESC
             """
             cursor.execute(sql, (start_date, end_date))

@@ -11,7 +11,8 @@ from database.services.task_service import TaskService
 from database.services.upload_service import UploadService
 from database.services.docking_task_params_service import DockingTaskParamsService
 from requests.basic_request import DockingRequest
-from config import ROOT
+from services.storage import get_storage
+from config import ROOT, storage as storage_config
 
 logger = logging.getLogger("docking_router")
 
@@ -94,42 +95,47 @@ async def docking_endpoint(
                 }
             )
         
-        # 验证文件是否实际存在
-        receptor_path = Path(match.file_path)
-        if not receptor_path.exists():
+        # 获取存储服务并验证文件是否存在于 SeaweedFS
+        storage = get_storage()
+        remote_key = match.file_path  # 现在 file_path 存储的是 remote_key
+        
+        if not await storage.file_exists(remote_key):
             raise HTTPException(
                 status_code=500,
                 detail={
                     "error": "receptor_file_missing",
-                    "message": f"受体文件 '{receptor_filename}' 在服务器上不存在",
+                    "message": f"受体文件 '{receptor_filename}' 在存储系统中不存在",
                     "details": {
-                        "expected_path": str(receptor_path),
+                        "storage_key": remote_key,
                         "file_record_exists": True,
                         "suggestion": "请重新上传该文件"
                     }
                 }
             )
         
-        receptor_path = str(receptor_path)
-        logger.info("User %s using receptor file: %s", current_user.username, receptor_path)
+        logger.info("User %s using receptor file: %s (storage_key: %s)", 
+                   current_user.username, receptor_filename, remote_key)
 
-        # —— 2) 创建作业目录 —— #
-        JOBS_DOCK_DIR = ROOT / "jobs" / "docking"
-        JOBS_DOCK_DIR.mkdir(parents=True, exist_ok=True)
-        job_id = uuid.uuid4().hex
-        job_dir = JOBS_DOCK_DIR / job_id
-        job_dir.mkdir()
+        # —— 2) 创建作业目录结构（在 SeaweedFS 中） —— #
+        job_id = str(uuid.uuid4())
+        job_prefix = f"jobs/docking/{job_id}"
         
-        # 创建input和output子目录
-        input_dir = job_dir / "input"
-        output_dir = job_dir / "output"
-        input_dir.mkdir()
-        output_dir.mkdir()
+        # 本地临时目录用于计算（计算节点需要本地文件访问）
+        local_job_dir = storage_config.temp_dir / "jobs" / "docking" / job_id
+        local_input_dir = local_job_dir / "input"
+        local_output_dir = local_job_dir / "output"
+        local_input_dir.mkdir(parents=True, exist_ok=True)
+        local_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 下载受体文件到本地临时目录
+        local_receptor_path = local_input_dir / receptor_filename
+        await storage.download_file(remote_key, local_receptor_path)
 
         # —— 3) 保存请求参数 —— #
         params = {
             "ligands": [lig.model_dump() for lig in docking_request.ligands],
-            "receptor_pdbqt": receptor_path,
+            "receptor_pdbqt": str(local_receptor_path),  # 本地临时路径
+            "receptor_storage_key": remote_key,  # 存储路径，用于追溯
             "min_ph": docking_request.min_ph,
             "max_ph": docking_request.max_ph,
             "n_jobs": docking_request.n_jobs,
@@ -148,16 +154,26 @@ async def docking_endpoint(
         # 添加其他必填参数
         params["exhaustiveness"] = docking_request.exhaustiveness
         params["n_poses"] = docking_request.n_poses
+        
+        # 添加存储相关元信息
+        params["storage_prefix"] = job_prefix
+        params["local_job_dir"] = str(local_job_dir)
             
-        # 将配置文件保存到input目录下
-        with open(input_dir / "input.json", "w", encoding="utf-8") as f:
+        # 保存配置文件到本地临时目录
+        local_input_json = local_input_dir / "input.json"
+        with open(local_input_json, "w", encoding="utf-8") as f:
             json.dump(params, f, ensure_ascii=False, indent=2)
+        
+        # 同时上传 input.json 到 SeaweedFS
+        await storage.upload_file(local_input_json, f"{job_prefix}/input/input.json")
 
         # —— 4) 创建任务 —— #
+        # job_dir 存储 SeaweedFS 路径前缀（统一存储方案）
+        # 所有文件访问都通过 SeaweedFS，不再依赖本地路径
         task_id = TaskService.create_task(
             user_id=current_user.id,
             task_type="docking",
-            job_dir=str(job_dir)
+            job_dir=job_prefix  # SeaweedFS 路径前缀：jobs/docking/{job_id}
         )
 
         # —— 4.1) 创建任务参数记录并计算成本 —— #
@@ -193,8 +209,8 @@ async def docking_endpoint(
             "message": "对接任务已成功提交",
             "details": {
                 "job_id": job_id,
-                "job_directory": str(job_dir),
-                "receptor_file": receptor_path,
+                "storage_prefix": job_prefix,
+                "receptor_file": receptor_filename,
                 "ligands_count": len(docking_request.ligands),
                 "ligand_titles": [lig.title for lig in docking_request.ligands],
                 "parameters": {

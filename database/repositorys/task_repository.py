@@ -54,8 +54,8 @@ class TaskRepository:
                 set_clauses.append(f"{key} = %s")
                 values.append(json.dumps(value))
             elif value == "NOW()":  # 特殊处理NOW()函数
-                set_clauses.append(f"{key} = NOW()")
-                # 不添加到values中，因为NOW()直接在SQL中
+                set_clauses.append(f"{key} = CURRENT_TIMESTAMP")
+                # 不添加到values中，因为CURRENT_TIMESTAMP直接在SQL中
             else:
                 set_clauses.append(f"{key} = %s")
                 values.append(value)

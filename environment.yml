@@ -3,11 +3,12 @@ channels:
   - conda-forge
   - pytorch
 dependencies:
+  - aiohttp
   - bcrypt
   - cpuonly
   - fastapi
   - mamba
-  - mysql-connector-python
+  - psycopg2
   - pip
   - python=3.10
   - python-jose

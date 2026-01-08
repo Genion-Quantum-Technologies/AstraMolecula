@@ -8,11 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from middleware import auth_middleware
 from routers import auth, tasks, uploads, smiles, docking, peptide, logs, admin, public, payments
-from config.logging_config import setup_logging
+from config import setup_logging, server, cors as cors_config
 from async_task_processor import AsyncTaskProcessor
 
-# 设置日志系统
-setup_logging(level="INFO")
+# 设置日志系统（从配置文件读取日志级别）
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # 全局异步任务处理器
@@ -44,18 +44,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title="DockingVina API", 
-    description="Molecular docking task management and SMILES generation service. Docking computations are handled by dockingVinaApp.",
-    version="2.1.0"
+    title=server.title, 
+    description=server.description,
+    version=server.version
 )
 
-# 添加CORS中间件 - 必须在其他中间件之前
+# 添加CORS中间件 - 必须在其他中间件之前（配置从 settings.yaml 读取）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],  # 允许前端域名
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_origins=cors_config.allow_origins,
+    allow_credentials=cors_config.allow_credentials,
+    allow_methods=cors_config.allow_methods,
+    allow_headers=cors_config.allow_headers,
 )
 
 # 添加认证中间件
@@ -67,9 +67,8 @@ async def health_check():
     """健康检查端点"""
     return {
         "status": "healthy",
-        "message": "DockingVina API is running",
-        "timestamp": "2025-08-27T14:40:00Z",
-        "version": "2.0.0"
+        "message": f"{server.title} is running",
+        "version": server.version
     }
 
 # 根路径重定向到日志查看器

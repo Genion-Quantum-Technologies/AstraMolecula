@@ -7,14 +7,34 @@ import re
 import mimetypes
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 from database.services import TaskService
+from services.storage import get_storage
 from utils.log import get_logger
 from config import ROOT
 
 logger = get_logger("public_router", str(ROOT / "logs" / "public_access.log"), isMain=True)
 
 router = APIRouter(prefix="/public", tags=["Public Access"])
+
+
+def normalize_storage_prefix(job_dir: str) -> str:
+    """
+    标准化 job_dir 为存储前缀
+    
+    支持两种格式：
+    1. 新格式（SeaweedFS 路径）: jobs/docking/{job_id}
+    2. 旧格式（本地路径）: /tmp/astramolecula/jobs/docking/{job_id}
+    """
+    if job_dir.startswith('/'):
+        parts = Path(job_dir).parts
+        try:
+            jobs_idx = parts.index('jobs')
+            return '/'.join(parts[jobs_idx:])
+        except ValueError:
+            return '/'.join(parts[-3:]) if len(parts) >= 3 else job_dir
+    else:
+        return job_dir
 
 
 @router.get("/peptide/{task_id}/complex/{filename}")
@@ -39,7 +59,6 @@ async def get_public_peptide_complex(task_id: str, filename: str):
     logger.info(f"[public-peptide-access] task_id={task_id}, filename={filename}")
     
     # 1. 文件名安全验证
-    # 只允许字母、数字、下划线、连字符和点，防止路径遍历攻击
     if not re.match(r'^[\w\-.]+$', filename):
         logger.warning(f"Invalid filename format: {filename}")
         raise HTTPException(status_code=400, detail="Invalid filename format")
@@ -49,7 +68,7 @@ async def get_public_peptide_complex(task_id: str, filename: str):
         logger.warning(f"Only PDB files are allowed for public access: {filename}")
         raise HTTPException(status_code=400, detail="Only PDB files are allowed")
     
-    # 3. 验证任务是否存在（不检查用户权限，因为是公开访问）
+    # 3. 验证任务是否存在
     task = TaskService.get_task(task_id)
     if not task:
         logger.warning(f"Task not found: {task_id}")
@@ -60,73 +79,55 @@ async def get_public_peptide_complex(task_id: str, filename: str):
         logger.warning(f"Invalid task type for public peptide access: {task.task_type}")
         raise HTTPException(status_code=400, detail="Not a peptide optimization task")
     
-    # 5. 获取任务目录
-    job_dir = task.job_dir
-    if not job_dir:
-        logger.error(f"Task job_dir is missing: {task_id}")
-        raise HTTPException(status_code=500, detail="Task directory not found")
+    # 5. 从 SeaweedFS 获取文件
+    storage = get_storage()
+    storage_prefix = normalize_storage_prefix(task.job_dir)
     
-    # 6. 搜索文件（仅在安全的输出目录中）
+    # 搜索路径（相对于 storage_prefix）
     search_paths = [
-        os.path.join(job_dir, "output", filename),
-        os.path.join(job_dir, "output", "complexes", filename),
-        os.path.join(job_dir, "output", "complex", filename),
-        os.path.join(job_dir, "output", "pdb", filename),
-        os.path.join(job_dir, "output", "pdbs", filename),
+        f"output/{filename}",
+        f"output/complexes/{filename}",
+        f"output/complex/{filename}",
+        f"output/pdb/{filename}",
+        f"output/pdbs/{filename}",
     ]
     
-    found_file = None
-    for path in search_paths:
-        if os.path.exists(path) and os.path.isfile(path):
-            # 额外验证：确保文件路径在任务目录内（防止符号链接攻击）
-            real_path = os.path.realpath(path)
-            real_job_dir = os.path.realpath(job_dir)
-            if real_path.startswith(real_job_dir):
-                found_file = path
-                logger.info(f"File found: {path}")
-                break
+    found_key = None
+    for relative_path in search_paths:
+        remote_key = f"{storage_prefix}/{relative_path}"
+        if await storage.file_exists(remote_key):
+            found_key = remote_key
+            logger.info(f"File found in storage: {remote_key}")
+            break
     
-    # 7. 递归搜索 output 目录（限制深度为2）
-    if not found_file:
-        output_dir = os.path.join(job_dir, "output")
-        if os.path.isdir(output_dir):
-            for root, dirs, files in os.walk(output_dir):
-                # 限制搜索深度
-                rel_depth = Path(root).relative_to(output_dir).parts
-                if len(rel_depth) > 2:
-                    continue
-                
-                if filename in files:
-                    file_path = os.path.join(root, filename)
-                    # 验证路径安全性
-                    real_path = os.path.realpath(file_path)
-                    real_job_dir = os.path.realpath(job_dir)
-                    if real_path.startswith(real_job_dir):
-                        found_file = file_path
-                        logger.info(f"File found in subdirectory: {file_path}")
-                        break
+    # 递归搜索 output 目录
+    if not found_key:
+        try:
+            output_files = await storage.list_files(f"{storage_prefix}/output/")
+            for f in output_files:
+                if f.endswith(f"/{filename}") or f.split('/')[-1] == filename:
+                    found_key = f
+                    logger.info(f"File found in storage subdirectory: {f}")
+                    break
+        except Exception as e:
+            logger.warning(f"Error listing output files: {e}")
     
-    # 8. 文件未找到
-    if not found_file:
+    if not found_key:
         logger.warning(f"File not found: {filename} in task {task_id}")
         raise HTTPException(status_code=404, detail=f"File '{filename}' not found")
     
-    # 9. 返回文件内容
+    # 6. 返回文件内容
     try:
-        # 读取文件内容并返回为纯文本
-        with open(found_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
+        content = await storage.download_bytes(found_key)
         logger.info(f"Successfully served public file: {filename} (size: {len(content)} bytes)")
         
-        # 返回为纯文本，便于前端 JavaScript 处理
         return PlainTextResponse(
-            content=content,
+            content=content.decode('utf-8'),
             media_type="text/plain",
             headers={
                 "Content-Disposition": f'inline; filename="{filename}"',
-                "Cache-Control": "public, max-age=3600",  # 缓存1小时
-                "Access-Control-Allow-Origin": "*",  # 允许跨域访问
+                "Cache-Control": "public, max-age=3600",
+                "Access-Control-Allow-Origin": "*",
             }
         )
     
@@ -219,62 +220,49 @@ async def get_public_docking_sdf(task_id: str, filename: str):
         logger.warning(f"Invalid task type for public docking access: {task.task_type}")
         raise HTTPException(status_code=400, detail="Not a docking task")
     
-    # 5. 获取任务目录
-    job_dir = task.job_dir
-    if not job_dir:
-        logger.error(f"Task job_dir is missing: {task_id}")
-        raise HTTPException(status_code=500, detail="Task directory not found")
+    # 5. 从 SeaweedFS 获取文件
+    storage = get_storage()
+    storage_prefix = normalize_storage_prefix(task.job_dir)
     
-    # 6. 搜索文件（仅在安全的输出目录中）
+    # 搜索路径（相对于 storage_prefix）
     search_paths = [
-        os.path.join(job_dir, "output", filename),
-        os.path.join(job_dir, "output", "sdf", filename),
-        os.path.join(job_dir, "output", "ligands", filename),
+        f"output/{filename}",
+        f"output/sdf/{filename}",
+        f"output/ligands/{filename}",
+        f"output/docked/{filename}",
     ]
     
-    found_file = None
-    for path in search_paths:
-        if os.path.exists(path) and os.path.isfile(path):
-            # 验证路径安全性
-            real_path = os.path.realpath(path)
-            real_job_dir = os.path.realpath(job_dir)
-            if real_path.startswith(real_job_dir):
-                found_file = path
-                logger.info(f"File found: {path}")
-                break
+    found_key = None
+    for relative_path in search_paths:
+        remote_key = f"{storage_prefix}/{relative_path}"
+        if await storage.file_exists(remote_key):
+            found_key = remote_key
+            logger.info(f"File found in storage: {remote_key}")
+            break
     
-    # 7. 递归搜索 output 目录（限制深度为2）
-    if not found_file:
-        output_dir = os.path.join(job_dir, "output")
-        if os.path.isdir(output_dir):
-            for root, dirs, files in os.walk(output_dir):
-                rel_depth = Path(root).relative_to(output_dir).parts
-                if len(rel_depth) > 2:
-                    continue
-                
-                if filename in files:
-                    file_path = os.path.join(root, filename)
-                    real_path = os.path.realpath(file_path)
-                    real_job_dir = os.path.realpath(job_dir)
-                    if real_path.startswith(real_job_dir):
-                        found_file = file_path
-                        logger.info(f"File found in subdirectory: {file_path}")
-                        break
+    # 递归搜索 output 目录
+    if not found_key:
+        try:
+            output_files = await storage.list_files(f"{storage_prefix}/output/")
+            for f in output_files:
+                if f.endswith(f"/{filename}") or f.split('/')[-1] == filename:
+                    found_key = f
+                    logger.info(f"File found in storage subdirectory: {f}")
+                    break
+        except Exception as e:
+            logger.warning(f"Error listing output files: {e}")
     
-    # 8. 文件未找到
-    if not found_file:
+    if not found_key:
         logger.warning(f"File not found: {filename} in task {task_id}")
         raise HTTPException(status_code=404, detail=f"File '{filename}' not found")
     
-    # 9. 返回文件内容
+    # 6. 返回文件内容
     try:
-        with open(found_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
+        content = await storage.download_bytes(found_key)
         logger.info(f"Successfully served public file: {filename} (size: {len(content)} bytes)")
         
         return PlainTextResponse(
-            content=content,
+            content=content.decode('utf-8'),
             media_type="text/plain",
             headers={
                 "Content-Disposition": f'inline; filename="{filename}"',
@@ -284,7 +272,7 @@ async def get_public_docking_sdf(task_id: str, filename: str):
         )
     
     except Exception as e:
-        logger.error(f"Error reading file {found_file}: {e}")
+        logger.error(f"Error reading file from storage: {e}")
         raise HTTPException(status_code=500, detail="Failed to read file")
 
 
@@ -360,23 +348,16 @@ async def get_public_docking_params(task_id: str):
         logger.warning(f"Invalid task type: {task.task_type}")
         raise HTTPException(status_code=400, detail="Not a docking task")
     
-    # 3. 获取任务目录
-    job_dir = task.job_dir
-    if not job_dir:
-        logger.error(f"Task job_dir is missing: {task_id}")
-        raise HTTPException(status_code=500, detail="Task directory not found")
-    
-    # 4. 读取 input.json 获取对接参数
-    input_json_path = os.path.join(job_dir, "input", "input.json")
-    if not os.path.exists(input_json_path):
-        logger.warning(f"input.json not found: {input_json_path}")
-        raise HTTPException(status_code=404, detail="Docking parameters not found")
+    # 3. 从 SeaweedFS 读取 input.json
+    storage = get_storage()
+    storage_prefix = normalize_storage_prefix(task.job_dir)
     
     try:
-        with open(input_json_path, 'r', encoding='utf-8') as f:
-            input_data = json.load(f)
+        remote_key = f"{storage_prefix}/input/input.json"
+        content = await storage.download_bytes(remote_key)
+        input_data = json.loads(content.decode('utf-8'))
         
-        # 5. 提取对接盒子参数
+        # 4. 提取对接盒子参数
         params = {
             "center_x": input_data.get("center_x"),
             "center_y": input_data.get("center_y"),
@@ -397,7 +378,10 @@ async def get_public_docking_params(task_id: str):
             "success": True,
             "params": params
         }
-        
+    
+    except FileNotFoundError:
+        logger.warning(f"input.json not found for task: {task_id}")
+        raise HTTPException(status_code=404, detail="Docking parameters not found")
     except Exception as e:
         logger.error(f"Error reading input.json: {e}")
         raise HTTPException(status_code=500, detail="Failed to read docking parameters")
@@ -421,6 +405,8 @@ async def get_public_docking_protein(task_id: str):
     返回：
     - PDB/PDBQT 文件内容（text/plain）
     """
+    import json
+    
     logger.info(f"[public-docking-protein] task_id={task_id}")
     
     # 1. 验证任务是否存在
@@ -434,32 +420,26 @@ async def get_public_docking_protein(task_id: str):
         logger.warning(f"Invalid task type for public docking access: {task.task_type}")
         raise HTTPException(status_code=400, detail="Not a docking task")
     
-    # 3. 获取任务目录
-    job_dir = task.job_dir
-    if not job_dir:
-        logger.error(f"Task job_dir is missing: {task_id}")
-        raise HTTPException(status_code=500, detail="Task directory not found")
+    # 3. 从 SeaweedFS 获取蛋白质文件
+    storage = get_storage()
+    storage_prefix = normalize_storage_prefix(task.job_dir)
     
-    found_file = None
+    found_key = None
     
-    # 4. 优先从input.json读取receptor_pdbqt路径
-    input_json_path = os.path.join(job_dir, "input", "input.json")
-    if os.path.exists(input_json_path):
-        try:
-            import json
-            with open(input_json_path, 'r') as f:
-                input_data = json.load(f)
-                receptor_path = input_data.get('receptor_pdbqt')
-                if receptor_path and os.path.exists(receptor_path) and os.path.isfile(receptor_path):
-                    # 验证文件类型
-                    if receptor_path.endswith('.pdb') or receptor_path.endswith('.pdbqt'):
-                        found_file = receptor_path
-                        logger.info(f"Protein file found from input.json: {receptor_path}")
-        except Exception as e:
-            logger.warning(f"Failed to read receptor from input.json: {e}")
+    # 4. 优先从 input.json 读取 receptor_storage_key
+    try:
+        input_key = f"{storage_prefix}/input/input.json"
+        content = await storage.download_bytes(input_key)
+        input_data = json.loads(content.decode('utf-8'))
+        receptor_storage_key = input_data.get('receptor_storage_key')
+        if receptor_storage_key and await storage.file_exists(receptor_storage_key):
+            found_key = receptor_storage_key
+            logger.info(f"Protein file found from input.json: {receptor_storage_key}")
+    except Exception as e:
+        logger.warning(f"Failed to read receptor from input.json: {e}")
     
-    # 5. 如果input.json中没有，搜索蛋白质文件（常见名称）
-    if not found_file:
+    # 5. 搜索蛋白质文件
+    if not found_key:
         protein_filenames = [
             "receptor.pdb",
             "receptor.pdbqt",
@@ -472,70 +452,40 @@ async def get_public_docking_protein(task_id: str):
         search_paths = []
         for filename in protein_filenames:
             search_paths.extend([
-                os.path.join(job_dir, filename),
-                os.path.join(job_dir, "output", filename),
-                os.path.join(job_dir, "input", filename),
-                os.path.join(job_dir, "receptor", filename),
+                f"{storage_prefix}/{filename}",
+                f"{storage_prefix}/output/{filename}",
+                f"{storage_prefix}/input/{filename}",
             ])
         
         for path in search_paths:
-            if os.path.exists(path) and os.path.isfile(path):
-                # 验证路径安全性
-                real_path = os.path.realpath(path)
-                real_job_dir = os.path.realpath(job_dir)
-                if real_path.startswith(real_job_dir):
-                    found_file = path
-                    logger.info(f"Protein file found in job_dir: {path}")
-                    break
-    
-    # 6. 递归搜索（限制深度为2）
-    if not found_file:
-        for root, dirs, files in os.walk(job_dir):
-            rel_depth = Path(root).relative_to(job_dir).parts
-            if len(rel_depth) > 2:
-                continue
-            
-            protein_filenames = [
-                "receptor.pdb",
-                "receptor.pdbqt",
-                "protein.pdb",
-                "protein.pdbqt",
-                "receptorH.pdb",
-                "receptorH.pdbqt",
-            ]
-            
-            for filename in protein_filenames:
-                if filename in files:
-                    file_path = os.path.join(root, filename)
-                    real_path = os.path.realpath(file_path)
-                    real_job_dir = os.path.realpath(job_dir)
-                    if real_path.startswith(real_job_dir):
-                        found_file = file_path
-                        logger.info(f"Protein file found in subdirectory: {file_path}")
-                        break
-            
-            if found_file:
+            if await storage.file_exists(path):
+                found_key = path
+                logger.info(f"Protein file found in storage: {path}")
                 break
     
-    # 7. 文件未找到
-    if not found_file:
+    # 6. 搜索 input 目录下的 .pdbqt 文件
+    if not found_key:
+        try:
+            input_files = await storage.list_files(f"{storage_prefix}/input/")
+            for f in input_files:
+                if f.endswith('.pdbqt') or f.endswith('.pdb'):
+                    found_key = f
+                    logger.info(f"Protein file found in input directory: {f}")
+                    break
+        except Exception as e:
+            logger.warning(f"Error listing input files: {e}")
+    
+    if not found_key:
         logger.warning(f"Protein file not found in task {task_id}")
         raise HTTPException(status_code=404, detail="Protein file not found")
     
-    # 7. 验证文件类型
-    if not (found_file.endswith('.pdb') or found_file.endswith('.pdbqt')):
-        logger.warning(f"Invalid protein file type: {found_file}")
-        raise HTTPException(status_code=400, detail="Only PDB/PDBQT files are allowed")
-    
-    # 8. 返回文件内容
+    # 7. 返回文件内容
     try:
-        with open(found_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        logger.info(f"Successfully served public protein file: {found_file} (size: {len(content)} bytes)")
+        content = await storage.download_bytes(found_key)
+        logger.info(f"Successfully served public protein file: {found_key} (size: {len(content)} bytes)")
         
         return PlainTextResponse(
-            content=content,
+            content=content.decode('utf-8'),
             media_type="text/plain",
             headers={
                 "Content-Disposition": f'inline; filename="protein.pdb"',
@@ -545,6 +495,6 @@ async def get_public_docking_protein(task_id: str):
         )
     
     except Exception as e:
-        logger.error(f"Error reading protein file {found_file}: {e}")
+        logger.error(f"Error reading protein file from storage: {e}")
         raise HTTPException(status_code=500, detail="Failed to read protein file")
 

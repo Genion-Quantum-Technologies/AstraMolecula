@@ -14,7 +14,7 @@ class TaskService:
     @staticmethod
     def create_task(user_id: str, task_type: str, job_dir: str, 
                    metadata: Optional[Dict[str, Any]] = None) -> str:
-        task_id = uuid.uuid4().hex
+        task_id = str(uuid.uuid4())
         logger.info("Creating new task: id=%s, user_id=%s, type=%s", 
                    task_id, user_id, task_type)
         # 使用None，让数据库的DEFAULT CURRENT_TIMESTAMP处理时间

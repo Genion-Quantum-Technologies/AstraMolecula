@@ -4,7 +4,7 @@ import os
 from sklearn.model_selection import train_test_split
 
 import utils.file as uf
-import configuration.config_default as cfgd
+import config.ml_config as cfgd
 import preprocess.property_change_encoder as pce
 
 SEED = 42

@@ -15,8 +15,8 @@ class ServiceUserMappingService:
     @staticmethod
     def create_mapping(service_api_key: str, external_user_id: str, internal_user_id: str) -> ServiceUserMapping:
         """创建服务用户映射"""
-        # service_user_mappings表的id字段是char(32)，需要生成32字符的UUID（无连字符）
-        mapping_id = str(uuid.uuid4()).replace('-', '')
+        # service_user_mappings表的id字段统一使用36位UUID
+        mapping_id = str(uuid.uuid4())
         now = datetime.now()
         
         ServiceUserMappingRepository.create(

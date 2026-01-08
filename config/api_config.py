@@ -1,19 +1,24 @@
-# API 配置文件
+"""
+API 配置文件
+从 settings.yaml 加载配置，保持向后兼容
+"""
 
-# 缓存设置
+from config.settings import api as _api
+
+# 缓存设置 (兼容旧代码)
 CACHE_SETTINGS = {
-    "file_cache_duration": 3600,  # 文件缓存1小时 (秒)
-    "status_cache_duration": 60,  # 状态缓存1分钟 (秒)
+    "file_cache_duration": _api.file_cache_duration,
+    "status_cache_duration": _api.status_cache_duration,
 }
 
-# 轮询设置
+# 轮询设置 (兼容旧代码)
 POLLING_SETTINGS = {
-    "min_interval": 2,  # 最小轮询间隔 (秒)
-    "max_interval": 30,  # 最大轮询间隔 (秒)
-    "backoff_factor": 1.5,  # 退避因子
+    "min_interval": _api.polling_min_interval,
+    "max_interval": _api.polling_max_interval,
+    "backoff_factor": _api.polling_backoff_factor,
 }
 
-# HTTP 状态码说明
+# HTTP 状态码说明 (静态常量)
 STATUS_CODE_MEANINGS = {
     202: "task_processing",
     409: "task_status_conflict", 
@@ -21,7 +26,7 @@ STATUS_CODE_MEANINGS = {
     425: "task_pending",
 }
 
-# 任务状态优先级（用于前端决定轮询频率）
+# 任务状态优先级 (静态常量)
 TASK_STATUS_PRIORITY = {
     "pending": 1,
     "processing": 2, 

@@ -90,7 +90,7 @@ class PeptideCostCalculator:
         
         # 创建参数对象
         params = PeptideTaskParams(
-            id=uuid.uuid4().hex,
+            id=str(uuid.uuid4()),
             task_id=task_id,
             peptide_sequence=peptide_sequence,
             peptide_length=cost_factors["peptide_length"],

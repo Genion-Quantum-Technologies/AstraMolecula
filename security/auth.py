@@ -6,26 +6,15 @@ from pydantic import BaseModel, EmailStr
 from fastapi.security import OAuth2PasswordBearer
 from database.services.user_service import UserService
 from database.models.user import User
-import os
+from config import security as security_config
 
-# JWT 配置
-SECRET_KEY = "YOUR_RANDOM_SECRET_KEY_32+_CHARS"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+# JWT 配置（从统一配置加载）
+SECRET_KEY = security_config.jwt_secret_key
+ALGORITHM = security_config.jwt_algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = security_config.access_token_expire_minutes
 
-# API keys for inter-service authentication, comma separated
-# 从环境变量获取API Keys
-_env_keys = set(filter(None, os.getenv("SERVICE_API_KEYS", "").split(",")))
-
-# 添加测试用的API Keys
-_test_keys = {
-    "third-party-service-key-123",
-    "another-service-key-456",
-    "test-api-key-789"
-}
-
-# 合并环境变量和测试API Keys
-SERVICE_API_KEYS = _env_keys.union(_test_keys)
+# 服务间 API Keys（从统一配置加载）
+SERVICE_API_KEYS = security_config.service_api_keys
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 

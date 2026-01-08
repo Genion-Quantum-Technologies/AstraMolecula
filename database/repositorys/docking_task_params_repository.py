@@ -18,8 +18,8 @@ class DockingTaskParamsRepository:
         try:
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS docking_task_params (
-                id CHAR(32) PRIMARY KEY,
-                task_id CHAR(32) NOT NULL,
+                id CHAR(36) PRIMARY KEY,
+                task_id CHAR(36) NOT NULL,
                 n_ligands INT NOT NULL,
                 min_ph DECIMAL(3,1) NOT NULL,
                 max_ph DECIMAL(3,1) NOT NULL,
@@ -39,10 +39,10 @@ class DockingTaskParamsRepository:
                 pose_generation_factor DECIMAL(10,6) NOT NULL,
                 total_compute_units DECIMAL(20,6) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_task_id (task_id),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            );
+            CREATE INDEX IF NOT EXISTS idx_docking_task_id ON docking_task_params(task_id);
             """
             cursor.execute(create_table_sql)
             conn.commit()

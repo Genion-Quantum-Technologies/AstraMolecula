@@ -1,6 +1,7 @@
 """
 异步任务处理器
 支持并发处理和进度更新
+支持 SeaweedFS 对象存储
 """
 
 import asyncio
@@ -13,7 +14,8 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from database.services import TaskService
 from database.models.task import Task, TaskStatus
 from utils.tools import run_generate_runner
-from config import ROOT
+from services.storage import get_storage
+from config import ROOT, storage as storage_config
 
 logger = logging.getLogger("async_task_processor")
 
@@ -141,6 +143,17 @@ class AsyncTaskProcessor:
         
         callback.update_progress(10.0, "Loading input parameters")
         
+        # 优先从本地读取，如果不存在则从 SeaweedFS 下载
+        if not input_json.exists():
+            storage = get_storage()
+            # 从 job_dir 提取存储前缀
+            storage_prefix = self._get_storage_prefix(task.job_dir, "generate")
+            if storage_prefix:
+                remote_key = f"{storage_prefix}/input.json"
+                if await storage.file_exists(remote_key):
+                    job_dir.mkdir(parents=True, exist_ok=True)
+                    await storage.download_file(remote_key, input_json)
+        
         with open(input_json, "r", encoding="utf-8") as f:
             params = json.load(f)
         
@@ -156,12 +169,31 @@ class AsyncTaskProcessor:
         
         callback.update_progress(90.0, "Saving results")
         
-        # 保存结果
+        # 保存结果到本地
         output_path = job_dir / "output.json"
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
+        
+        # 同步上传结果到 SeaweedFS
+        storage = get_storage()
+        storage_prefix = params.get('storage_prefix') or self._get_storage_prefix(task.job_dir, "generate")
+        if storage_prefix:
+            await storage.upload_file(output_path, f"{storage_prefix}/output.json")
+            logger.info("Task %s: Results uploaded to SeaweedFS: %s/output.json", task.id, storage_prefix)
             
         callback.update_progress(100.0, "Generation completed")
+    
+    def _get_storage_prefix(self, job_dir: str, task_type: str) -> Optional[str]:
+        """从本地 job_dir 路径提取存储前缀"""
+        try:
+            parts = Path(job_dir).parts
+            # 查找 'jobs' 在路径中的位置
+            if 'jobs' in parts:
+                jobs_idx = parts.index('jobs')
+                return '/'.join(parts[jobs_idx:])
+        except Exception:
+            pass
+        return None
     
     def _run_generate_with_progress(self, params: dict, callback: TaskProgressCallback) -> list:
         """带进度的生成任务运行器"""
