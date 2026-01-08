@@ -14,9 +14,6 @@ router = APIRouter(
     tags=["Payments"]
 )
 
-print('access_token:', access_token)
-print('Environment:', SquareEnvironment)
-
 # Initialize Square Client
 square = Square(
     token=access_token,
@@ -36,32 +33,25 @@ async def create_payment(payload: PaymentRequest):
 
     idempotency_key = str(uuid.uuid4())
 
-    print('sourceId:', payload.sourceId)
-    print('amount:', payload.amount)
-    print('planId:', payload.planId)
-    print('idempotencyKey:', idempotency_key)
-
     try:
-        result = square.payments.create_payment(
-            body={
-                'source_id': payload.sourceId,
-                'idempotency_key': idempotency_key,
-                'amount_money': {
-                    'amount': payload.amount,
-                    'currency': 'USD',
-                },
-                'note': f'Plan: {payload.planId}',
-            }
+        result = square.payments.create(
+            source_id=payload.sourceId,
+            idempotency_key=idempotency_key,
+            amount_money={
+                'amount': payload.amount,
+                'currency': 'USD',
+            },
+            note=f'Plan: {payload.planId}',
         )
 
-        if result.is_error():
+        if result.errors:
             raise Exception(result.errors)
 
-        payment = result.body.get('payment')
+        payment = result.payment
 
         return {
             'success': True,
-            'paymentId': payment.get('id'),
+            'paymentId': payment.id,
         }
 
     except Exception as e:
