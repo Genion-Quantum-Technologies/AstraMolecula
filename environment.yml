@@ -20,5 +20,4 @@ dependencies:
   - uvicorn
   - pip:
     - mmpdb==2.1
-    - my_toolset==0.1.0
     - squareup
