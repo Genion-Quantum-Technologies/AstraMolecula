@@ -20,3 +20,4 @@ dependencies:
   - uvicorn
   - pip:
     - mmpdb==2.1
+    - squareup
