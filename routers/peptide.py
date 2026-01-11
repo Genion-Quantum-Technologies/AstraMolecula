@@ -85,8 +85,8 @@ async def create_optimization_task(request: Request, optimization_request: Pepti
         local_input_dir.mkdir(parents=True, exist_ok=True)
         local_output_dir.mkdir(parents=True, exist_ok=True)
         
-        # 下载受体PDB文件到本地临时目录，重命名为标准名称
-        local_receptor_path = local_input_dir / "5ffg.pdb"
+        # 下载受体PDB文件到本地临时目录，保持原始文件名
+        local_receptor_path = local_input_dir / optimization_request.receptor_pdb_filename
         await storage.download_file(remote_key, local_receptor_path)
         
         # 创建peptide.fasta文件
@@ -116,8 +116,8 @@ receptor_storage_key={remote_key}
         with open(config_path, 'w') as f:
             f.write(config_content)
         
-        # 上传输入文件到 SeaweedFS
-        await storage.upload_file(local_receptor_path, f"{job_prefix}/input/5ffg.pdb")
+        # 上传输入文件到 SeaweedFS（保持原始文件名）
+        await storage.upload_file(local_receptor_path, f"{job_prefix}/input/{optimization_request.receptor_pdb_filename}")
         await storage.upload_bytes(peptide_fasta_content.encode(), f"{job_prefix}/input/peptide.fasta")
         await storage.upload_file(config_path, f"{job_prefix}/optimization_config.txt")
         
