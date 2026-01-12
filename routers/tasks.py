@@ -31,24 +31,12 @@ def normalize_storage_prefix(job_dir: str) -> str:
     """
     标准化 job_dir 为存储前缀
     
-    支持两种格式：
-    1. 新格式（SeaweedFS 路径）: jobs/docking/{job_id}
-    2. 旧格式（本地路径）: /tmp/astramolecula/jobs/docking/{job_id}
+    job_dir 格式: jobs/{task_type}/{job_id}
+    例如: jobs/docking/{job_id} 或 jobs/generate/{job_id}
     
-    返回统一的 SeaweedFS 路径前缀
+    返回 SeaweedFS 路径前缀
     """
-    if job_dir.startswith('/'):
-        # 旧格式本地路径，转换为存储路径
-        parts = Path(job_dir).parts
-        try:
-            jobs_idx = parts.index('jobs')
-            return '/'.join(parts[jobs_idx:])
-        except ValueError:
-            # 无法解析，返回原路径最后三部分作为 fallback
-            return '/'.join(parts[-3:]) if len(parts) >= 3 else job_dir
-    else:
-        # 新格式，直接返回
-        return job_dir
+    return job_dir
 
 
 async def read_json_from_storage(storage_prefix: str, relative_path: str) -> dict | list:

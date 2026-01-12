@@ -54,8 +54,7 @@ async def docking_endpoint(
                     "message": f"受体文件必须是.pdbqt格式，当前文件: {receptor_filename}",
                     "details": {
                         "provided_filename": receptor_filename,
-                        "required_extension": ".pdbqt",
-                        "valid_example": "protein_7UDP.pdbqt"
+                        "required_extension": ".pdbqt"
                     }
                 }
             )

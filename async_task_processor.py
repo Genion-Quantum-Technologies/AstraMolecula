@@ -138,24 +138,23 @@ class AsyncTaskProcessor:
     
     async def _process_generate_async(self, task: Task, callback: TaskProgressCallback) -> None:
         """异步处理生成任务"""
-        job_dir = Path(task.job_dir)
-        input_json = job_dir / "input.json"
+        storage = get_storage()
+        storage_prefix = task.job_dir  # job_dir 现在存储的是 SeaweedFS 路径
         
         callback.update_progress(10.0, "Loading input parameters")
         
-        # 优先从本地读取，如果不存在则从 SeaweedFS 下载
-        if not input_json.exists():
-            storage = get_storage()
-            # 从 job_dir 提取存储前缀
-            storage_prefix = self._get_storage_prefix(task.job_dir, "generate")
-            if storage_prefix:
-                remote_key = f"{storage_prefix}/input.json"
-                if await storage.file_exists(remote_key):
-                    job_dir.mkdir(parents=True, exist_ok=True)
-                    await storage.download_file(remote_key, input_json)
-        
-        with open(input_json, "r", encoding="utf-8") as f:
-            params = json.load(f)
+        # 从 SeaweedFS 下载 input.json
+        input_remote_key = f"{storage_prefix}/input.json"
+        try:
+            input_data = await storage.download_bytes(input_remote_key)
+            params = json.loads(input_data.decode('utf-8'))
+            logger.info("Task %s: Loaded input.json from SeaweedFS: %s", task.id, input_remote_key)
+        except FileNotFoundError:
+            logger.error("Task %s: input.json not found in SeaweedFS: %s", task.id, input_remote_key)
+            raise Exception(f"Input file not found: {input_remote_key}")
+        except Exception as e:
+            logger.error("Task %s: Failed to load input.json: %s", task.id, e)
+            raise
         
         callback.update_progress(20.0, "Preparing generation model")
         
@@ -167,33 +166,16 @@ class AsyncTaskProcessor:
             params, callback
         )
         
-        callback.update_progress(90.0, "Saving results")
+        callback.update_progress(90.0, "Saving results to SeaweedFS")
         
-        # 保存结果到本地
-        output_path = job_dir / "output.json"
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
+        # 将结果直接上传到 SeaweedFS（不再保存到本地）
+        output_json_bytes = json.dumps(result, ensure_ascii=False, indent=2).encode('utf-8')
+        output_remote_key = f"{storage_prefix}/output.json"
         
-        # 同步上传结果到 SeaweedFS
-        storage = get_storage()
-        storage_prefix = params.get('storage_prefix') or self._get_storage_prefix(task.job_dir, "generate")
-        if storage_prefix:
-            await storage.upload_file(output_path, f"{storage_prefix}/output.json")
-            logger.info("Task %s: Results uploaded to SeaweedFS: %s/output.json", task.id, storage_prefix)
+        await storage.upload_bytes(output_json_bytes, output_remote_key, content_type="application/json")
+        logger.info("Task %s: Results uploaded to SeaweedFS: %s", task.id, output_remote_key)
             
         callback.update_progress(100.0, "Generation completed")
-    
-    def _get_storage_prefix(self, job_dir: str, task_type: str) -> Optional[str]:
-        """从本地 job_dir 路径提取存储前缀"""
-        try:
-            parts = Path(job_dir).parts
-            # 查找 'jobs' 在路径中的位置
-            if 'jobs' in parts:
-                jobs_idx = parts.index('jobs')
-                return '/'.join(parts[jobs_idx:])
-        except Exception:
-            pass
-        return None
     
     def _run_generate_with_progress(self, params: dict, callback: TaskProgressCallback) -> list:
         """带进度的生成任务运行器"""

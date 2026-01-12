@@ -13,6 +13,7 @@ from requests.basic_request import GenerateRequestList
 from responses.basic_response import FragmentResponse
 from utils.fragment_processor import fragmentize_molecule
 from config import ROOT
+from services.storage import get_storage
 
 logger = logging.getLogger("smiles_router")
 
@@ -52,7 +53,7 @@ async def generate_molecules(
     generate_requests: GenerateRequestList
 ):
     """
-    1. 将请求参数保存到 jobs/<job_id>/input.json
+    1. 将请求参数保存到 SeaweedFS
     2. 创建一条待处理的 generate 任务记录
     3. 由 task_worker 在后台读取任务并生成结果
     """
@@ -61,27 +62,30 @@ async def generate_molecules(
     logger.info("User %s submit generate task", current_user.username)
 
     try:
-        # （1）生成一个唯一的 job_id，并创建对应文件夹
-        JOBS_DIR = ROOT / "jobs" / "generate"
-        JOBS_DIR.mkdir(parents=True, exist_ok=True)
-
+        # （1）生成一个唯一的 job_id
         job_id = str(uuid.uuid4())
-        job_dir = JOBS_DIR / job_id
-        job_dir.mkdir()
-
-        # （2）将请求体内容保存到 job_dir/input.json
+        
+        # 构建 SeaweedFS 存储路径（不再创建本地目录）
+        storage_prefix = f"jobs/generate/{job_id}"
+        
+        # （2）将请求体内容保存到 SeaweedFS
+        storage = get_storage()
         input_data = generate_requests.model_dump()
-        with open(job_dir / "input.json", "w", encoding="utf-8") as f_in:
-            json.dump(input_data, f_in, indent=2, ensure_ascii=False)
+        input_json_bytes = json.dumps(input_data, indent=2, ensure_ascii=False).encode('utf-8')
+        
+        # 上传到 SeaweedFS
+        remote_key = f"{storage_prefix}/input.json"
+        await storage.upload_bytes(input_json_bytes, remote_key, content_type="application/json")
+        logger.info("Uploaded input.json to SeaweedFS: %s", remote_key)
 
-        # （3）创建任务，供后台 worker 执行
+        # （3）创建任务，job_dir 存储为逻辑路径（用于后续查找）
         task_id = TaskService.create_task(
             user_id=current_user.id,
             task_type="generate",
-            job_dir=str(job_dir)
+            job_dir=storage_prefix  # 存储逻辑路径而非本地路径
         )
 
-        # （3.5）启动异步处理 —— #
+        # （3.5）启动异步处理
         try:
             from async_task_processor import task_processor
             task = TaskService.get_task(task_id)
