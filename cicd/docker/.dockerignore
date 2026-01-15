@@ -1,5 +1,49 @@
+# Git
 .git
 .gitignore
-test
-upload
 .github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.eggs
+dist
+build
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Test & Upload directories
+test
+tests
+upload
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Logs
+logs
+*.log
+
+# Environment files (will be set via env vars)
+.env
+.env.*
+
+# Misc
+*.bak
+*.tmp
+Thumbs.db
+.DS_Store

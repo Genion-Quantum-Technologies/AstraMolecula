@@ -1,8 +1,37 @@
 import pandas as pd
 import os
+import sys
+import shutil
+import subprocess
 from pathlib import Path
 from mmpdblib.fragment_io import read_fragment_records
 from rdkit import Chem
+
+
+def get_mmpdb_path() -> str:
+    """获取 mmpdb 可执行文件的路径"""
+    # 首先尝试从 PATH 中查找
+    mmpdb_path = shutil.which("mmpdb")
+    if mmpdb_path:
+        return mmpdb_path
+    
+    # 如果 PATH 中没有，尝试从当前 Python 环境的 bin 目录查找
+    python_bin_dir = Path(sys.executable).parent
+    mmpdb_in_env = python_bin_dir / "mmpdb"
+    if mmpdb_in_env.exists():
+        return str(mmpdb_in_env)
+    
+    # 最后尝试常见的 conda 环境路径
+    conda_paths = [
+        "/opt/conda/envs/AstraMolecula/bin/mmpdb",
+        Path.home() / "miniforge3/envs/AstraMolecula/bin/mmpdb",
+        Path.home() / "miniconda3/envs/AstraMolecula/bin/mmpdb",
+    ]
+    for p in conda_paths:
+        if Path(p).exists():
+            return str(p)
+    
+    raise FileNotFoundError("找不到 mmpdb 可执行文件，请确保 mmpdb 已正确安装。")
 class Index_Dummy:
     """对 dummy 原子进行编号：变量和常量部分分别处理"""
     def __init__(self, df):
@@ -65,10 +94,15 @@ def fragmentize_molecule(smiles_string: str, max_ratio: float = 0.8) -> pd.DataF
         with open(input_file, "w") as f:
             f.write(smiles_string + "\t" + "Molecule" + "\n")
 
-        # 使用 mmpdb 工具进行分子碎片化
-        ret = os.system(f"mmpdb fragment {input_file} -o {output_file}")
-        if ret != 0:
-            raise Exception("mmpdb fragment 命令执行失败，请确保 mmpdb 工具安装并配置正确。")
+        # 获取 mmpdb 路径并使用 subprocess 执行
+        mmpdb_path = get_mmpdb_path()
+        result = subprocess.run(
+            [mmpdb_path, "fragment", input_file, "-o", output_file],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            raise Exception(f"mmpdb fragment 命令执行失败: {result.stderr}")
 
         # 读取并处理碎片
         fragment_reader = read_fragment_records(output_file)

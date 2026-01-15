@@ -1,0 +1,36 @@
+# ============================================================
+# AstraMolecula 开发环境 Docker Compose 配置
+# 仅启动应用，使用本地/外部数据库
+# ============================================================
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: cicd/docker/Dockerfile
+    container_name: astramolecula-dev
+    environment:
+      # 数据库配置 - 连接宿主机的 PostgreSQL
+      ASTRA_DATABASE_HOST: host.docker.internal
+      ASTRA_DATABASE_PORT: 5432
+      ASTRA_DATABASE_USER: admin
+      ASTRA_DATABASE_PASSWORD: secret
+      ASTRA_DATABASE_DATABASE: mydatabase
+      # 存储配置 - 连接宿主机的 SeaweedFS
+      ASTRA_STORAGE_FILER_ENDPOINT: http://host.docker.internal:8888
+      # 日志级别
+      ASTRA_LOGGING_LEVEL: DEBUG
+    ports:
+      - "8000:8000"
+    volumes:
+      # 开发模式：挂载源码以便热重载
+      - ../../src:/app/src:ro
+      - ../../my_toolsets:/app/my_toolsets:ro
+      - ../../resource:/app/resource:ro
+      - app_logs:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  app_logs:

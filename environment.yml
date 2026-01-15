@@ -13,11 +13,17 @@ dependencies:
   - python=3.10
   - python-jose
   - pytorch
-  - rdkit
+  - rdkit=2022.03
+  - scikit-learn
   - scipy
   - seaborn
   - tqdm
   - uvicorn
+  - pandas
+  - numpy
+  - boto3
+  - pyyaml
   - pip:
     - mmpdb==2.1
     - squareup
+    - python-multipart
