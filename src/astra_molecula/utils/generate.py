@@ -5,6 +5,7 @@ import argparse
 import pandas as pd
 from pathlib import Path
 import torch
+import sys
 
 import astra_molecula.utils.chem as uc
 import astra_molecula.utils.torch_util as ut
@@ -17,6 +18,12 @@ import astra_molecula.core.config.cli_opts as opts
 from astra_molecula.ml.models.transformer.module.decode import decode
 from astra_molecula.ml.models.transformer.encode_decode.model import EncoderDecoder
 # from models.seq2seq.model import Model
+
+# 为旧版pickle文件创建模块别名
+# vocab.pkl文件是用旧模块路径'preprocess'创建的，需要映射到新路径
+import astra_molecula.ml.preprocess as preprocess
+sys.modules['preprocess'] = preprocess
+sys.modules['preprocess.vocabulary'] = preprocess.vocabulary
 
 def prepare_input(opt):
     ''' check if the input file contain pk_diff 

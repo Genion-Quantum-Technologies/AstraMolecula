@@ -24,6 +24,8 @@ from collections import defaultdict
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
+from astra_molecula.core.config import ROOT
+
 _fscores = None
 
 
@@ -32,9 +34,8 @@ def readFragmentScores(name='fpscores'):
   global _fscores
   # generate the full path filename:
   if name == "fpscores":
-    # name = op.join(op.dirname(__file__), name)
-    # 改为使用上层目录的resource文件夹
-    name = op.join(op.dirname(__file__), '..', 'resource', 'fpscores')
+    # 使用统一的ROOT变量访问resource目录
+    name = str(ROOT / 'resource' / 'fpscores')
   data = pickle.load(gzip.open('%s.pkl.gz' % name))
   outDict = {}
   for i in data:

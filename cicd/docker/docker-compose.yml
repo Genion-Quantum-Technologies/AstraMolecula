@@ -78,7 +78,7 @@ services:
       ASTRA_DATABASE_PASSWORD: secret
       ASTRA_DATABASE_DATABASE: mydatabase
       # 存储配置
-      ASTRA_STORAGE_FILER_ENDPOINT: http://seaweedfs-filer:8888
+      SEAWEED_FILER_ENDPOINT: http://seaweedfs-filer:8888
       # 日志配置
       ASTRA_LOGGING_LEVEL: INFO
     ports:
