@@ -426,8 +426,9 @@ async def download_peptide_optimization_csv(
                 if selected_indices is not None and index not in selected_indices:
                     continue
                     
-                original_seq = result.get('originalSequence', '').replace('"', '""')
-                optimal_seq = result.get('optimalSequence', '').replace('"', '""')
+                # 确保所有字段都是字符串类型，然后转义双引号
+                original_seq = str(result.get('originalSequence', '')).replace('"', '""')
+                optimal_seq = str(result.get('optimalSequence', '')).replace('"', '""')
                 secondary_structure = str(result.get('secondaryStructureFraction', '')).replace('"', '""')
                 
                 line = (
@@ -495,9 +496,16 @@ async def download_peptide_optimization_csv(
                         }
                     )
             
-            # 没有索引过滤，直接返回预签名 URL
-            url = await get_file_download_url(storage_prefix, "output/result.csv")
-            return RedirectResponse(url)
+            # 没有索引过滤，从 SeaweedFS 下载文件内容并流式返回
+            file_content = await download_file_content(storage_prefix, "output/result.csv")
+            return StreamingResponse(
+                io.BytesIO(file_content),
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=peptide_results_{task_id}.csv",
+                    "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+                }
+            )
         
         except FileNotFoundError:
             raise HTTPException(status_code=404, detail="No peptide optimization results found")
@@ -589,9 +597,16 @@ async def download_peptide_results_csv(
                     }
                 )
         
-        # 没有索引过滤，直接返回预签名 URL
-        url = await get_file_download_url(storage_prefix, "output/result.csv")
-        return RedirectResponse(url)
+        # 没有索引过滤，从 SeaweedFS 下载文件内容并流式返回
+        file_content = await download_file_content(storage_prefix, "output/result.csv")
+        return StreamingResponse(
+            io.BytesIO(file_content),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=peptide_results_{task_id}.csv",
+                "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+            }
+        )
         
     except HTTPException:
         raise
@@ -983,8 +998,11 @@ async def get_docking_results(request: Request, task_id: str):
         # 从请求中提取，去除端口号和 /api 路径
         base_url = f"{request.url.scheme}://{request.url.hostname}"
     
-    # 为每条记录添加分享链接
+    # 为每条记录添加分享链接，并确保 title 字段是字符串
     for item in data:
+        # 确保 title 字段是字符串类型（dockRes.json 中可能是整数）
+        if 'title' in item and not isinstance(item['title'], str):
+            item['title'] = str(item['title'])
         if 'file' in item:
             from urllib.parse import quote
             filename = quote(item['file'])
@@ -1024,13 +1042,18 @@ async def get_sdf_file(request: Request, task_id: str, filename: str):
     if not filename.endswith('.sdf') or '/' in filename or '\\' in filename:
         raise HTTPException(status_code=400, detail="invalid filename")
     
-    # 从 SeaweedFS 获取文件 URL
+    # 从 SeaweedFS 获取文件内容并流式返回（避免重定向到内部地址导致外网无法访问）
     storage_prefix = normalize_storage_prefix(task.job_dir)
     try:
-        url = await get_file_download_url(storage_prefix, f"output/docked/{filename}")
-        return RedirectResponse(url, headers={
-            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
-        })
+        file_content = await download_file_content(storage_prefix, f"output/docked/{filename}")
+        return StreamingResponse(
+            io.BytesIO(file_content),
+            media_type="chemical/x-mdl-sdfile",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+            }
+        )
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="SDF file not found")
 
@@ -1073,27 +1096,38 @@ async def get_protein_file(request: Request, task_id: str):
         
         # 获取第一个结果中的 receptor_storage_key（存储在上传时的键）
         # 或者从 input.json 获取 receptor_storage_key
+        storage = get_storage()
         try:
             input_config = await read_json_from_storage(storage_prefix, "input/input.json")
             receptor_storage_key = input_config.get('receptor_storage_key')
             if receptor_storage_key:
-                url = await get_file_download_url("", receptor_storage_key.lstrip('/'))
-                return RedirectResponse(url, headers={
-                    "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
-                })
+                # 从 SeaweedFS 下载文件内容并流式返回（避免重定向到内部地址导致外网无法访问）
+                file_content = await storage.download_bytes(receptor_storage_key.lstrip('/'))
+                return StreamingResponse(
+                    io.BytesIO(file_content),
+                    media_type="chemical/x-pdbqt",
+                    headers={
+                        "Content-Disposition": f"attachment; filename=receptor.pdbqt",
+                        "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+                    }
+                )
         except FileNotFoundError:
             pass
         
         # Fallback: 尝试从 input 目录获取 receptor 文件
         try:
-            storage = get_storage()
             input_files = await storage.list_files(f"{storage_prefix}/input/")
             for f in input_files:
                 if f.endswith('.pdbqt'):
-                    url = await storage.get_presigned_url(f)
-                    return RedirectResponse(url, headers={
-                        "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
-                    })
+                    file_content = await storage.download_bytes(f)
+                    return StreamingResponse(
+                        io.BytesIO(file_content),
+                        media_type="chemical/x-pdbqt",
+                        headers={
+                            "Content-Disposition": f"attachment; filename={f.split('/')[-1]}",
+                            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+                        }
+                    )
         except Exception:
             pass
         
@@ -1220,13 +1254,18 @@ async def download_peptide_result_csv(request: Request, task_id: str):
     # 记录下载操作
     logger.info("User %s (%s) downloading peptide result CSV file for task %s", user.username, user_info['auth_type'], task_id)
     
-    # 从 SeaweedFS 获取文件 URL 并重定向
+    # 从 SeaweedFS 获取文件内容并流式返回（避免重定向到内部地址导致外网无法访问）
     storage_prefix = normalize_storage_prefix(task.job_dir)
     try:
-        url = await get_file_download_url(storage_prefix, "output/result.csv")
-        return RedirectResponse(url, headers={
-            "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
-        })
+        file_content = await download_file_content(storage_prefix, "output/result.csv")
+        return StreamingResponse(
+            io.BytesIO(file_content),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=result_{task_id}.csv",
+                "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+            }
+        )
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="result.csv file not found")
 
@@ -1376,13 +1415,26 @@ async def download_peptide_file(request: Request, task_id: str, filename: str):
     if not found_key:
         raise HTTPException(status_code=404, detail=f"file {filename} not found")
 
-    # 获取预签名 URL 并重定向
+    # 从 SeaweedFS 下载文件内容并流式返回（避免重定向到内部地址导致外网无法访问）
+    import mimetypes
     try:
-        url = await storage.get_presigned_url(found_key)
-        return RedirectResponse(url)
+        file_content = await storage.download_bytes(found_key)
+        mime_type, _ = mimetypes.guess_type(filename)
+        if not mime_type:
+            mime_type = 'application/octet-stream'
+        return StreamingResponse(
+            io.BytesIO(file_content),
+            media_type=mime_type,
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Cache-Control": f"public, max-age={CACHE_SETTINGS['file_cache_duration']}"
+            }
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"file {filename} not found")
     except Exception as e:
-        logger.error(f"Error getting presigned URL: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get file URL")
+        logger.error(f"Error downloading file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to download file")
 
 
 # ==================== 新增的CSV下载API端点 ====================
@@ -1506,10 +1558,11 @@ async def download_docking_results_csv(
         csv_lines = ['Ligand Name,SMILES,Docking Score,SDF Filename']
         
         for result in docking_results:
-            title = result.get('title', '').replace('"', '""')  # 转义双引号
-            smiles = result.get('smiles', '').replace('"', '""')  # 转义双引号
+            # 确保所有字段都是字符串类型，然后转义双引号
+            title = str(result.get('title', '')).replace('"', '""')
+            smiles = str(result.get('smiles', '')).replace('"', '""')
             score = result.get('score', 0)
-            file = result.get('file', '').replace('"', '""')  # 转义双引号
+            file = str(result.get('file', '')).replace('"', '""')
             
             line = f'"{title}","{smiles}",{score:.2f},"{file}"'
             csv_lines.append(line)
