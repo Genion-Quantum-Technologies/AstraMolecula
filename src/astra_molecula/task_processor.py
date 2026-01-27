@@ -224,7 +224,7 @@ class AsyncTaskProcessor:
                 else:
                     all_var_smiles = var_smiles_raw
             
-            logger.info("生成参数: const_smiles=%s, var_smiles=%s, num_samples=%d", 
+            logger.info("Generation parameters: const_smiles=%s, var_smiles=%s, num_samples=%d", 
                        const_smiles, all_var_smiles, num_samples)
             
             # 确保参数格式正确

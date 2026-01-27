@@ -31,11 +31,30 @@ def normalize_storage_prefix(job_dir: str) -> str:
     """
     标准化 job_dir 为存储前缀
     
-    job_dir 格式: jobs/{task_type}/{job_id}
-    例如: jobs/docking/{job_id} 或 jobs/generate/{job_id}
+    job_dir 可能的格式:
+    - 本地路径: /tmp/astramolecula/jobs/{task_type}/{job_id}
+    - SeaweedFS 路径: jobs/{task_type}/{job_id}
     
     返回 SeaweedFS 路径前缀
     """
+    if not job_dir:
+        return job_dir
+    
+    # 如果是本地路径格式，需要提取 jobs/ 部分
+    if job_dir.startswith('/'):
+        # 格式: /tmp/astramolecula/jobs/...
+        parts = job_dir.split('/tmp/astramolecula/')
+        if len(parts) > 1:
+            return parts[1]
+        
+        # 退而求其次，提取 jobs/ 开始的部分
+        if '/jobs/' in job_dir:
+            idx = job_dir.index('/jobs/') + 1
+            return job_dir[idx:]
+        
+        # 无法识别的格式，记录警告
+        logger.warning("Cannot normalize job_dir to storage prefix: %s", job_dir)
+    
     return job_dir
 
 
@@ -1363,8 +1382,8 @@ async def download_peptide_file(request: Request, task_id: str, filename: str):
     
     logger.info(f"[peptide-download] task_id={task_id} filename={filename}")
 
-    # 基本校验
-    if not re.match(r'^[\w\\-. ]+$', filename):
+    # 基本校验：允许字母数字、下划线、连字符、点和空格
+    if not re.match(r'^[\w\-. ]+$', filename):
         raise HTTPException(status_code=400, detail="invalid filename")
 
     user_info = get_current_user_info(request)
