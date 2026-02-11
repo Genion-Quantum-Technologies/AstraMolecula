@@ -16,6 +16,15 @@ app = FastAPI(lifespan=lifespan)
 
 app.middleware("http")(auth_middleware)
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+@app.get("/")
+async def root():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/docs")
+
 app.include_router(auth.router)
 app.include_router(uploads.router)
 app.include_router(smiles.router)

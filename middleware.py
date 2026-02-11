@@ -18,7 +18,7 @@ async def auth_middleware(request: Request, call_next):
         response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
         return response
 
-    if request.url.path in OPEN_PATHS:
+    if request.url.path in OPEN_PATHS or request.url.path.startswith("/static") or request.url.path in ["/", "/health", "/docs", "/openapi.json"]:
         response = await call_next(request)
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"

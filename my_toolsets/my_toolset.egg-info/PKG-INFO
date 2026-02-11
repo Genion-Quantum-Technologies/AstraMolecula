@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: my_toolset
 Version: 0.1.0
 Summary: A example Python package
@@ -7,3 +7,8 @@ Author: Jie Zhang
 Author-email: jie.zhang@aixplorerbio.com
 License: AIXB license
 Requires-Dist: numpy
+Dynamic: author
+Dynamic: author-email
+Dynamic: license
+Dynamic: requires-dist
+Dynamic: summary
