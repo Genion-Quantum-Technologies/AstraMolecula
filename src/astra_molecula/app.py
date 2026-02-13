@@ -94,11 +94,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "path": request.url.path,
             "method": request.method,
             "error_code": f"HTTP_{exc.status_code}"
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
         }
     )
 
@@ -114,11 +109,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "path": request.url.path,
             "method": request.method,
             "error_code": "VALIDATION_ERROR"
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
         }
     )
 
@@ -135,11 +125,6 @@ async def general_exception_handler(request: Request, exc: Exception):
             "method": request.method,
             "error_code": "INTERNAL_SERVER_ERROR",
             "suggestion": "Please contact the administrator if this error persists."
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
         }
     )
 
