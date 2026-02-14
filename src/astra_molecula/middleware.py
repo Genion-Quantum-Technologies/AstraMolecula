@@ -16,30 +16,25 @@ logger = logging.getLogger("middleware")
 # 你想要跳过验证的路径列表
 OPEN_PATHS = {
     "/",
+    "/health",
     "/login",
     "/signup",
-    "/health",
     "/docs",
     "/openapi.json",
     "/redoc",
     "/smiles2img",
     "/fragmentize",
     "/logs",
-    "/logs/",
+    "/public",      # 公开访问路径（无需认证）
+    "/api/public",  # 前端使用 /api 代理的公开访问路径
 }
+
+STATIC_PREFIX = "/static"
 
 # 高优先级路径列表（tasks相关接口）
 HIGH_PRIORITY_PATHS = {
     "/tasks",
     "/tasks/",
-}
-
-# 开放路径前缀列表（需要前缀匹配的路径）
-OPEN_PATH_PREFIXES = {
-    "/logs",
-    "/static",
-    "/public",      # 公开访问路径（无需认证）
-    "/api/public",  # 前端使用 /api 代理的公开访问路径
 }
 
 def is_high_priority_request(path: str) -> bool:
@@ -84,19 +79,11 @@ async def auth_middleware(request: Request, call_next):
         
         if request.method == "OPTIONS":
             logger.debug("Handling OPTIONS request for %s", request.url.path)
-            response = Response()
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
-            return response
+            return Response()
 
-        if request.url.path in OPEN_PATHS or any(request.url.path.startswith(prefix) for prefix in OPEN_PATH_PREFIXES):
+        if request.url.path.startswith(STATIC_PREFIX) or request.url.path in OPEN_PATHS:
             logger.debug("Open path accessed: %s", request.url.path)
-            response = await call_next(request)
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
-            return response
+            return await call_next(request)
 
         api_key = request.headers.get("X-API-Key")
         if api_key:
@@ -112,11 +99,6 @@ async def auth_middleware(request: Request, call_next):
                             "message": "X-External-User-ID header is required for service authentication",
                             "suggestion": "Please provide the external user ID in the X-External-User-ID header",
                             "error_code": "AUTH_MISSING_EXTERNAL_USER_ID"
-                        },
-                        headers={
-                            "Access-Control-Allow-Origin": "*",
-                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
                         }
                     )
                 
@@ -137,9 +119,6 @@ async def auth_middleware(request: Request, call_next):
                     request.state.external_user_id = external_user_id
                     
                     response = await call_next(request)
-                    response.headers["Access-Control-Allow-Origin"] = "*"
-                    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-                    response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
                     
                     # 为高优先级请求添加特殊头部
                     if is_high_priority:
@@ -156,11 +135,6 @@ async def auth_middleware(request: Request, call_next):
                             "error": "Service authentication error",
                             "message": "Failed to process service authentication",
                             "error_code": "AUTH_SERVICE_ERROR"
-                        },
-                        headers={
-                            "Access-Control-Allow-Origin": "*",
-                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                            "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
                         }
                     )
             logger.warning("Invalid API key attempted: %s", api_key[:10] + "...")
@@ -171,11 +145,6 @@ async def auth_middleware(request: Request, call_next):
                     "message": "The provided API key is not valid or has expired.",
                     "suggestion": "Please check your API key or contact the administrator for a new one.",
                     "error_code": "AUTH_INVALID_API_KEY"
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
                 }
             )
 
@@ -194,11 +163,6 @@ async def auth_middleware(request: Request, call_next):
                     ],
                     "open_endpoints": list(OPEN_PATHS),
                     "error_code": "AUTH_MISSING_CREDENTIALS"
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
                 }
             )
         token = auth.removeprefix("Bearer ").strip()
@@ -216,11 +180,6 @@ async def auth_middleware(request: Request, call_next):
                     "suggestion": "Please login again to get a new token or check if your token is correctly formatted.",
                     "error_code": "AUTH_INVALID_TOKEN",
                     "token_error": str(e)
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
                 }
             )
 
@@ -234,21 +193,12 @@ async def auth_middleware(request: Request, call_next):
                     "message": f"User '{username}' not found in the system.",
                     "suggestion": "Please check if your account exists or contact the administrator.",
                     "error_code": "AUTH_USER_NOT_FOUND"
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
                 }
             )
 
         request.state.user = user
         request.state.auth_type = 'user'
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization, X-API-Key, Content-Type"
-        return response
+        return await call_next(request)
     
     except Exception as e:
         logger.exception("Unexpected error in auth middleware: %s", e)
@@ -259,10 +209,5 @@ async def auth_middleware(request: Request, call_next):
                 "message": "An unexpected error occurred during authentication.",
                 "suggestion": "Please try again or contact the administrator if this error persists.",
                 "error_code": "AUTH_MIDDLEWARE_ERROR"
-            },
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type"
             }
         )
