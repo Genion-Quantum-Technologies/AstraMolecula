@@ -4,6 +4,7 @@ from .user import User
 from .service_user_mapping import ServiceUserMapping
 from .docking_task_params import DockingTaskParams
 from .peptide_task_params import PeptideTaskParams
+from .sarm_task_params import SarmTaskParams
 
 __all__ = [
     'Task',
@@ -11,5 +12,6 @@ __all__ = [
     'User',
     'ServiceUserMapping',
     'DockingTaskParams',
-    'PeptideTaskParams'
+    'PeptideTaskParams',
+    'SarmTaskParams'
 ]

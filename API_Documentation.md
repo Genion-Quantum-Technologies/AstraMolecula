@@ -4,9 +4,23 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.3.5
+- **API版本**: 2.4.0
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 SARM 分析功能 (v2.4.0)
+
+- **SARM 矩阵分析**: 新增 `POST /sarm/analyze` 接口，支持基于 SMILES 或 Murcko 骨架的构效关系矩阵分析
+- **SAR 树生成**: 新增 `POST /sarm/tree` 接口，支持基于核心片段的 SAR 衍生树构建
+- **任务全生命周期**: 支持任务状态查询、参数查询、结果文件列表、打包下载和单文件下载
+- **CSV 文件上传**: 用户上传包含 SMILES 和活性数据的 CSV 文件，系统自动复制到任务专属存储路径
+- **Worker 自动轮询**: autoSARM Worker 自动获取并处理待执行的 SARM 任务
+- **灵活分析参数**: 支持对数变换、片段最小计数、Excel 导出等多种可选配置
+
+### 🆕 支付功能 (v2.4.0)
+
+- **Square 支付集成**: 新增 `POST /payments` 接口，支持通过 Square 平台处理支付
+- **订阅计划关联**: 支持 planId 参数，将支付与订阅计划关联
 
 ### 🆕 肽段优化参数增强 (v2.3.5)
 
@@ -173,6 +187,8 @@ results = session.get("/tasks/{task_id}/dockRes")
 - [分子相关接口](#分子相关接口)
 - [对接计算接口](#对接计算接口)
 - [肽段优化接口](#肽段优化接口)
+- [SARM分析接口](#sarm分析接口)
+- [支付接口](#支付接口)
 - [任务管理接口](#任务管理接口)
 - [新增的CSV下载接口](#新增的csv下载接口)
 - [管理员接口](#管理员接口)
@@ -319,12 +335,12 @@ results = session.get("/tasks/{task_id}/dockRes")
 
 **接口地址**: `POST /upload_pdbqt`
 
-**描述**: 上传分子结构文件（PDB/PDBQT格式），用于分子对接和肽段优化
+**描述**: 上传分子结构文件（PDB/PDBQT/CSV格式），用于分子对接、肽段优化和SARM分析
 
 **认证要求**: JWT Token 或 API Key
 
 **请求参数**: 
-- `files`: 文件列表（支持.pdb, .pdbqt格式）
+- `files`: 文件列表（支持.pdb, .pdbqt, .csv格式）
 
 **返回值**:
 ```json
@@ -335,9 +351,10 @@ results = session.get("/tasks/{task_id}/dockRes")
 }
 ```
 
-**说明**: 此接口支持上传PDB和PDBQT格式文件，可用于：
-- 分子对接任务的受体文件
-- 肽段优化任务的受体蛋白文件
+**说明**: 此接口支持上传PDB、PDBQT和CSV格式文件，可用于：
+- 分子对接任务的受体文件（.pdb/.pdbqt）
+- 肽段优化任务的受体蛋白文件（.pdb/.pdbqt）
+- SARM分析任务的化合物活性数据文件（.csv）
 
 ## 分子相关接口
 
@@ -713,6 +730,454 @@ curl -X POST "http://your-server-url/docking" \
 - 如果配置中没有step参数，表示执行完整优化流程
 - 用户配置参数反映实际提交的值
 
+## SARM分析接口
+
+> **🆕 v2.4.0 新增功能**: SARM（Structure-Activity Relationship Matrix）分析模块，提供分子构效关系矩阵分析和 SAR 衍生树生成能力。由 autoSARM Worker 后台自动处理任务。
+
+### 创建 SARM 矩阵分析任务
+
+**接口地址**: `POST /sarm/analyze`
+
+**描述**: 提交 SARM 矩阵分析任务到队列。需要先通过 `POST /upload_pdbqt` 上传包含 SMILES 和活性数据的 CSV 文件。系统将自动验证文件、复制到任务专属存储路径，并创建任务记录供 autoSARM Worker 自动轮询处理。
+
+**认证要求**: JWT Token 或 API Key
+
+**请求参数**:
+```json
+{
+  "csv_filename": "string (必需)",
+  "value_columns": ["string"] ,
+  "analysis_type": "string (默认 'smiles')",
+  "log_transform": "boolean (默认 false)",
+  "minimum_site1": "number (默认 3)",
+  "minimum_site2": "number (默认 3)",
+  "n_jobs": "integer (可选，默认自动检测)",
+  "csv2excel": "boolean (默认 false)"
+}
+```
+
+**参数详细说明**:
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `csv_filename` | string | ✅ | - | 已上传的 CSV 文件名（必须通过 `/upload_pdbqt` 接口上传，文件扩展名必须为 `.csv`） |
+| `value_columns` | array[string] | ✅ | - | CSV 中用于 SAR 分析的数值活性列名。例如 `["IC50_uM"]` 或 `["IC50", "Ki"]`，支持多列 |
+| `analysis_type` | string | ❌ | `"smiles"` | 分析类型：`"smiles"` 基于完整 SMILES 分析；`"scaffold"` 基于 Murcko 骨架分析 |
+| `log_transform` | boolean | ❌ | `false` | 是否对活性值取对数（ln）。当活性值跨越多个数量级时建议开启 |
+| `minimum_site1` | number | ❌ | `3` | 第一切割位点片段的最小出现次数，低于此值的片段将被过滤 |
+| `minimum_site2` | number | ❌ | `3` | 第二切割位点片段的最小出现次数，低于此值的片段将被过滤 |
+| `n_jobs` | integer | ❌ | 自动检测 | 分子片段化的并行进程数，默认使用容器可用 CPU 的 80%，一般无需设置 |
+| `csv2excel` | boolean | ❌ | `false` | 是否将结果同时导出为带分子结构图的 Excel 文件。开启后处理时间会明显增加 |
+
+**CSV 文件格式要求**:
+
+用户上传的 CSV 文件需满足以下条件：
+- **必须包含 `smiles` 列**（不区分大小写），内容为有效的 SMILES 字符串
+- **必须包含至少一个数值活性列**，列名需与 `value_columns` 参数对应
+- 支持标准 CSV 格式（逗号分隔）
+- 建议去除重复和无效 SMILES 行（系统也会自动处理）
+
+```csv
+smiles,IC50_uM,Ki_nM
+CC(=O)Oc1ccccc1C(=O)O,3.2,15.6
+CC(C)Cc1ccc(cc1)C(C)C(=O)O,0.8,4.2
+```
+
+**请求示例**:
+
+```bash
+# 使用JWT Token认证
+curl -X POST "http://your-server-url/sarm/analyze" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "csv_filename": "compounds.csv",
+    "value_columns": ["IC50_uM"],
+    "analysis_type": "smiles",
+    "log_transform": false,
+    "minimum_site1": 3,
+    "minimum_site2": 3,
+    "csv2excel": false
+  }'
+
+# 使用API Key认证
+curl -X POST "http://your-server-url/sarm/analyze" \
+  -H "X-API-Key: third-party-service-key-123" \
+  -H "X-External-User-ID: user@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "csv_filename": "compounds.csv",
+    "value_columns": ["IC50_uM", "Ki_nM"],
+    "analysis_type": "scaffold",
+    "log_transform": true
+  }'
+```
+
+**返回值** (201):
+```json
+{
+  "task_id": "string",
+  "status": "submitted",
+  "message": "SARM 矩阵分析任务已成功提交",
+  "details": {
+    "job_id": "string",
+    "storage_prefix": "jobs/sarm_analysis/{job_id}",
+    "csv_filename": "compounds.csv",
+    "value_columns": ["IC50_uM"],
+    "parameters": {
+      "analysis_type": "smiles",
+      "log_transform": false,
+      "minimum_site1": 3,
+      "minimum_site2": 3,
+      "n_jobs": null,
+      "csv2excel": false
+    }
+  },
+  "next_steps": {
+    "check_status": "/sarm/{task_id}",
+    "get_params": "/sarm/{task_id}/params",
+    "list_results": "/sarm/{task_id}/results",
+    "download_results": "/sarm/{task_id}/download"
+  }
+}
+```
+
+**错误响应**:
+- `400`: CSV 文件名格式错误 / value_columns 为空 / analysis_type 无效
+- `404`: CSV 文件不在用户上传记录中
+- `500`: 存储系统文件缺失 / 内部错误
+
+### 创建 SAR 树生成任务
+
+**接口地址**: `POST /sarm/tree`
+
+**描述**: 提交 SAR 树生成任务到队列。通常在 SARM 矩阵分析完成后使用，依赖先前的分析结果，基于核心片段构建衍生树。
+
+**认证要求**: JWT Token 或 API Key
+
+**请求参数**:
+```json
+{
+  "fragment_core": "string (必需)",
+  "root_title": "string (必需)",
+  "input_file": "string (默认 'input.csv')",
+  "tree_content": ["string"] ,
+  "highlight_dict": ["string"] ,
+  "max_level": "integer (默认 5)"
+}
+```
+
+**参数详细说明**:
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `fragment_core` | string | ✅ | - | 用于构建衍生树的核心片段 SMARTS/SMILES，如 `c1ccc(cc1)C(=O)` |
+| `root_title` | string | ✅ | - | SAR 树根节点的显示名称，如 `Benzamide core` |
+| `input_file` | string | ❌ | `"input.csv"` | SAR 树输入数据文件名 |
+| `tree_content` | array[string] | ❌ | `["double-cut"]` | 树中展示的内容类型。可选值：`"double-cut"`、`"single-cut"` 或组合 |
+| `highlight_dict` | array[string] | ❌ | `[]` | 需要在树中高亮显示的化合物/片段列表 |
+| `max_level` | integer | ❌ | `5` | 树的最大展开层数（范围 1-20，建议 3-7，层数越多计算越慢） |
+
+**请求示例**:
+
+```bash
+curl -X POST "http://your-server-url/sarm/tree" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fragment_core": "c1ccc(cc1)C(=O)",
+    "root_title": "Benzamide core",
+    "tree_content": ["double-cut"],
+    "max_level": 5
+  }'
+```
+
+**返回值** (201):
+```json
+{
+  "task_id": "string",
+  "status": "submitted",
+  "message": "SAR 树生成任务已成功提交",
+  "details": {
+    "job_id": "string",
+    "storage_prefix": "jobs/sarm_analysis/{job_id}",
+    "parameters": {
+      "fragment_core": "c1ccc(cc1)C(=O)",
+      "root_title": "Benzamide core",
+      "input_file": "input.csv",
+      "tree_content": ["double-cut"],
+      "highlight_dict": [],
+      "max_level": 5
+    }
+  },
+  "next_steps": {
+    "check_status": "/sarm/{task_id}",
+    "get_params": "/sarm/{task_id}/params",
+    "list_results": "/sarm/{task_id}/results",
+    "download_results": "/sarm/{task_id}/download"
+  }
+}
+```
+
+**错误响应**:
+- `400`: fragment_core 或 root_title 为空 / max_level 超出范围 (1-20)
+- `500`: 内部错误
+
+### 查询 SARM 任务状态
+
+**接口地址**: `GET /sarm/{task_id}`
+
+**描述**: 获取指定 SARM 分析任务的状态和基本信息
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: TaskResponse 对象
+```json
+{
+  "id": "string",
+  "user_id": "string",
+  "task_type": "sarm_analysis",
+  "job_dir": "string",
+  "status": "string",
+  "created_at": "datetime",
+  "finished_at": "datetime (可选)"
+}
+```
+
+**错误响应**:
+- `400`: 任务类型不是 sarm_analysis
+- `404`: 任务不存在
+
+### 查询 SARM 任务参数
+
+**接口地址**: `GET /sarm/{task_id}/params`
+
+**描述**: 获取 SARM 分析任务的配置参数详情。返回内容根据 `task_subtype` 不同而不同。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值（SARM 矩阵分析，task_subtype='sarm'）**:
+```json
+{
+  "task_id": "string",
+  "task_subtype": "sarm",
+  "csv_filename": "compounds.csv",
+  "analysis_type": "smiles",
+  "value_columns": ["IC50_uM"],
+  "log_transform": false,
+  "minimum_site1": 3,
+  "minimum_site2": 3,
+  "n_jobs": null,
+  "csv2excel": false
+}
+```
+
+**返回值（SAR 树生成，task_subtype='tree'）**:
+```json
+{
+  "task_id": "string",
+  "task_subtype": "tree",
+  "fragment_core": "c1ccc(cc1)C(=O)",
+  "root_title": "Benzamide core",
+  "input_file": "input.csv",
+  "tree_content": ["double-cut"],
+  "highlight_dict": [],
+  "max_level": 5
+}
+```
+
+**错误响应**:
+- `400`: 任务类型不是 sarm_analysis
+- `404`: 任务不存在 / 参数记录不存在
+
+### 列出 SARM 结果文件
+
+**接口地址**: `GET /sarm/{task_id}/results`
+
+**描述**: 列出任务完成后 SAR_Results 目录下的所有结果文件。任务状态必须为 `finished`。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "status": "finished",
+  "total_files": 12,
+  "files": [
+    {
+      "filename": "Left_Table_info.csv",
+      "storage_key": "jobs/sarm_analysis/{job_id}/output/SAR_Results/Left_Table_info.csv",
+      "size": 1234
+    },
+    {
+      "filename": "Right_Table/result_001.csv",
+      "storage_key": "...",
+      "size": 5678
+    }
+  ],
+  "download_all": "/sarm/{task_id}/download"
+}
+```
+
+**结果目录结构**:
+```
+output/SAR_Results/
+├── Left_Table/           ← 左侧切割位点结果
+├── Right_Table/          ← 右侧切割位点结果
+├── Combine_Table/        ← 组合结果
+├── Left_Table_info.csv   ← 左侧统计信息
+├── Right_Table_info.csv  ← 右侧统计信息
+├── Combine_Table_info.csv← 组合统计信息
+└── singleCut_Table_info.csv ← 单切位点统计
+```
+
+**错误响应**:
+- `400`: 任务类型不是 sarm_analysis
+- `404`: 任务不存在 / 未找到结果文件
+- `409`: 任务尚未完成
+
+### 打包下载 SARM 结果
+
+**接口地址**: `GET /sarm/{task_id}/download`
+
+**描述**: 将任务的所有结果文件打包为 ZIP 下载。打包 `output/SAR_Results/` 目录下的所有文件。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: ZIP 文件流
+
+**文件命名**: `sarm_results_{task_id}.zip`
+
+**错误响应**:
+- `400`: 任务类型不是 sarm_analysis
+- `404`: 任务不存在 / 未找到结果文件
+- `409`: 任务尚未完成
+
+**示例**:
+```bash
+curl -X GET "http://your-server-url/sarm/{task_id}/download" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o sarm_results.zip
+```
+
+### 下载单个 SARM 结果文件
+
+**接口地址**: `GET /sarm/{task_id}/download/{file_path}`
+
+**描述**: 从 SAR_Results 目录下载指定的单个文件。`file_path` 是相对于 `SAR_Results/` 的路径。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+- `file_path`: 文件相对路径（如 `Left_Table_info.csv` 或 `Left_Table/some_file.csv`）
+
+**返回值**: 文件流（根据文件类型自动设置 MIME 类型）
+
+**支持的文件类型**:
+| 扩展名 | MIME 类型 |
+|--------|----------|
+| `.csv` | `text/csv` |
+| `.xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
+| `.json` | `application/json` |
+| 其他 | `application/octet-stream` |
+
+**安全措施**:
+- 防止路径遍历攻击（禁止 `..` 和以 `/` 开头的路径）
+- 仅在 `SAR_Results/` 目录范围内搜索
+
+**示例**:
+```bash
+# 下载统计信息CSV
+curl -X GET "http://your-server-url/sarm/{task_id}/download/Left_Table_info.csv" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o Left_Table_info.csv
+
+# 下载子目录中的文件
+curl -X GET "http://your-server-url/sarm/{task_id}/download/Combine_Table/combined.csv" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o combined.csv
+```
+
+**错误响应**:
+- `400`: 任务类型不是 sarm_analysis / 无效文件路径
+- `404`: 任务不存在 / 文件不存在
+- `409`: 任务尚未完成
+
+### SARM 任务处理流程
+
+1. **上传文件**: 通过 `POST /upload_pdbqt` 上传包含 SMILES 和活性数据的 CSV 文件
+2. **提交任务**: 通过 `POST /sarm/analyze` 或 `POST /sarm/tree` 提交分析任务
+3. **自动处理**: autoSARM Worker 自动轮询获取 `pending` 状态的任务并开始处理
+4. **查询状态**: 通过 `GET /sarm/{task_id}` 轮询任务状态
+5. **获取结果**: 任务 `finished` 后，通过 `GET /sarm/{task_id}/results` 查看结果列表
+6. **下载结果**: 通过 `GET /sarm/{task_id}/download` 打包下载或单独下载特定文件
+
+## 支付接口
+
+### 创建支付
+
+**接口地址**: `POST /payments`
+
+**描述**: 通过 Square 平台处理支付，支持订阅计划关联
+
+**认证要求**: JWT Token 或 API Key
+
+**请求参数**:
+```json
+{
+  "sourceId": "string (必需)",
+  "amount": "integer (必需)",
+  "planId": "string (可选)"
+}
+```
+
+**参数详细说明**:
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `sourceId` | string | ✅ | Square 支付源 ID（nonce 或 token），由前端 Square Web Payments SDK 生成 |
+| `amount` | integer | ✅ | 支付金额，单位为美分（USD）。例如 `1000` 表示 $10.00 |
+| `planId` | string | ❌ | 订阅计划 ID，将作为备注关联到支付记录 |
+
+**请求示例**:
+
+```bash
+curl -X POST "http://your-server-url/payments" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceId": "cnon:card-nonce-ok",
+    "amount": 1000,
+    "planId": "pro_monthly"
+  }'
+```
+
+**返回值** (200):
+```json
+{
+  "success": true,
+  "paymentId": "string"
+}
+```
+
+**错误响应**:
+- `400`: 缺少 sourceId 或 amount
+- `500`: Square 支付处理失败
+
 ## 任务管理接口
 
 ### 获取任务列表
@@ -900,6 +1365,14 @@ curl -X GET "/tasks/{task_id}/docking/params" \
 | `GET /tasks/{task_id}/peptide/output` | 下载整个输出文件夹 | ZIP |
 | `GET /tasks/{task_id}/peptide/download/{filename}` | 下载单个结构文件 | PDB/SDF/MOL等 |
 | `GET /tasks/{task_id}/peptide/protein` | 下载受体蛋白文件 | PDB |
+
+### SARM分析任务专用下载接口
+
+| 接口 | 描述 | 返回格式 |
+|------|------|--------|
+| `GET /sarm/{task_id}/results` | 列出所有结果文件 | JSON |
+| `GET /sarm/{task_id}/download` | 打包下载所有结果文件 | ZIP |
+| `GET /sarm/{task_id}/download/{file_path}` | 下载单个结果文件 | CSV/XLSX/JSON |
 
 ### 下载单个对接结果文件（SDF/PDBQT）
 
@@ -2077,6 +2550,45 @@ curl -X GET "/tasks/{task_id}/peptide/results/csv?indices=2,4,6" \
 }
 ```
 
+### SarmAnalysisRequest
+```json
+{
+  "csv_filename": "string (必需)",
+  "value_columns": ["string"],
+  "analysis_type": "string (默认 'smiles')",
+  "log_transform": "boolean (默认 false)",
+  "minimum_site1": "number (默认 3)",
+  "minimum_site2": "number (默认 3)",
+  "n_jobs": "integer (可选)",
+  "csv2excel": "boolean (默认 false)"
+}
+```
+
+**说明**: `task_type` 为 `sarm_analysis`，`task_subtype` 为 `sarm`
+
+### SarmTreeRequest
+```json
+{
+  "fragment_core": "string (必需)",
+  "root_title": "string (必需)",
+  "input_file": "string (默认 'input.csv')",
+  "tree_content": ["string"],
+  "highlight_dict": ["string"],
+  "max_level": "integer (默认 5)"
+}
+```
+
+**说明**: `task_type` 为 `sarm_analysis`，`task_subtype` 为 `tree`
+
+### PaymentRequest
+```json
+{
+  "sourceId": "string (必需)",
+  "amount": "integer (必需，单位：美分)",
+  "planId": "string (可选)"
+}
+```
+
 ## 认证说明
 
 ### JWT Token认证
@@ -2109,6 +2621,16 @@ X-External-User-ID: <external_user_identifier>
 | `processing` | 任务正在执行中 | 5秒 |
 | `finished` | 任务完成 | 停止轮询 |
 | `failed` | 任务执行失败 | 停止轮询 |
+| `cancelled` | 任务已取消 | 停止轮询 |
+
+**支持的任务类型**:
+
+| task_type | 描述 | 关联接口前缀 |
+|-----------|------|-------------|
+| `generate` | 分子生成 | `/generate` |
+| `docking` | 分子对接 | `/docking` |
+| `peptide_optimization` | 肽段优化 | `/peptide/optimize` |
+| `sarm_analysis` | SARM 构效关系分析 | `/sarm` |
 
 ## 错误处理
 
@@ -2404,9 +2926,23 @@ if response.status_code == 200:
 
 ---
 
-**文档版本**: v2.3.2  
-**最后更新**: 2025年12月9日  
-**更新说明**: 本次更新补充完善下载接口文档，支持更灵活的文件下载功能。主要更新包括：
+**文档版本**: v2.4.0  
+**最后更新**: 2026年2月18日  
+**更新说明**: 本次更新新增 SARM 分析模块（6个端点）和支付接口，扩展了系统的构效关系分析和商业化能力。主要更新包括：
+
+### 🧬 SARM 分析功能 (v2.4.0)
+- **SARM 矩阵分析**: 新增 `POST /sarm/analyze`，提交基于 CSV 活性数据的构效关系矩阵分析
+- **SAR 树生成**: 新增 `POST /sarm/tree`，基于核心片段构建 SAR 衍生树
+- **任务查询**: `GET /sarm/{task_id}` 查询状态，`GET /sarm/{task_id}/params` 查询参数
+- **结果下载**: 支持结果文件列表、ZIP 打包下载和单文件下载
+- **数据库扩展**: 新增 `sarm_task_params` 表存储分析参数
+
+### 💳 支付功能 (v2.4.0)
+- **Square 支付**: 新增 `POST /payments` 接口，支持 Square 平台支付处理
+
+---
+
+**v2.3.2** (2025年12月9日): 下载功能增强
 
 ### 📥 下载功能增强 (v2.3.2)
 - **单独文件下载**: 新增单个对接结果文件下载功能

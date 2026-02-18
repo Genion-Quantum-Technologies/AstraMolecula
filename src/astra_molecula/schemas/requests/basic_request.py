@@ -82,3 +82,35 @@ class PeptideOptimizationRequest(BaseModel):
     cleanup: Optional[bool] = None  # 废弃字段，将被忽略
     step: Optional[int] = None  # 废弃字段，将被忽略
     proteinmpnn_enabled: Optional[bool] = None  # 废弃字段，将被忽略
+
+
+# ============================================
+# 3. 为 SARM 分析定义 Pydantic 模型
+# ============================================
+class SarmAnalysisRequest(BaseModel):
+    """SARM 矩阵生成请求"""
+    # 必填参数
+    csv_filename: str                       # 用户上传的 CSV 文件名（需先通过 /uploads 上传）
+    value_columns: List[str]                # CSV 中用于 SAR 分析的数值活性列名，如 ["IC50_uM"]
+    
+    # 可选参数（有默认值）
+    analysis_type: str = "smiles"            # 'smiles' 基于完整 SMILES；'scaffold' 基于 Murcko 骨架
+    log_transform: bool = False             # 是否对活性值取对数（ln）
+    minimum_site1: float = 3                # Site1 片段最小出现次数
+    minimum_site2: float = 3                # Site2 片段最小出现次数
+    n_jobs: Optional[int] = None            # 并行进程数，默认自动检测
+    csv2excel: bool = False                 # 是否同时导出带结构图的 Excel 文件
+
+
+class SarmTreeRequest(BaseModel):
+    """SAR 树生成请求"""
+    # 必填参数
+    fragment_core: str                      # 核心片段 SMARTS/SMILES
+    root_title: str                         # SAR 树根节点显示名称
+    source_task_id: str                     # 前序 SARM 矩阵分析任务 ID（用于获取 SAR 结果）
+    
+    # 可选参数（有默认值）
+    input_file: str = "input.csv"            # SAR 树输入数据文件名
+    tree_content: List[str] = ["double-cut"] # 树中展示的内容类型
+    highlight_dict: List[str] = []           # 需要在树中高亮的化合物/片段列表
+    max_level: int = 5                       # 树的最大展开层数（建议 3-7）

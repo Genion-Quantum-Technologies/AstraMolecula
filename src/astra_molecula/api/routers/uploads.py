@@ -35,7 +35,7 @@ async def upload_pdbqt(
 
     saved = []
     for f in files:
-        allowed_extensions = [".pdb", ".pdbqt"]
+        allowed_extensions = [".pdb", ".pdbqt", ".csv"]
         if not any(f.filename.endswith(ext) for ext in allowed_extensions):
             logger.warning("User %s upload rejected - unsupported file type: %s", 
                           current_user.username, f.filename)

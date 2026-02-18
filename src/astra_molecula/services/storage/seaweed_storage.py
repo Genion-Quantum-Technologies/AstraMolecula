@@ -372,3 +372,30 @@ class SeaweedStorage:
                 return response.status in (200, 201)
         
         return False
+
+    async def copy_directory(self, src_prefix: str, dest_prefix: str) -> int:
+        """
+        复制整个目录（通过列出文件并逐个复制实现）
+        
+        Args:
+            src_prefix: 源目录路径前缀
+            dest_prefix: 目标目录路径前缀
+            
+        Returns:
+            成功复制的文件数量
+        """
+        files = await self.list_files(src_prefix)
+        copied_count = 0
+        
+        for src_key in files:
+            relative_path = src_key[len(src_prefix):].lstrip('/')
+            dest_key = f"{dest_prefix}/{relative_path}"
+            try:
+                await self.copy_file(src_key, dest_key)
+                copied_count += 1
+            except Exception as e:
+                logger.warning("Failed to copy file %s -> %s: %s", src_key, dest_key, e)
+        
+        logger.info("Copied directory %s -> %s (%d files)", 
+                   src_prefix, dest_prefix, copied_count)
+        return copied_count
