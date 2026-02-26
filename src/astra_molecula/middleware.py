@@ -78,8 +78,8 @@ async def auth_middleware(request: Request, call_next):
             logger.debug("Processing request: %s %s", request.method, request.url.path)
         
         if request.method == "OPTIONS":
-            logger.debug("Handling OPTIONS request for %s", request.url.path)
-            return Response()
+            logger.debug("Handling OPTIONS request for %s, passing to CORS middleware", request.url.path)
+            return await call_next(request)
 
         if request.url.path.startswith(STATIC_PREFIX) or request.url.path in OPEN_PATHS:
             logger.debug("Open path accessed: %s", request.url.path)

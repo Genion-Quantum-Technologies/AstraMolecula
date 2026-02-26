@@ -227,7 +227,60 @@ class SeaweedStorage:
         
         logger.debug("Listed %d files with prefix: %s", len(result), prefix)
         return result
-    
+
+    async def list_files_recursive(self, prefix: str) -> List[str]:
+        """
+        递归列出指定前缀下的所有文件（包括子目录中的文件）
+        
+        Args:
+            prefix: 路径前缀
+            
+        Returns:
+            所有文件路径列表（不包括目录本身）
+        """
+        all_files = []
+        url = self._get_url(prefix.rstrip('/') + '/')
+        params = {'pretty': 'y'}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, headers={'Accept': 'application/json'}) as response:
+                if response.status != 200:
+                    return []
+
+                try:
+                    data = await response.json()
+                    entries = data.get('Entries', []) or []
+                    for entry in entries:
+                        full_path = entry.get('FullPath', '') or entry.get('Name', '')
+                        if not full_path:
+                            continue
+
+                        # 提取相对路径
+                        name = full_path
+                        if name.startswith('/buckets/' + self.bucket + '/'):
+                            name = name[len('/buckets/' + self.bucket + '/'):]
+
+                        # 判断是否为目录：SeaweedFS JSON 返回小写 "chunks"
+                        chunks = entry.get('chunks')
+                        has_chunks = chunks is not None and isinstance(chunks, list) and len(chunks) > 0
+                        mode = entry.get('Mode', 0)
+                        # SeaweedFS 目录使用特殊 mode 位 (0o20000000000 或标准 0o40000)
+                        is_dir_mode = (mode & 0o20000000000) != 0 or (mode & 0o40000) != 0
+                        # 目录：无 chunks 且 mode 表示为目录；或 FullPath 以 / 结尾
+                        is_dir = (not has_chunks and is_dir_mode) or name.endswith('/')
+
+                        if is_dir:
+                            # 递归列出子目录
+                            sub_files = await self.list_files_recursive(name)
+                            all_files.extend(sub_files)
+                        else:
+                            all_files.append(name)
+                except Exception as e:
+                    logger.warning("Error listing files recursively at %s: %s", prefix, e)
+
+        logger.debug("Listed %d files recursively with prefix: %s", len(all_files), prefix)
+        return all_files
+
     async def file_exists(self, remote_key: str) -> bool:
         """
         检查文件是否存在
@@ -344,12 +397,15 @@ class SeaweedStorage:
         Returns:
             下载的本地文件路径列表
         """
-        files = await self.list_files(remote_prefix)
+        files = await self.list_files_recursive(remote_prefix)
         downloaded = []
         
         for remote_key in files:
             relative_path = remote_key[len(remote_prefix):].lstrip('/')
+            if not relative_path:
+                continue
             local_path = local_dir / relative_path
+            local_path.parent.mkdir(parents=True, exist_ok=True)
             await self.download_file(remote_key, local_path)
             downloaded.append(local_path)
         
@@ -384,11 +440,13 @@ class SeaweedStorage:
         Returns:
             成功复制的文件数量
         """
-        files = await self.list_files(src_prefix)
+        files = await self.list_files_recursive(src_prefix)
         copied_count = 0
         
         for src_key in files:
             relative_path = src_key[len(src_prefix):].lstrip('/')
+            if not relative_path:
+                continue
             dest_key = f"{dest_prefix}/{relative_path}"
             try:
                 await self.copy_file(src_key, dest_key)

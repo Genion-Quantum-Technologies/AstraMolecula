@@ -598,7 +598,7 @@ async def list_sarm_results(request: Request, task_id: str):
         storage_prefix = _normalize_storage_prefix(task.job_dir)
         results_prefix = f"{storage_prefix}/output/SAR_Results/"
 
-        files = await storage.list_files(results_prefix)
+        files = await storage.list_files_recursive(results_prefix)
 
         if not files:
             raise HTTPException(
@@ -623,7 +623,7 @@ async def list_sarm_results(request: Request, task_id: str):
             result_files.append({
                 "filename": relative_path,
                 "storage_key": file_key,
-                "size": file_info.get("Content-Length") if file_info else None
+                "size": file_info.get("size") if file_info else None
             })
 
         return {
@@ -673,7 +673,7 @@ async def download_sarm_results(request: Request, task_id: str):
         storage_prefix = _normalize_storage_prefix(task.job_dir)
         results_prefix = f"{storage_prefix}/output/SAR_Results/"
 
-        files = await storage.list_files(results_prefix)
+        files = await storage.list_files_recursive(results_prefix)
 
         if not files:
             raise HTTPException(status_code=404, detail="No result files found")
@@ -763,6 +763,14 @@ async def download_single_sarm_file(request: Request, task_id: str, file_path: s
             media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         elif filename.endswith('.json'):
             media_type = "application/json"
+        elif filename.endswith('.pdf'):
+            media_type = "application/pdf"
+        elif filename.endswith('.png'):
+            media_type = "image/png"
+        elif filename.endswith('.svg'):
+            media_type = "image/svg+xml"
+        elif filename.endswith('.txt'):
+            media_type = "text/plain"
         else:
             media_type = "application/octet-stream"
 
