@@ -7,6 +7,7 @@ from .basic_request import (
     GenerateRequestList,
     DockingLigand,
     DockingRequest,
+    HighFoldC2CRequest,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     'GenerateRequestList',
     'DockingLigand',
     'DockingRequest',
+    'HighFoldC2CRequest',
 ]

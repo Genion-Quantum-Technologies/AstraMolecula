@@ -114,3 +114,36 @@ class SarmTreeRequest(BaseModel):
     tree_content: List[str] = ["double-cut"] # 树中展示的内容类型
     highlight_dict: List[str] = []           # 需要在树中高亮的化合物/片段列表
     max_level: int = 5                       # 树的最大展开层数（建议 3-7）
+
+
+# ============================================
+# 4. 为 HighFold-C2C 环肽设计定义 Pydantic 模型
+# ============================================
+class HighFoldC2CRequest(BaseModel):
+    """
+    HighFold-C2C 环肽设计请求
+
+    三阶段 pipeline:
+    - Stage 1: C2C 序列生成（core_sequence + span_len → 环肽候选序列）
+    - Stage 2: HighFold 结构预测（AlphaFold2 + CycPOEM 二硫键约束）
+    - Stage 3: 理化性质评估（pLDDT、分子量、等电点等）
+    """
+    # ---- 必填参数 ----
+    core_sequence: str                      # 核心肽段氨基酸序列，如 "NNN", "CNNNC"
+
+    # ---- 基础参数（建议在主表单中展示） ----
+    span_len: int = 5                       # 延伸长度（每侧），范围 1-15
+    num_sample: int = 20                    # 采样数量，范围 1-100
+    disulfide_bond_pairs: Optional[str] = None  # 二硫键位置对，格式 "0,4" 或 "0,4:2,7"
+
+    # ---- 高级参数（可选，有默认值） ----
+    temperature: float = 1.0                # 采样温度，范围 0.1-2.0
+    top_p: float = 0.9                      # 核采样阈值，范围 0.1-1.0
+    seed: int = 42                          # 随机种子
+    model_type: str = "alphafold2"          # 结构预测模型类型
+    msa_mode: str = "single_sequence"       # MSA 搜索模式
+    num_models: int = 5                     # 预测模型数量 (1-5)
+    num_recycle: Optional[int] = None       # 循环次数
+    use_templates: bool = False             # 是否使用 PDB 模板
+    amber: bool = False                     # AMBER 力场精修
+    num_relax: int = 0                      # 精修结构数

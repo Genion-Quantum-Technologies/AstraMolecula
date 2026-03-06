@@ -13,7 +13,7 @@ from astra_molecula.core.security.auth import ALGORITHM, SECRET_KEY, SERVICE_API
 
 logger = logging.getLogger("middleware")
 
-# 你想要跳过验证的路径列表
+# 你想要跳过验证的路径列表（精确匹配）
 OPEN_PATHS = {
     "/",
     "/health",
@@ -25,11 +25,14 @@ OPEN_PATHS = {
     "/smiles2img",
     "/fragmentize",
     "/logs",
-    "/public",      # 公开访问路径（无需认证）
-    "/api/public",  # 前端使用 /api 代理的公开访问路径
 }
 
-STATIC_PREFIX = "/static"
+# 前缀匹配的开放路径（这些路径及其子路径都无需认证）
+OPEN_PATH_PREFIXES = (
+    "/static",
+    "/public",      # 公开访问路径（无需认证），如 /public/peptide/{task_id}/complex/{filename}
+    "/api/public",  # 前端使用 /api 代理的公开访问路径
+)
 
 # 高优先级路径列表（tasks相关接口）
 HIGH_PRIORITY_PATHS = {
@@ -81,7 +84,7 @@ async def auth_middleware(request: Request, call_next):
             logger.debug("Handling OPTIONS request for %s, passing to CORS middleware", request.url.path)
             return await call_next(request)
 
-        if request.url.path.startswith(STATIC_PREFIX) or request.url.path in OPEN_PATHS:
+        if request.url.path in OPEN_PATHS or request.url.path.startswith(OPEN_PATH_PREFIXES):
             logger.debug("Open path accessed: %s", request.url.path)
             return await call_next(request)
 
@@ -161,7 +164,7 @@ async def auth_middleware(request: Request, call_next):
                         "Bearer token (JWT): Add 'Authorization: Bearer <your_jwt_token>' header",
                         "API key: Add 'X-API-Key: <your_api_key>' header"
                     ],
-                    "open_endpoints": list(OPEN_PATHS),
+                    "open_endpoints": list(OPEN_PATHS) + [f"{p}/*" for p in OPEN_PATH_PREFIXES],
                     "error_code": "AUTH_MISSING_CREDENTIALS"
                 }
             )

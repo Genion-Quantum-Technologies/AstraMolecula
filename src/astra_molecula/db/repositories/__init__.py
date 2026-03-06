@@ -4,6 +4,7 @@ from .task_repository import TaskRepository
 from .docking_task_params_repository import DockingTaskParamsRepository
 from .peptide_task_params_repository import PeptideTaskParamsRepository
 from .sarm_task_params_repository import SarmTaskParamsRepository
+from .highfold_task_params_repository import HighFoldTaskParamsRepository
 
 __all__ = [
     'UserRepository',
@@ -11,5 +12,6 @@ __all__ = [
     'TaskRepository',
     'DockingTaskParamsRepository',
     'PeptideTaskParamsRepository',
-    'SarmTaskParamsRepository'
+    'SarmTaskParamsRepository',
+    'HighFoldTaskParamsRepository',
 ]

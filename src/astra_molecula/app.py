@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from astra_molecula.middleware import auth_middleware
-from astra_molecula.api.routers import auth, tasks, uploads, smiles, docking, peptide, sarm, logs, admin, public, payments
+from astra_molecula.api.routers import auth, tasks, uploads, smiles, docking, peptide, sarm, highfold, logs, admin, public, payments
 from astra_molecula.core.config import setup_logging, server, cors as cors_config
 from astra_molecula.task_processor import AsyncTaskProcessor
 
@@ -138,6 +138,7 @@ app.include_router(uploads.router)    # 上传接口
 app.include_router(smiles.router)     # 生成接口
 app.include_router(peptide.router)    # 蛋白优化接口
 app.include_router(sarm.router)       # SARM 分析接口
+app.include_router(highfold.router)   # HighFold-C2C 环肽设计接口
 app.include_router(docking.router)    # 对接接口（计算密集型，最后处理）
 app.include_router(logs.router)       # 日志查看接口（免认证）
 

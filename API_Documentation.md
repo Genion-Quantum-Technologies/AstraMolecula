@@ -4,9 +4,19 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.4.0
+- **API版本**: 2.5.0
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 HighFold-C2C 环肽设计功能 (v2.5.0)
+
+- **环肽序列生成**: 新增 `POST /highfold/predict` 接口，基于核心肽段序列自动生成环肽候选序列
+- **三阶段流水线**: C2C 序列生成 → AlphaFold2 结构预测 → 理化性质评估，全自动执行
+- **多种结果格式**: 支持 JSON 结果摘要、原始 CSV、FASTA 序列、PDB 结构文件等多种输出
+- **丰富参数配置**: 支持采样温度、核采样阈值、模型类型、MSA 模式、AMBER 精修等高级参数
+- **实时进度查询**: 支持任务状态轮询、参数查询、分步结果获取
+- **批量下载**: 支持单个 PDB 文件下载和全部结果 ZIP 打包下载
+- **Worker 自动轮询**: HighFold-C2C 微服务自动获取并处理 `highfold_c2c` 类型的待执行任务
 
 ### 🆕 SARM 分析功能 (v2.4.0)
 
@@ -188,6 +198,7 @@ results = session.get("/tasks/{task_id}/dockRes")
 - [对接计算接口](#对接计算接口)
 - [肽段优化接口](#肽段优化接口)
 - [SARM分析接口](#sarm分析接口)
+- [HighFold-C2C 环肽设计接口](#highfold-c2c-环肽设计接口)
 - [支付接口](#支付接口)
 - [任务管理接口](#任务管理接口)
 - [新增的CSV下载接口](#新增的csv下载接口)
@@ -1126,6 +1137,543 @@ curl -X GET "http://your-server-url/sarm/{task_id}/download/Combine_Table/combin
 5. **获取结果**: 任务 `finished` 后，通过 `GET /sarm/{task_id}/results` 查看结果列表
 6. **下载结果**: 通过 `GET /sarm/{task_id}/download` 打包下载或单独下载特定文件
 
+## HighFold-C2C 环肽设计接口
+
+> **🆕 v2.5.0 新增功能**: HighFold-C2C（Cyclic-to-Cyclic）环肽设计模块，集成 C2C 序列生成、AlphaFold2 结构预测和理化性质评估三阶段流水线。由 HighFold-C2C 微服务后台自动处理任务。
+
+**接口概览**:
+
+| 方法 | 接口路径 | 描述 |
+|------|----------|------|
+| `POST` | `/highfold/predict` | 创建环肽设计任务 |
+| `GET` | `/highfold/{task_id}` | 查询任务状态 |
+| `GET` | `/highfold/{task_id}/params` | 查询任务参数 |
+| `GET` | `/highfold/{task_id}/results` | 获取结果摘要（CSV → JSON） |
+| `GET` | `/highfold/{task_id}/results/csv` | 下载原始 CSV 结果 |
+| `GET` | `/highfold/{task_id}/sequences` | 获取 FASTA 序列列表 |
+| `GET` | `/highfold/{task_id}/structures` | 列出 PDB 结构文件 |
+| `GET` | `/highfold/{task_id}/structures/{filename}` | 下载单个 PDB 文件 |
+| `GET` | `/highfold/{task_id}/download` | 打包下载所有输出（ZIP） |
+
+### 创建 HighFold-C2C 环肽设计任务
+
+**接口地址**: `POST /highfold/predict`
+
+**描述**: 提交环肽设计与结构预测任务到队列。系统将自动执行三个阶段：
+1. **C2C 序列生成**: 基于核心序列（core_sequence）和延伸长度（span_len），使用预训练语言模型生成环肽候选序列
+2. **HighFold 结构预测**: 使用 AlphaFold2（或其他指定模型）对生成的环肽进行三维结构预测
+3. **理化性质评估**: 计算 pLDDT、分子量、等电点、芳香性、不稳定指数、疏水性、亲水性等
+
+**认证要求**: JWT Token 或 API Key
+
+**请求参数**:
+```json
+{
+  "core_sequence": "string (必需)",
+  "span_len": "integer (默认 5)",
+  "num_sample": "integer (默认 20)",
+  "disulfide_bond_pairs": "string (可选)",
+  "temperature": "number (默认 1.0)",
+  "top_p": "number (默认 0.9)",
+  "seed": "integer (默认 42)",
+  "model_type": "string (默认 'alphafold2')",
+  "msa_mode": "string (默认 'single_sequence')",
+  "num_models": "integer (默认 5)",
+  "num_recycle": "integer (可选)",
+  "use_templates": "boolean (默认 false)",
+  "amber": "boolean (默认 false)",
+  "num_relax": "integer (默认 0)"
+}
+```
+
+**参数详细说明**:
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `core_sequence` | string | ✅ | - | 核心肽段氨基酸序列，仅允许标准 20 种氨基酸字母（A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y），如 `"NNN"`、`"CNNNC"` |
+| `span_len` | integer | ❌ | `5` | 每侧延伸的残基数。总环肽长度 = core_sequence长度 + span_len × 2。范围 1-15 |
+| `num_sample` | integer | ❌ | `20` | 生成的候选环肽序列数量。第一条为贪心解码，其余为采样。范围 1-100 |
+| `disulfide_bond_pairs` | string | ❌ | `null` | 二硫键位置对（0基索引）。格式：`"0,4"` 表示一对，`"0,4:2,7"` 表示两对。仅当核心序列含半胱氨酸(C)时需要 |
+| `temperature` | number | ❌ | `1.0` | 采样温度，范围 0.1-2.0。较高值产生更多样化的序列 |
+| `top_p` | number | ❌ | `0.9` | 核采样（nucleus sampling）阈值，范围 0.1-1.0 |
+| `seed` | integer | ❌ | `42` | 随机种子，用于结果可复现 |
+| `model_type` | string | ❌ | `"alphafold2"` | 结构预测模型类型。可选值见下表 |
+| `msa_mode` | string | ❌ | `"single_sequence"` | MSA 搜索模式。可选值见下表 |
+| `num_models` | integer | ❌ | `5` | 使用的预测模型数量，范围 1-5 |
+| `num_recycle` | integer | ❌ | `null` | 循环精修次数，留空使用模型默认值（通常为 3） |
+| `use_templates` | boolean | ❌ | `false` | 是否使用 PDB 模板辅助预测 |
+| `amber` | boolean | ❌ | `false` | 是否启用 AMBER 力场精修 |
+| `num_relax` | integer | ❌ | `0` | AMBER 精修的结构数量（仅在 `amber=true` 时有效） |
+
+**model_type 可选值**:
+
+| 值 | 说明 |
+|----|------|
+| `alphafold2` | AlphaFold2 标准模型（推荐） |
+| `alphafold2_ptm` | AlphaFold2 pTM 模型（提供 pTM 和 PAE 评分） |
+| `alphafold2_multimer_v1` | AlphaFold2 Multimer v1 |
+| `alphafold2_multimer_v2` | AlphaFold2 Multimer v2 |
+| `alphafold2_multimer_v3` | AlphaFold2 Multimer v3 |
+| `deepfold_v1` | DeepFold v1 |
+
+**msa_mode 可选值**:
+
+| 值 | 说明 |
+|----|------|
+| `single_sequence` | 单序列模式（最快，推荐用于短肽） |
+| `mmseqs2_uniref` | MMseqs2 搜索 UniRef 数据库 |
+| `mmseqs2_uniref_env` | MMseqs2 搜索 UniRef + 环境数据库 |
+
+**约束验证规则**:
+
+| 规则 | 条件 | 错误码 |
+|------|------|--------|
+| 总长度限制 | core_sequence长度 + span_len × 2 ≤ 20 | `total_length_exceeded` |
+| 核心比例 | core_sequence长度 / 总长度 ≥ 0.3 (30%) | `core_ratio_too_low` |
+| 序列合法性 | 仅含标准20种氨基酸字母 | `invalid_amino_acids` |
+| 序列非空 | core_sequence 不能为空 | `empty_core_sequence` |
+
+**请求示例**:
+
+```bash
+# 基本用法 — 使用 JWT Token
+curl -X POST "http://your-server-url/highfold/predict" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "core_sequence": "NNN",
+    "span_len": 5,
+    "num_sample": 20
+  }'
+
+# 高级用法 — 使用 API Key，含二硫键和 AMBER 精修
+curl -X POST "http://your-server-url/highfold/predict" \
+  -H "X-API-Key: third-party-service-key-123" \
+  -H "X-External-User-ID: user@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "core_sequence": "CNNNC",
+    "span_len": 4,
+    "num_sample": 50,
+    "disulfide_bond_pairs": "0,4",
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "seed": 123,
+    "model_type": "alphafold2_ptm",
+    "msa_mode": "single_sequence",
+    "num_models": 3,
+    "amber": true,
+    "num_relax": 1
+  }'
+```
+
+**返回值** (201):
+```json
+{
+  "task_id": "string",
+  "status": "submitted",
+  "message": "HighFold-C2C 环肽设计任务已成功提交",
+  "details": {
+    "job_id": "string (UUID)",
+    "storage_prefix": "jobs/highfold_c2c/{job_id}",
+    "core_sequence": "NNN",
+    "total_peptide_length": 13,
+    "core_ratio": 0.231,
+    "parameters": {
+      "span_len": 5,
+      "num_sample": 20,
+      "temperature": 1.0,
+      "top_p": 0.9,
+      "seed": 42,
+      "model_type": "alphafold2",
+      "msa_mode": "single_sequence",
+      "disulfide_bond_pairs": null,
+      "num_models": 5,
+      "num_recycle": null,
+      "use_templates": false,
+      "amber": false,
+      "num_relax": 0
+    }
+  },
+  "next_steps": {
+    "check_status": "/highfold/{task_id}",
+    "get_params": "/highfold/{task_id}/params",
+    "get_results": "/highfold/{task_id}/results",
+    "get_sequences": "/highfold/{task_id}/sequences",
+    "list_structures": "/highfold/{task_id}/structures",
+    "download_all": "/highfold/{task_id}/download"
+  }
+}
+```
+
+**错误响应**:
+- `400`: 参数验证失败（序列为空、含无效字符、长度超限、核心比例过低、参数范围错误等）
+- `401`: 未认证
+- `500`: 内部服务器错误
+
+### 查询 HighFold-C2C 任务状态
+
+**接口地址**: `GET /highfold/{task_id}`
+
+**描述**: 获取指定 HighFold-C2C 任务的状态和基本信息
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: TaskResponse 对象
+```json
+{
+  "id": "string",
+  "user_id": "string",
+  "task_type": "highfold_c2c",
+  "job_dir": "string",
+  "status": "string (pending|processing|finished|failed)",
+  "created_at": "datetime",
+  "finished_at": "datetime (可选)"
+}
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在
+
+### 查询 HighFold-C2C 任务参数
+
+**接口地址**: `GET /highfold/{task_id}/params`
+
+**描述**: 获取 HighFold-C2C 任务的配置参数详情，包括核心序列、延伸长度、采样参数和结构预测参数。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "core_sequence": "NNN",
+  "span_len": 5,
+  "num_sample": 20,
+  "total_peptide_length": 13,
+  "temperature": 1.0,
+  "top_p": 0.9,
+  "seed": 42,
+  "model_type": "alphafold2",
+  "msa_mode": "single_sequence",
+  "disulfide_bond_pairs": null,
+  "num_models": 5,
+  "num_recycle": null,
+  "use_templates": false,
+  "amber": false,
+  "num_relax": 0
+}
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在 / 参数记录不存在
+
+### 获取 HighFold-C2C 结果摘要
+
+**接口地址**: `GET /highfold/{task_id}/results`
+
+**描述**: 解析 `output/output.csv` 文件，返回每条环肽的评估结果 JSON 数组。包含序列信息和各项理化性质评分。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "total_sequences": 20,
+  "results": [
+    {
+      "Index": 0,
+      "Cyclic sequence": "ANNNVLKFPAWQRT",
+      "pLDDT": 72.5,
+      "Molecular weight": 1580.3,
+      "Isoelectric point": 8.2,
+      "Aromaticity": 0.071,
+      "Instability index": 32.1,
+      "Hydrophobicity": -0.45,
+      "Hydrophilicity": 0.32
+    }
+  ]
+}
+```
+
+**结果字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `Index` | number | 序列编号（0-based） |
+| `Cyclic sequence` | string | 环肽氨基酸序列 |
+| `pLDDT` | number | AlphaFold2 预测的局部置信度评分 (0-100)，≥70 为高质量 |
+| `Molecular weight` | number | 分子量 (Da) |
+| `Isoelectric point` | number | 等电点 (pH) |
+| `Aromaticity` | number | 芳香性 |
+| `Instability index` | number | 不稳定指数，<40 通常认为稳定 |
+| `Hydrophobicity` | number | GRAVY 疏水性指数 |
+| `Hydrophilicity` | number | 亲水性 |
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在 / 结果文件不存在
+- `409`: 任务尚未完成
+
+### 下载 HighFold-C2C 结果 CSV
+
+**接口地址**: `GET /highfold/{task_id}/results/csv`
+
+**描述**: 下载原始 `output.csv` 结果文件
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: CSV 文件流
+
+**文件命名**: `highfold_results_{task_id前8位}.csv`
+
+**示例**:
+```bash
+curl -X GET "http://your-server-url/highfold/{task_id}/results/csv" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o highfold_results.csv
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在 / CSV 文件不存在
+- `409`: 任务尚未完成
+
+### 获取 FASTA 序列
+
+**接口地址**: `GET /highfold/{task_id}/sequences`
+
+**描述**: 解析 `output/predict.fasta` 文件，返回 C2C 生成的环肽候选序列列表。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "total_sequences": 20,
+  "sequences": [
+    {
+      "name": "cyclic_peptide_0",
+      "sequence": "ANNNVLKFPAWQRT"
+    },
+    {
+      "name": "cyclic_peptide_1",
+      "sequence": "RNNNFIKGTAWKSE"
+    }
+  ]
+}
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在 / FASTA 文件不存在
+- `409`: 任务尚未完成
+
+### 列出 PDB 结构文件
+
+**接口地址**: `GET /highfold/{task_id}/structures`
+
+**描述**: 列出 HighFold 结构预测生成的所有 PDB 结构文件。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**:
+```json
+{
+  "task_id": "string",
+  "total_structures": 5,
+  "structures": [
+    {
+      "filename": "cyclic_peptide_0_relaxed_rank_001.pdb",
+      "storage_key": "jobs/highfold_c2c/{job_id}/output/cyclic_peptide_0_relaxed_rank_001.pdb",
+      "size": 45678,
+      "download_url": "/highfold/{task_id}/structures/cyclic_peptide_0_relaxed_rank_001.pdb"
+    }
+  ]
+}
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在
+- `409`: 任务尚未完成
+
+### 下载单个 PDB 结构文件
+
+**接口地址**: `GET /highfold/{task_id}/structures/{filename}`
+
+**描述**: 下载指定的 PDB 结构文件。仅允许下载 `.pdb` 扩展名的文件。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+- `filename`: PDB 文件名（不含路径，仅文件名，必须以 `.pdb` 结尾）
+
+**返回值**: PDB 文件流（MIME: `chemical/x-pdb`）
+
+**安全措施**:
+- 禁止包含 `..` 或 `/` 的文件名（防止路径遍历）
+- 仅允许 `.pdb` 扩展名
+
+**示例**:
+```bash
+curl -X GET "http://your-server-url/highfold/{task_id}/structures/cyclic_peptide_0_relaxed_rank_001.pdb" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o structure.pdb
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c / 无效文件名 / 非 PDB 文件
+- `404`: 任务不存在 / 文件不存在
+- `409`: 任务尚未完成
+
+### 打包下载所有输出
+
+**接口地址**: `GET /highfold/{task_id}/download`
+
+**描述**: 将 HighFold-C2C 任务的所有输出文件打包为 ZIP 下载。包含 CSV 结果、FASTA 序列、PDB 结构文件等。
+
+**认证要求**: JWT Token 或 API Key
+
+**路径参数**:
+- `task_id`: 任务ID
+
+**返回值**: ZIP 文件流
+
+**文件命名**: `highfold_c2c_results_{task_id前8位}.zip`
+
+**ZIP 包含内容**:
+```
+output/
+├── output.csv            ← 评估结果汇总
+├── predict.fasta         ← 生成的环肽序列
+├── *.pdb                 ← 预测的 3D 结构文件
+└── ... (其他输出文件)
+```
+
+**示例**:
+```bash
+curl -X GET "http://your-server-url/highfold/{task_id}/download" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o highfold_results.zip
+```
+
+**错误响应**:
+- `400`: 任务类型不是 highfold_c2c
+- `404`: 任务不存在 / 无输出文件
+- `409`: 任务尚未完成
+
+### HighFold-C2C 任务处理流程
+
+1. **提交任务**: 通过 `POST /highfold/predict` 提交环肽设计任务（核心序列 + 配置参数）
+2. **自动处理**: HighFold-C2C 微服务自动轮询获取 `pending` 状态的 `highfold_c2c` 任务并开始处理
+3. **三阶段执行**:
+   - Stage 1 — **C2C 序列生成**: 基于核心序列生成环肽候选序列
+   - Stage 2 — **HighFold 结构预测**: 使用 AlphaFold2 进行三维结构预测
+   - Stage 3 — **理化性质评估**: 计算 pLDDT、分子量、等电点等理化性质
+4. **查询状态**: 通过 `GET /highfold/{task_id}` 轮询任务状态（建议 10 秒间隔）
+5. **获取结果**: 任务 `finished` 后，通过以下接口获取不同格式的结果：
+   - 结果摘要: `GET /highfold/{task_id}/results`
+   - 序列列表: `GET /highfold/{task_id}/sequences`
+   - 结构文件: `GET /highfold/{task_id}/structures`
+6. **下载结果**: 通过 `GET /highfold/{task_id}/download` 打包下载全部输出
+
+### Python 调用示例
+
+```python
+import requests
+import time
+
+# === 配置 ===
+BASE_URL = "http://your-server-url"
+HEADERS = {
+    "X-API-Key": "third-party-service-key-123",
+    "X-External-User-ID": "user@example.com",
+    "Content-Type": "application/json"
+}
+
+# === 1. 提交任务 ===
+resp = requests.post(f"{BASE_URL}/highfold/predict", headers=HEADERS, json={
+    "core_sequence": "NNN",
+    "span_len": 5,
+    "num_sample": 20,
+    "model_type": "alphafold2",
+    "msa_mode": "single_sequence"
+})
+task_id = resp.json()["task_id"]
+print(f"Task submitted: {task_id}")
+
+# === 2. 轮询等待完成 ===
+while True:
+    status_resp = requests.get(f"{BASE_URL}/highfold/{task_id}", headers=HEADERS)
+    status = status_resp.json()["status"]
+    print(f"Status: {status}")
+    if status == "finished":
+        break
+    elif status == "failed":
+        print("Task failed!")
+        exit(1)
+    time.sleep(10)
+
+# === 3. 获取结果 ===
+# 评估结果
+results = requests.get(f"{BASE_URL}/highfold/{task_id}/results", headers=HEADERS).json()
+print(f"Total sequences: {results['total_sequences']}")
+for r in results["results"]:
+    print(f"  Sequence: {r.get('Cyclic sequence', 'N/A')}, pLDDT: {r.get('pLDDT', 'N/A')}")
+
+# 序列列表
+sequences = requests.get(f"{BASE_URL}/highfold/{task_id}/sequences", headers=HEADERS).json()
+for seq in sequences["sequences"]:
+    print(f"  {seq['name']}: {seq['sequence']}")
+
+# 结构文件列表
+structures = requests.get(f"{BASE_URL}/highfold/{task_id}/structures", headers=HEADERS).json()
+for s in structures["structures"]:
+    print(f"  PDB: {s['filename']} ({s.get('size', 'N/A')} bytes)")
+
+# === 4. 下载 ===
+# 打包下载
+zip_resp = requests.get(f"{BASE_URL}/highfold/{task_id}/download", headers=HEADERS)
+with open("highfold_results.zip", "wb") as f:
+    f.write(zip_resp.content)
+print("Results downloaded!")
+
+# 下载单个 PDB
+if structures["structures"]:
+    pdb_name = structures["structures"][0]["filename"]
+    pdb_resp = requests.get(
+        f"{BASE_URL}/highfold/{task_id}/structures/{pdb_name}",
+        headers=HEADERS
+    )
+    with open(pdb_name, "wb") as f:
+        f.write(pdb_resp.content)
+    print(f"Structure {pdb_name} downloaded!")
+```
+
 ## 支付接口
 
 ### 创建支付
@@ -1373,6 +1921,17 @@ curl -X GET "/tasks/{task_id}/docking/params" \
 | `GET /sarm/{task_id}/results` | 列出所有结果文件 | JSON |
 | `GET /sarm/{task_id}/download` | 打包下载所有结果文件 | ZIP |
 | `GET /sarm/{task_id}/download/{file_path}` | 下载单个结果文件 | CSV/XLSX/JSON |
+
+### HighFold-C2C 环肽设计任务专用下载接口
+
+| 接口 | 描述 | 返回格式 |
+|------|------|--------|
+| `GET /highfold/{task_id}/results` | 获取评估结果摘要 | JSON |
+| `GET /highfold/{task_id}/results/csv` | 下载评估结果 CSV | CSV |
+| `GET /highfold/{task_id}/sequences` | 获取 FASTA 序列列表 | JSON |
+| `GET /highfold/{task_id}/structures` | 列出 PDB 结构文件 | JSON |
+| `GET /highfold/{task_id}/structures/{filename}` | 下载单个 PDB 文件 | PDB |
+| `GET /highfold/{task_id}/download` | 打包下载所有输出 | ZIP |
 
 ### 下载单个对接结果文件（SDF/PDBQT）
 
@@ -2580,6 +3139,28 @@ curl -X GET "/tasks/{task_id}/peptide/results/csv?indices=2,4,6" \
 
 **说明**: `task_type` 为 `sarm_analysis`，`task_subtype` 为 `tree`
 
+### HighFoldC2CRequest
+```json
+{
+  "core_sequence": "string (必需)",
+  "span_len": "integer (默认 5, 范围 1-15)",
+  "num_sample": "integer (默认 20, 范围 1-100)",
+  "disulfide_bond_pairs": "string (可选, 如 '0,4' 或 '0,4:2,7')",
+  "temperature": "number (默认 1.0, 范围 0.1-2.0)",
+  "top_p": "number (默认 0.9, 范围 0.1-1.0)",
+  "seed": "integer (默认 42)",
+  "model_type": "string (默认 'alphafold2')",
+  "msa_mode": "string (默认 'single_sequence')",
+  "num_models": "integer (默认 5, 范围 1-5)",
+  "num_recycle": "integer (可选)",
+  "use_templates": "boolean (默认 false)",
+  "amber": "boolean (默认 false)",
+  "num_relax": "integer (默认 0)"
+}
+```
+
+**说明**: `task_type` 为 `highfold_c2c`。约束：总长度(core长度 + span_len×2) ≤ 20，核心比例 ≥ 30%。
+
 ### PaymentRequest
 ```json
 {
@@ -2631,6 +3212,7 @@ X-External-User-ID: <external_user_identifier>
 | `docking` | 分子对接 | `/docking` |
 | `peptide_optimization` | 肽段优化 | `/peptide/optimize` |
 | `sarm_analysis` | SARM 构效关系分析 | `/sarm` |
+| `highfold_c2c` | HighFold-C2C 环肽设计 | `/highfold` |
 
 ## 错误处理
 
