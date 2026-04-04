@@ -86,3 +86,23 @@ class UserService:
         """将影子用户的数据迁移到真实用户"""
         # 这里需要调用repository来执行数据迁移
         UserRepository.merge_shadow_user_data(shadow_user_id, real_user_id)
+
+    @staticmethod
+    def process_successful_payment(user_id: str, plan_id: str) -> None:
+        """根据付款计划更新用户的会员层级"""
+        from datetime import datetime, timedelta
+        
+        # 映射逻辑
+        mapping = {
+            "education": "education",
+            "pro": "pro",
+            "enterprise": "enterprise"
+        }
+        
+        # 匹配计划，默认为 basic
+        tier = mapping.get(plan_id.lower(), "basic")
+        
+        # 默认增加 30 天会员期
+        expires_at = datetime.utcnow() + timedelta(days=30)
+        
+        UserRepository.update_membership(user_id, tier, expires_at)

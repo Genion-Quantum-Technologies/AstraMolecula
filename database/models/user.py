@@ -18,3 +18,5 @@ class User:
     migrated_to: Optional[str] = None
     user_role: str = 'user'  # 'user' or 'admin'
     is_admin: bool = False
+    membership_tier: str = 'basic'
+    membership_expires_at: Optional[datetime] = None

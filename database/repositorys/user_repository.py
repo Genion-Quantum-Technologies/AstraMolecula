@@ -23,7 +23,7 @@ class UserRepository:
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
                external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
-               user_role, is_admin
+               user_role, is_admin, membership_tier, membership_expires_at
           FROM users
          WHERE username = %s
         """
@@ -43,7 +43,7 @@ class UserRepository:
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
                external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
-               user_role, is_admin
+               user_role, is_admin, membership_tier, membership_expires_at
           FROM users
       ORDER BY created_at DESC
          LIMIT %s
@@ -108,7 +108,7 @@ class UserRepository:
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
                external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
-               user_role, is_admin
+               user_role, is_admin, membership_tier, membership_expires_at
           FROM users
          WHERE id = %s
         """
@@ -147,9 +147,10 @@ class UserRepository:
         """查找影子用户"""
         sql = """
         SELECT id, username, password_hash, phone, email, created_at, updated_at,
-               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to
+               external_user_id, source_system, created_by_service, is_shadow_user, migrated_to,
+               user_role, is_admin, membership_tier, membership_expires_at
           FROM users
-         WHERE external_user_id = %s AND source_system = %s AND is_shadow_user = 1
+         WHERE external_user_id = %s AND source_system = %s AND is_shadow_user IS TRUE
         """
         conn = get_connection()
         try:
@@ -186,6 +187,24 @@ class UserRepository:
                     (real_user_id, shadow_user_id)
                 )
                 
+            conn.commit()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def update_membership(user_id: str, tier: str, expires_at: datetime) -> None:
+        """更新用户的会员层级和过期时间"""
+        sql = """
+        UPDATE users 
+           SET membership_tier = %s, 
+               membership_expires_at = %s,
+               updated_at = CURRENT_TIMESTAMP
+         WHERE id = %s
+        """
+        conn = get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql, (tier, expires_at, user_id))
             conn.commit()
         finally:
             conn.close()

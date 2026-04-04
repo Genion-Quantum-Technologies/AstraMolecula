@@ -65,5 +65,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "is_shadow_user": current_user.is_shadow_user,
         "source_system": current_user.source_system,
         "created_at": current_user.created_at,
-        "updated_at": current_user.updated_at
+        "updated_at": current_user.updated_at,
+        "membership_tier": current_user.membership_tier,
+        "membership_expires_at": current_user.membership_expires_at
     }
