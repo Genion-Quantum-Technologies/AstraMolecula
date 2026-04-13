@@ -6,12 +6,12 @@
 set -e
 
 # 配置变量 - 请根据您的实际情况修改
-CLOUD_SERVER="106.14.212.218"       # 云服务器IP地址
-CLOUD_USER="root"                    # 云服务器用户名
-SSH_KEY_PATH="$HOME/.ssh/mac2ec2.pem"  # SSH私钥路径
+CLOUD_SERVER="3.133.131.124"         # AWS EC2 云服务器IP地址
+CLOUD_USER="ubuntu"                   # 云服务器用户名
+SSH_KEY_PATH="$HOME/.ssh/id_ed25519"  # SSH私钥路径
 
 # 隧道配置
-LOCAL_DOCKING_PORT=8000              # 本地DockingVina服务端口
+LOCAL_DOCKING_PORT=8001              # 本地AstraMolecula服务端口 (docker映射8001->8000)
 REMOTE_DOCKING_PORT=8000            # 远程映射端口
 
 # AutoSSH配置
@@ -106,14 +106,15 @@ start_tunnel() {
     log "日志文件: $LOG_FILE"
     
     # 设置AutoSSH环境变量
+    export AUTOSSH_PIDFILE="$PID_FILE"
     export AUTOSSH_POLL=$AUTOSSH_POLL
-    export AUTOSSH_GATETIME=$AUTOSSH_GATETIME
+    export AUTOSSH_GATETIME=0
     export AUTOSSH_DEBUG=$AUTOSSH_DEBUG
     export AUTOSSH_LOGLEVEL=6
     
-    # 启动AutoSSH隧道
+    # 启动AutoSSH隧道 (使用 -M 0 禁用monitor port, 依赖 ServerAliveInterval)
     autossh \
-        -M $AUTOSSH_MONITOR_PORT \
+        -M 0 \
         -f \
         -N \
         -i "$SSH_KEY_PATH" \
@@ -122,12 +123,11 @@ start_tunnel() {
         -o ExitOnForwardFailure=yes \
         -o StrictHostKeyChecking=no \
         -R 0.0.0.0:${REMOTE_DOCKING_PORT}:localhost:${LOCAL_DOCKING_PORT} \
-        "$CLOUD_USER@$CLOUD_SERVER" \
-        > "$LOG_FILE" 2>&1
+        "$CLOUD_USER@$CLOUD_SERVER"
     
     # 获取AutoSSH进程PID
-    sleep 2
-    local autossh_pid=$(pgrep -f "autossh.*$AUTOSSH_MONITOR_PORT")
+    sleep 3
+    local autossh_pid=$(pgrep -f "autossh.*${LOCAL_DOCKING_PORT}.*${CLOUD_SERVER}")
     
     if [ -n "$autossh_pid" ]; then
         echo "$autossh_pid" > "$PID_FILE"
