@@ -13,12 +13,10 @@ HighFold-C2C 环肽设计 API 路由
 - GET  /highfold/{task_id}/download — 打包下载所有输出
 """
 import io
-import csv
 import json
 import re
 import uuid
 import logging
-import zipfile
 from typing import Optional
 
 from fastapi import APIRouter, Request, HTTPException
@@ -29,6 +27,7 @@ from astra_molecula.db.services.highfold_task_params_service import HighFoldTask
 from astra_molecula.schemas.requests.basic_request import HighFoldC2CRequest
 from astra_molecula.schemas.responses.basic_response import TaskResponse
 from astra_molecula.services.storage import get_storage
+from astra_molecula.services import highfold_results
 
 logger = logging.getLogger("highfold_router")
 
@@ -50,17 +49,6 @@ VALID_MSA_MODES = {"single_sequence", "mmseqs2_uniref", "mmseqs2_uniref_env"}
 
 
 # ==== 辅助函数 ====
-
-def _normalize_storage_prefix(job_dir: str) -> str:
-    """标准化 job_dir 为 SeaweedFS 存储前缀"""
-    if not job_dir:
-        return job_dir
-    if job_dir.startswith('/'):
-        if '/jobs/' in job_dir:
-            idx = job_dir.index('/jobs/') + 1
-            return job_dir[idx:]
-    return job_dir
-
 
 def _get_current_user(request: Request):
     """获取当前认证用户"""
@@ -378,8 +366,7 @@ async def get_highfold_task_status(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
+        highfold_results.ensure_highfold_task(task)
 
         return TaskResponse(
             id=task.id,
@@ -412,33 +399,10 @@ async def get_highfold_task_params(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
+        highfold_results.ensure_highfold_task(task)
 
         params = HighFoldTaskParamsService.get_task_params(task_id)
-        if not params:
-            raise HTTPException(status_code=404, detail="HighFold-C2C task parameters not found")
-
-        total_length = (len(params.core_sequence) + params.span_len * 2) if params.core_sequence else None
-
-        return {
-            "task_id": task_id,
-            "core_sequence": params.core_sequence,
-            "span_len": params.span_len,
-            "num_sample": params.num_sample,
-            "total_peptide_length": total_length,
-            "temperature": float(params.temperature),
-            "top_p": float(params.top_p),
-            "seed": params.seed,
-            "model_type": params.model_type,
-            "msa_mode": params.msa_mode,
-            "disulfide_bond_pairs": params.disulfide_bond_pairs,
-            "num_models": params.num_models,
-            "num_recycle": params.num_recycle,
-            "use_templates": params.use_templates,
-            "amber": params.amber,
-            "num_relax": params.num_relax,
-        }
+        return {"task_id": task_id, **highfold_results.build_public_params(params)}
 
     except HTTPException:
         raise
@@ -469,54 +433,8 @@ async def get_highfold_results(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
-
-        if task.status != "finished":
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "error": "task_not_finished",
-                    "message": f"任务状态为 {task.status}，尚未完成",
-                    "details": {"current_status": task.status}
-                }
-            )
-
-        storage = get_storage()
-        storage_prefix = _normalize_storage_prefix(task.job_dir)
-        csv_key = f"{storage_prefix}/output/output.csv"
-
-        if not await storage.file_exists(csv_key):
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": "results_not_found",
-                    "message": "结果文件 output.csv 不存在",
-                    "details": {"storage_key": csv_key}
-                }
-            )
-
-        content = await storage.download_bytes(csv_key)
-        text = content.decode('utf-8')
-
-        # 解析 CSV
-        reader = csv.DictReader(io.StringIO(text))
-        rows = []
-        for row in reader:
-            parsed_row = {}
-            for key, value in row.items():
-                # 尝试将数值字段转为 float
-                try:
-                    parsed_row[key] = float(value)
-                except (ValueError, TypeError):
-                    parsed_row[key] = value
-            rows.append(parsed_row)
-
-        return {
-            "task_id": task_id,
-            "total_sequences": len(rows),
-            "results": rows
-        }
+        highfold_results.ensure_highfold_task(task, require_finished=True)
+        return await highfold_results.fetch_results_parsed(task)
 
     except HTTPException:
         raise
@@ -538,20 +456,8 @@ async def download_highfold_results_csv(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
-
-        if task.status != "finished":
-            raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
-
-        storage = get_storage()
-        storage_prefix = _normalize_storage_prefix(task.job_dir)
-        csv_key = f"{storage_prefix}/output/output.csv"
-
-        if not await storage.file_exists(csv_key):
-            raise HTTPException(status_code=404, detail="Results CSV not found")
-
-        content = await storage.download_bytes(csv_key)
+        highfold_results.ensure_highfold_task(task, require_finished=True)
+        content = await highfold_results.fetch_results_csv_bytes(task)
 
         return StreamingResponse(
             io.BytesIO(content),
@@ -582,46 +488,8 @@ async def get_highfold_sequences(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
-
-        if task.status != "finished":
-            raise HTTPException(
-                status_code=409,
-                detail={"error": "task_not_finished", "message": f"任务状态为 {task.status}"}
-            )
-
-        storage = get_storage()
-        storage_prefix = _normalize_storage_prefix(task.job_dir)
-        fasta_key = f"{storage_prefix}/output/predict.fasta"
-
-        if not await storage.file_exists(fasta_key):
-            raise HTTPException(status_code=404, detail="FASTA file not found")
-
-        content = await storage.download_bytes(fasta_key)
-        text = content.decode('utf-8')
-
-        # 解析 FASTA
-        sequences = []
-        current_name = None
-        current_seq = []
-        for line in text.strip().split('\n'):
-            line = line.strip()
-            if line.startswith('>'):
-                if current_name is not None:
-                    sequences.append({"name": current_name, "sequence": ''.join(current_seq)})
-                current_name = line[1:].strip()
-                current_seq = []
-            else:
-                current_seq.append(line)
-        if current_name is not None:
-            sequences.append({"name": current_name, "sequence": ''.join(current_seq)})
-
-        return {
-            "task_id": task_id,
-            "total_sequences": len(sequences),
-            "sequences": sequences
-        }
+        highfold_results.ensure_highfold_task(task, require_finished=True)
+        return await highfold_results.fetch_sequences(task)
 
     except HTTPException:
         raise
@@ -643,39 +511,11 @@ async def list_highfold_structures(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
-
-        if task.status != "finished":
-            raise HTTPException(
-                status_code=409,
-                detail={"error": "task_not_finished", "message": f"任务状态为 {task.status}"}
-            )
-
-        storage = get_storage()
-        storage_prefix = _normalize_storage_prefix(task.job_dir)
-        output_prefix = f"{storage_prefix}/output/"
-
-        all_files = await storage.list_files_recursive(output_prefix)
-
-        # 筛选 PDB 文件
-        pdb_files = []
-        for file_key in all_files:
-            if file_key.endswith('.pdb'):
-                filename = file_key.split('/')[-1]
-                file_info = await storage.get_file_info(file_key)
-                pdb_files.append({
-                    "filename": filename,
-                    "storage_key": file_key,
-                    "size": file_info.get("size") if file_info else None,
-                    "download_url": f"/highfold/{task_id}/structures/{filename}"
-                })
-
-        return {
-            "task_id": task_id,
-            "total_structures": len(pdb_files),
-            "structures": pdb_files
-        }
+        highfold_results.ensure_highfold_task(task, require_finished=True)
+        return await highfold_results.list_structures(
+            task,
+            download_url_prefix=f"/highfold/{task_id}/structures",
+        )
 
     except HTTPException:
         raise
@@ -697,27 +537,15 @@ async def download_highfold_structure(request: Request, task_id: str, filename: 
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
-
-        if task.status != "finished":
-            raise HTTPException(status_code=409, detail=f"Task status is {task.status}")
+        highfold_results.ensure_highfold_task(task, require_finished=True)
 
         # 安全检查
-        if '..' in filename or '/' in filename:
+        if '..' in filename or '/' in filename or not re.match(r'^[\w\-.]+$', filename):
             raise HTTPException(status_code=400, detail="Invalid filename")
-
         if not filename.endswith('.pdb'):
             raise HTTPException(status_code=400, detail="Only PDB files can be downloaded via this endpoint")
 
-        storage = get_storage()
-        storage_prefix = _normalize_storage_prefix(task.job_dir)
-        remote_key = f"{storage_prefix}/output/{filename}"
-
-        if not await storage.file_exists(remote_key):
-            raise HTTPException(status_code=404, detail=f"Structure file not found: {filename}")
-
-        content = await storage.download_bytes(remote_key)
+        content = await highfold_results.fetch_structure_pdb_bytes(task, filename)
 
         return StreamingResponse(
             io.BytesIO(content),
@@ -749,41 +577,13 @@ async def download_highfold_all(request: Request, task_id: str):
         if not task or task.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        if task.task_type != "highfold_c2c":
-            raise HTTPException(status_code=400, detail="Task is not a HighFold-C2C task")
+        highfold_results.ensure_highfold_task(task, require_finished=True)
 
-        if task.status != "finished":
-            raise HTTPException(status_code=409, detail=f"Task status is {task.status}, cannot download results")
-
-        storage = get_storage()
-        storage_prefix = _normalize_storage_prefix(task.job_dir)
-        output_prefix = f"{storage_prefix}/output/"
-
-        files = await storage.list_files_recursive(output_prefix)
-
-        if not files:
-            raise HTTPException(status_code=404, detail="No output files found")
-
-        # 创建 ZIP 包
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for file_key in files:
-                if file_key.endswith('/'):
-                    continue  # 跳过目录
-
-                try:
-                    content = await storage.download_bytes(file_key)
-                    arcname = file_key[len(output_prefix):] if file_key.startswith(output_prefix) else file_key.split('output/')[-1]
-                    zf.writestr(arcname, content)
-                except Exception as e:
-                    logger.warning("Failed to add file to ZIP: %s, error: %s", file_key, e)
-
-        zip_buffer.seek(0)
-
+        zip_bytes = await highfold_results.build_results_zip(task)
         filename = f"highfold_c2c_results_{task_id[:8]}.zip"
 
         return StreamingResponse(
-            zip_buffer,
+            io.BytesIO(zip_bytes),
             media_type="application/zip",
             headers={
                 "Content-Disposition": f"attachment; filename={filename}",

@@ -2,14 +2,17 @@
 公开访问路由 - 无需认证
 用于第三方用户访问共享的肽优化结果3D结构
 """
+import io
 import os
 import re
 import mimetypes
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse, StreamingResponse
 from astra_molecula.db.services import TaskService
+from astra_molecula.db.services.highfold_task_params_service import HighFoldTaskParamsService
 from astra_molecula.services.storage import get_storage
+from astra_molecula.services import highfold_results
 from astra_molecula.utils.log import get_logger
 from astra_molecula.core.config import ROOT
 
@@ -498,3 +501,128 @@ async def get_public_docking_protein(task_id: str):
         logger.error(f"Error reading protein file from storage: {e}")
         raise HTTPException(status_code=500, detail="Failed to read protein file")
 
+
+
+# ============================================================================
+# HighFold-C2C 公开访问端点
+# ============================================================================
+#
+# 镜像 docking/peptide 模式，提供未登录可读的 HighFold-C2C 结果端点。
+# 所有端点共享 highfold_results 服务模块的逻辑（与 authenticated 路由一致）。
+# 安全模型：知道 task_id 即可查看；filename 走正则白名单；扩展名严格限制。
+# ============================================================================
+
+
+def _ensure_highfold_filename(filename: str, allowed_ext: str) -> None:
+    """公开端点 filename 安全校验：正则 + 扩展名白名单。"""
+    if not re.match(r'^[\w\-.]+$', filename):
+        logger.warning(f"Invalid filename format: {filename}")
+        raise HTTPException(status_code=400, detail="Invalid filename format")
+    if not filename.endswith(allowed_ext):
+        logger.warning(f"Disallowed extension for public access: {filename}")
+        raise HTTPException(status_code=400, detail=f"Only {allowed_ext} files are allowed")
+
+
+@router.get("/highfold/{task_id}/info")
+async def get_public_highfold_task_info(task_id: str):
+    """获取 HighFold-C2C 任务的公开元数据（不含 user_id 等敏感字段）"""
+    logger.info(f"[public-highfold-info] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task)
+    return highfold_results.build_public_task_info(task)
+
+
+@router.get("/highfold/{task_id}/params")
+async def get_public_highfold_params(task_id: str):
+    """获取 HighFold-C2C 任务参数（公开版本）"""
+    logger.info(f"[public-highfold-params] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task)
+    params = HighFoldTaskParamsService.get_task_params(task_id)
+    return {"task_id": task_id, **highfold_results.build_public_params(params)}
+
+
+@router.get("/highfold/{task_id}/results")
+async def get_public_highfold_results(task_id: str):
+    """获取 HighFold-C2C 评估结果摘要（CSV 解析为 JSON）"""
+    logger.info(f"[public-highfold-results] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task, require_finished=True)
+    return await highfold_results.fetch_results_parsed(task)
+
+
+@router.get("/highfold/{task_id}/results/csv")
+async def download_public_highfold_results_csv(task_id: str):
+    """下载 HighFold-C2C 原始 CSV 文件"""
+    logger.info(f"[public-highfold-results-csv] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task, require_finished=True)
+    content = await highfold_results.fetch_results_csv_bytes(task)
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=highfold_results_{task_id[:8]}.csv",
+            "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
+
+
+@router.get("/highfold/{task_id}/sequences")
+async def get_public_highfold_sequences(task_id: str):
+    """获取 HighFold-C2C 生成的 FASTA 序列"""
+    logger.info(f"[public-highfold-sequences] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task, require_finished=True)
+    return await highfold_results.fetch_sequences(task)
+
+
+@router.get("/highfold/{task_id}/structures")
+async def list_public_highfold_structures(task_id: str):
+    """列出 HighFold-C2C 输出的 PDB 结构文件"""
+    logger.info(f"[public-highfold-structures] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task, require_finished=True)
+    return await highfold_results.list_structures(
+        task,
+        download_url_prefix=f"/public/highfold/{task_id}/structures",
+    )
+
+
+@router.get("/highfold/{task_id}/structures/{filename}")
+async def get_public_highfold_structure(task_id: str, filename: str):
+    """获取单个 PDB 结构文件的文本内容（用于 3D 查看器）"""
+    logger.info(f"[public-highfold-structure] task_id={task_id}, filename={filename}")
+    _ensure_highfold_filename(filename, ".pdb")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task, require_finished=True)
+    content = await highfold_results.fetch_structure_pdb_bytes(task, filename)
+    return PlainTextResponse(
+        content=content.decode('utf-8'),
+        media_type="text/plain",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
+
+
+@router.get("/highfold/{task_id}/download")
+async def download_public_highfold_all(task_id: str):
+    """打包下载 HighFold-C2C 全部输出文件 (ZIP)"""
+    logger.info(f"[public-highfold-download] task_id={task_id}")
+    task = TaskService.get_task(task_id)
+    highfold_results.ensure_highfold_task(task, require_finished=True)
+    zip_bytes = await highfold_results.build_results_zip(task)
+    filename = f"highfold_c2c_results_{task_id[:8]}.zip"
+    return StreamingResponse(
+        io.BytesIO(zip_bytes),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
