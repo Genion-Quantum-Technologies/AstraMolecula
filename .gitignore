@@ -60,3 +60,6 @@ htmlcov/
 
 # Build
 *.txt
+
+# Local-only Claude Code project guide (not tracked)
+CLAUDE.md
