@@ -4,9 +4,15 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.5.0
+- **API版本**: 2.6.1
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🆕 HighFold-C2C 结构 3D 查看链接 (v2.6.1)
+
+- **结构列表新增 `share_url`**: `GET /highfold/{task_id}/structures` 与公开版 `GET /public/highfold/{task_id}/structures` 现在为每个 PDB 结构返回 `share_url` —— 公开 3D 查看页深链(`/public/highfold-viewer?taskId=...&filename=...`),无需登录即可直接打开该结构的 3D 视图。落地方式对齐 docking 的 `dockRes.share_url`(`base_url` 取 `FRONTEND_BASE_URL`,回退请求 host)。
+- **公开查看页支持结构深链**: `/public/highfold-viewer` 支持可选 `filename` 查询参数,加载后自动打开对应结构的 3D 视图。
+- **前端参数标签修复**: HighFold-C2C 任务详情页补齐 `total_peptide_length` 的显示标签(此前回退显示原始字段名)。该字段一直由 `/highfold/{task_id}/params` 返回(实时计算 = 核心序列长度 + span_len × 2,非数据库持久字段)。
 
 ### 🆕 HighFold-C2C 第三方接入 & 公开结果查看 (v2.6.0)
 
@@ -1518,11 +1524,26 @@ curl -X GET "http://your-server-url/highfold/{task_id}/results/csv" \
       "filename": "cyclic_peptide_0_relaxed_rank_001.pdb",
       "storage_key": "jobs/highfold_c2c/{job_id}/output/cyclic_peptide_0_relaxed_rank_001.pdb",
       "size": 45678,
-      "download_url": "/highfold/{task_id}/structures/cyclic_peptide_0_relaxed_rank_001.pdb"
+      "download_url": "/highfold/{task_id}/structures/cyclic_peptide_0_relaxed_rank_001.pdb",
+      "share_url": "https://<frontend-host>/public/highfold-viewer?taskId={task_id}&filename=cyclic_peptide_0_relaxed_rank_001.pdb"
     }
   ]
 }
 ```
+
+**结构字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `filename` | string | PDB 文件名（不含路径） |
+| `storage_key` | string | 文件在 SeaweedFS 中的存储键 |
+| `size` | number\|null | 文件字节大小 |
+| `download_url` | string | 单文件下载接口路径（`attachment` 下载） |
+| `share_url` | string | **公开 3D 查看页深链**，无需登录即可在浏览器中打开该结构的 3D 视图。落地方式与 docking 的 `dockRes.share_url` 一致：`base_url` 优先取环境变量 `FRONTEND_BASE_URL`，否则回退到请求的 `scheme://host`，再拼接 `/public/highfold-viewer?taskId=...&filename=...` |
+
+> **第三方 3D 集成建议**：
+> - 想要"即点即看"的 3D 链接 → 直接使用 `share_url`。
+> - 想自行渲染 → 用 `download_url` 拉取 PDB（公开端点 `GET /public/highfold/{task_id}/structures/{filename}` 以 `inline` 返回 `text/plain`，并带 `Access-Control-Allow-Origin: *`，可直接喂给 3Dmol.js / NGL / Mol*）。
 
 **错误响应**:
 - `400`: 任务类型不是 highfold_c2c
@@ -1826,7 +1847,7 @@ curl -X POST https://api.genionaitech.com/highfold/predict \
 
 #### GET /public/highfold/{task_id}/structures
 
-**描述**: 列出所有 PDB 预测结构文件及其下载 URL。
+**描述**: 列出所有 PDB 预测结构文件及其下载 URL 与公开 3D 查看深链。
 
 **认证要求**: 无
 
@@ -1838,12 +1859,16 @@ curl -X POST https://api.genionaitech.com/highfold/predict \
   "structures": [
     {
       "filename": "pep1_unrelaxed_rank_001_alphafold2_model_1_seed_000.pdb",
+      "storage_key": "jobs/highfold_c2c/{job_id}/output/pep1_unrelaxed_rank_001_alphafold2_model_1_seed_000.pdb",
       "size": 6642,
-      "download_url": "/public/highfold/b8a6d34a-7260-407e-82e4-964cc3774b71/structures/pep1_unrelaxed_rank_001_alphafold2_model_1_seed_000.pdb"
+      "download_url": "/public/highfold/b8a6d34a-7260-407e-82e4-964cc3774b71/structures/pep1_unrelaxed_rank_001_alphafold2_model_1_seed_000.pdb",
+      "share_url": "https://<frontend-host>/public/highfold-viewer?taskId=b8a6d34a-7260-407e-82e4-964cc3774b71&filename=pep1_unrelaxed_rank_001_alphafold2_model_1_seed_000.pdb"
     }
   ]
 }
 ```
+
+> `share_url` 为公开 3D 查看页深链（无需登录），打开后自动加载该结构的 3D 视图；字段含义与认证版 `GET /highfold/{task_id}/structures` 一致。
 
 #### GET /public/highfold/{task_id}/structures/{filename}
 

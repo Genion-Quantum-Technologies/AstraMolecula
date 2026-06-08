@@ -28,10 +28,21 @@ from astra_molecula.schemas.requests.basic_request import HighFoldC2CRequest
 from astra_molecula.schemas.responses.basic_response import TaskResponse
 from astra_molecula.services.storage import get_storage
 from astra_molecula.services import highfold_results
+from astra_molecula.core.config import api as api_config
 
 logger = logging.getLogger("highfold_router")
 
 router = APIRouter(prefix="/highfold", tags=["HighFold C2C"])
+
+# 前端基础 URL（用于生成公开 3D 查看分享链接），与 tasks.py 的 docking share_url 一致
+FRONTEND_BASE_URL = api_config.frontend_base_url
+
+
+def _public_viewer_base(request: Request) -> str:
+    """计算公开查看页基础地址，镜像 docking dockRes 的 base_url 逻辑：
+    优先用 FRONTEND_BASE_URL 环境变量，否则回退到请求的 scheme+host。"""
+    base_url = FRONTEND_BASE_URL or f"{request.url.scheme}://{request.url.hostname}"
+    return f"{base_url}/public/highfold-viewer"
 
 # 有效的氨基酸字母
 VALID_AA = set("ACDEFGHIKLMNPQRSTVWY")
@@ -515,6 +526,7 @@ async def list_highfold_structures(request: Request, task_id: str):
         return await highfold_results.list_structures(
             task,
             download_url_prefix=f"/highfold/{task_id}/structures",
+            share_url_base=_public_viewer_base(request),
         )
 
     except HTTPException:

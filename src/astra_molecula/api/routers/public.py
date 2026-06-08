@@ -7,18 +7,21 @@ import os
 import re
 import mimetypes
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse, StreamingResponse
 from astra_molecula.db.services import TaskService
 from astra_molecula.db.services.highfold_task_params_service import HighFoldTaskParamsService
 from astra_molecula.services.storage import get_storage
 from astra_molecula.services import highfold_results
 from astra_molecula.utils.log import get_logger
-from astra_molecula.core.config import ROOT
+from astra_molecula.core.config import ROOT, api as api_config
 
 logger = get_logger("public_router", str(ROOT / "logs" / "public_access.log"), isMain=True)
 
 router = APIRouter(prefix="/public", tags=["Public Access"])
+
+# 前端基础 URL（用于生成公开 3D 查看分享链接），与 tasks.py 的 docking share_url 一致
+FRONTEND_BASE_URL = api_config.frontend_base_url
 
 
 def normalize_storage_prefix(job_dir: str) -> str:
@@ -579,14 +582,16 @@ async def get_public_highfold_sequences(task_id: str):
 
 
 @router.get("/highfold/{task_id}/structures")
-async def list_public_highfold_structures(task_id: str):
+async def list_public_highfold_structures(request: Request, task_id: str):
     """列出 HighFold-C2C 输出的 PDB 结构文件"""
     logger.info(f"[public-highfold-structures] task_id={task_id}")
     task = TaskService.get_task(task_id)
     highfold_results.ensure_highfold_task(task, require_finished=True)
+    base_url = FRONTEND_BASE_URL or f"{request.url.scheme}://{request.url.hostname}"
     return await highfold_results.list_structures(
         task,
         download_url_prefix=f"/public/highfold/{task_id}/structures",
+        share_url_base=f"{base_url}/public/highfold-viewer",
     )
 
 

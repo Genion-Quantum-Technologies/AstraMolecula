@@ -15,6 +15,7 @@ import io
 import json
 import zipfile
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 from fastapi import HTTPException
 
@@ -120,12 +121,23 @@ async def fetch_sequences(task) -> Dict[str, Any]:
     }
 
 
-async def list_structures(task, *, download_url_prefix: str) -> Dict[str, Any]:
+async def list_structures(
+    task,
+    *,
+    download_url_prefix: str,
+    share_url_base: Optional[str] = None,
+) -> Dict[str, Any]:
     """列出 output 目录下的所有 .pdb 文件
 
     download_url_prefix: 用于拼接前端可访问的下载链接，例如：
       - "/highfold/{task_id}/structures"
       - "/public/highfold/{task_id}/structures"
+
+    share_url_base: 公开 3D 查看页基础地址（不含 query），用于为每个结构生成
+      可直接打开 3D 视图的分享链接，镜像 docking 的 share_url 落地方式，例如：
+      - "https://<host>/public/highfold-viewer"
+      最终拼成 "{share_url_base}?taskId={task_id}&filename={filename}"。
+      传 None 时不输出 share_url 字段。
     """
     storage = get_storage()
     storage_prefix = normalize_storage_prefix(task.job_dir)
@@ -138,12 +150,17 @@ async def list_structures(task, *, download_url_prefix: str) -> Dict[str, Any]:
         if file_key.endswith('.pdb'):
             filename = file_key.split('/')[-1]
             file_info = await storage.get_file_info(file_key)
-            pdb_files.append({
+            entry = {
                 "filename": filename,
                 "storage_key": file_key,
                 "size": file_info.get("size") if file_info else None,
                 "download_url": f"{download_url_prefix}/{filename}",
-            })
+            }
+            if share_url_base:
+                entry["share_url"] = (
+                    f"{share_url_base}?taskId={task.id}&filename={quote(filename)}"
+                )
+            pdb_files.append(entry)
 
     return {
         "task_id": task.id,
