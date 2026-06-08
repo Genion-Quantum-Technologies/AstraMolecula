@@ -90,14 +90,20 @@ async def get_public_peptide_complex(task_id: str, filename: str):
     storage_prefix = normalize_storage_prefix(task.job_dir)
     
     # 搜索路径（相对于 storage_prefix）
+    # 与鉴权端点 GET /tasks/{task_id}/peptide/download/{filename} 保持一致，
+    # 否则 peptide 复合物 PDB 落在 middlefiles/ 时公开 3D 查看会 404（下载却正常）。
     search_paths = [
         f"output/{filename}",
         f"output/complexes/{filename}",
         f"output/complex/{filename}",
         f"output/pdb/{filename}",
         f"output/pdbs/{filename}",
+        f"middlefiles/{filename}",
+        f"middlefiles/pdb/{filename}",
+        f"input/{filename}",
+        filename,
     ]
-    
+
     found_key = None
     for relative_path in search_paths:
         remote_key = f"{storage_prefix}/{relative_path}"
@@ -105,18 +111,21 @@ async def get_public_peptide_complex(task_id: str, filename: str):
             found_key = remote_key
             logger.info(f"File found in storage: {remote_key}")
             break
-    
-    # 递归搜索 output 目录
+
+    # 递归搜索 output 和 middlefiles 目录（与鉴权端点一致）
     if not found_key:
-        try:
-            output_files = await storage.list_files(f"{storage_prefix}/output/")
-            for f in output_files:
-                if f.endswith(f"/{filename}") or f.split('/')[-1] == filename:
-                    found_key = f
-                    logger.info(f"File found in storage subdirectory: {f}")
+        for base_dir in ["output", "middlefiles"]:
+            try:
+                files = await storage.list_files(f"{storage_prefix}/{base_dir}/")
+                for f in files:
+                    if f.endswith(f"/{filename}") or f.split('/')[-1] == filename:
+                        found_key = f
+                        logger.info(f"File found in storage subdirectory: {f}")
+                        break
+                if found_key:
                     break
-        except Exception as e:
-            logger.warning(f"Error listing output files: {e}")
+            except Exception as e:
+                logger.warning(f"Error listing {base_dir} files: {e}")
     
     if not found_key:
         logger.warning(f"File not found: {filename} in task {task_id}")
@@ -138,7 +147,7 @@ async def get_public_peptide_complex(task_id: str, filename: str):
         )
     
     except Exception as e:
-        logger.error(f"Error reading file {found_file}: {e}")
+        logger.error(f"Error reading file {found_key}: {e}")
         raise HTTPException(status_code=500, detail="Failed to read file")
 
 
