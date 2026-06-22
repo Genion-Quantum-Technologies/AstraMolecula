@@ -143,17 +143,18 @@ async def list_structures(
     storage_prefix = normalize_storage_prefix(task.job_dir)
     output_prefix = f"{storage_prefix}/output/"
 
-    all_files = await storage.list_files_recursive(output_prefix)
+    # 用带 size 的递归列举，避免对每个 PDB 再发一次 HEAD(消除 N+1)
+    all_entries = await storage.list_entries_recursive(output_prefix)
 
     pdb_files = []
-    for file_key in all_files:
+    for file_entry in all_entries:
+        file_key = file_entry["path"]
         if file_key.endswith('.pdb'):
             filename = file_key.split('/')[-1]
-            file_info = await storage.get_file_info(file_key)
             entry = {
                 "filename": filename,
                 "storage_key": file_key,
-                "size": file_info.get("size") if file_info else None,
+                "size": file_entry.get("size"),
                 "download_url": f"{download_url_prefix}/{filename}",
             }
             if share_url_base:

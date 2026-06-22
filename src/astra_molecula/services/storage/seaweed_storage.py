@@ -4,6 +4,7 @@ SeaweedFS 存储实现
 """
 import logging
 import aiohttp
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, AsyncIterator, Optional
 
@@ -20,9 +21,39 @@ class SeaweedStorage:
         self.bucket = storage_config.bucket
         self.base_url = storage_config.get_filer_base_url()
         
-        logger.info("SeaweedStorage initialized: filer=%s, bucket=%s", 
+        logger.info("SeaweedStorage initialized: filer=%s, bucket=%s",
                    self.filer_endpoint, self.bucket)
-    
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """复用单个 ClientSession。
+
+        原实现每个调用 new 一个 ClientSession → 每次都重新做集群 DNS 解析;在 ndots/
+        search 域异常时单次解析可达 ~8s,导致每个存储操作都慢、列表型接口 N 次放大到超时。
+        这里复用带 DNS 缓存的 connector(只解析一次),并设置超时使连接失败快速返回,
+        而非 aiohttp 默认的 300s 挂死。
+        """
+        if self._session is None or self._session.closed:
+            connector = aiohttp.TCPConnector(
+                use_dns_cache=True, ttl_dns_cache=300, limit=50, limit_per_host=20,
+            )
+            timeout = aiohttp.ClientTimeout(total=120, connect=10, sock_connect=10, sock_read=60)
+            self._session = aiohttp.ClientSession(connector=connector, timeout=timeout)
+        return self._session
+
+    @asynccontextmanager
+    async def _session_cm(self):
+        """提供共享 session 的异步上下文管理器(用于替换原先逐次 new 的 ClientSession);
+        退出时不关闭,供后续调用复用。"""
+        session = await self._get_session()
+        yield session
+
+    async def aclose(self) -> None:
+        """关闭共享 session(进程退出/重置时调用,可选)。"""
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+        self._session = None
+
     def _get_url(self, remote_key: str) -> str:
         """构建完整的 Filer URL"""
         # 确保 remote_key 不以 / 开头
@@ -42,7 +73,7 @@ class SeaweedStorage:
         """
         url = self._get_url(remote_key)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             with open(local_path, 'rb') as f:
                 data = aiohttp.FormData()
                 data.add_field('file', f, filename=local_path.name)
@@ -71,7 +102,7 @@ class SeaweedStorage:
         if content_type:
             headers['Content-Type'] = content_type
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             # 使用 multipart form 上传
             form_data = aiohttp.FormData()
             form_data.add_field('file', data, 
@@ -99,7 +130,7 @@ class SeaweedStorage:
         url = self._get_url(remote_key)
         local_path.parent.mkdir(parents=True, exist_ok=True)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.get(url) as response:
                 if response.status == 404:
                     raise FileNotFoundError(f"File not found: {remote_key}")
@@ -126,7 +157,7 @@ class SeaweedStorage:
         """
         url = self._get_url(remote_key)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.get(url) as response:
                 if response.status == 404:
                     raise FileNotFoundError(f"File not found: {remote_key}")
@@ -166,7 +197,7 @@ class SeaweedStorage:
         """
         url = self._get_url(remote_key)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.delete(url) as response:
                 if response.status not in (200, 202, 204, 404):
                     text = await response.text()
@@ -205,7 +236,7 @@ class SeaweedStorage:
         params = {'pretty': 'y'}
         
         result = []
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.get(url, params=params, headers={'Accept': 'application/json'}) as response:
                 if response.status == 404:
                     return []
@@ -242,7 +273,7 @@ class SeaweedStorage:
         url = self._get_url(prefix.rstrip('/') + '/')
         params = {'pretty': 'y'}
 
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.get(url, params=params, headers={'Accept': 'application/json'}) as response:
                 if response.status != 200:
                     return []
@@ -281,6 +312,54 @@ class SeaweedStorage:
         logger.debug("Listed %d files recursively with prefix: %s", len(all_files), prefix)
         return all_files
 
+    async def list_entries_recursive(self, prefix: str) -> List[dict]:
+        """递归列出文件及其大小：返回 [{'path': str, 'size': Optional[int]}]。
+
+        size 直接取自 filer 列举结果(FileSize 或 chunks 之和),避免再对每个文件单独
+        发 HEAD（消除 list_structures 等处的 N+1）。解析逻辑与 list_files_recursive 一致。
+        """
+        results: List[dict] = []
+        url = self._get_url(prefix.rstrip('/') + '/')
+        params = {'pretty': 'y'}
+
+        entries = []
+        async with self._session_cm() as session:
+            async with session.get(url, params=params, headers={'Accept': 'application/json'}) as response:
+                if response.status != 200:
+                    return []
+                try:
+                    data = await response.json()
+                    entries = data.get('Entries', []) or []
+                except Exception as e:
+                    logger.warning("Error listing entries recursively at %s: %s", prefix, e)
+                    return []
+
+        for entry in entries:
+            full_path = entry.get('FullPath', '') or entry.get('Name', '')
+            if not full_path:
+                continue
+
+            name = full_path
+            if name.startswith('/buckets/' + self.bucket + '/'):
+                name = name[len('/buckets/' + self.bucket + '/'):]
+
+            chunks = entry.get('chunks')
+            has_chunks = chunks is not None and isinstance(chunks, list) and len(chunks) > 0
+            mode = entry.get('Mode', 0)
+            is_dir_mode = (mode & 0o20000000000) != 0 or (mode & 0o40000) != 0
+            is_dir = (not has_chunks and is_dir_mode) or name.endswith('/')
+
+            if is_dir:
+                results.extend(await self.list_entries_recursive(name))
+            else:
+                size = entry.get('FileSize')
+                if size is None and has_chunks:
+                    size = sum(c.get('size', 0) for c in chunks)
+                results.append({'path': name, 'size': size})
+
+        logger.debug("Listed %d entries recursively with prefix: %s", len(results), prefix)
+        return results
+
     async def file_exists(self, remote_key: str) -> bool:
         """
         检查文件是否存在
@@ -293,7 +372,7 @@ class SeaweedStorage:
         """
         url = self._get_url(remote_key)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.head(url) as response:
                 return response.status == 200
     
@@ -328,7 +407,7 @@ class SeaweedStorage:
         """
         url = self._get_url(remote_key)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.get(url) as response:
                 if response.status == 404:
                     raise FileNotFoundError(f"File not found: {remote_key}")
@@ -351,7 +430,7 @@ class SeaweedStorage:
         """
         url = self._get_url(remote_key)
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             async with session.head(url) as response:
                 if response.status != 200:
                     return None
@@ -417,7 +496,7 @@ class SeaweedStorage:
         """确保 bucket 目录存在"""
         url = f"{self.filer_endpoint}/buckets/{self.bucket}/"
         
-        async with aiohttp.ClientSession() as session:
+        async with self._session_cm() as session:
             # 检查是否存在
             async with session.head(url) as response:
                 if response.status == 200:
