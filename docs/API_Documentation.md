@@ -4,15 +4,23 @@
 
 AstraMolecula API 是一个分子计算、对接模拟和肽段优化的生物信息学计算服务系统，提供完整的任务生命周期管理和结果获取功能。
 
-- **API版本**: 2.6.1
+- **API版本**: 2.6.2
 - **基础URL**: `http://your-server-url`
 - **认证方式**: JWT Token / API Key
+
+### 🐛 HighFold-C2C 总长度公式更正 + 参数约束接口 (v2.6.2)
+
+- **⚠️ 破坏性变更 — 结果 JSON 列名归一化**: `GET /highfold/{task_id}/results` 与公开版 `GET /public/highfold/{task_id}/results` 的 `results[]` 键已从原始 CSV 表头改为 snake_case，第三方需更新读取代码：
+  - `Index` → `index`、`Cyclic sequence` → `sequence`、`pLDDT` → `plddt`、`Molecular weight` → `molecular_weight`、`Isoelectric point` → `isoelectric_point`、`Aromaticity` → `aromaticity`、`Instability index` → `instability_index`、`Hydrophobicity` → `hydrophobicity`、`Hydrophilicity` → `hydrophilicity`
+  - **原始 CSV 下载接口 `GET /highfold/{task_id}/results/csv` 不受影响**（仍是原始列名表头），需要原始字段名的可改用它。
+- **`total_peptide_length` 公式更正**: 改为 `核心序列长度 + span_len`（**单侧**延伸）。此前文档与后端使用 `+ span_len × 2`（双侧），与 C2C worker 实际只在 core 一侧追加 `span_len` 个残基的行为（`core + span`）不符，导致展示的总长度不等于任何输出序列的真实长度。`total_length_exceeded` / `core_ratio_too_low` 校验同步按新公式计算。该字段由 `/highfold/{task_id}/params`（及公开版）实时计算返回（非持久字段，**不在 `/results` 中**），老任务重新打开即显示更正值。
+- **新增 `GET /highfold/constraints`**: 返回后端权威的参数取值范围与枚举（`max_total_length`、`min_core_ratio`、各参数 `min`/`max`、合法氨基酸/模型/MSA 枚举），供前端预校验回显，避免前后端阈值漂移。
 
 ### 🆕 HighFold-C2C 结构 3D 查看链接 (v2.6.1)
 
 - **结构列表新增 `share_url`**: `GET /highfold/{task_id}/structures` 与公开版 `GET /public/highfold/{task_id}/structures` 现在为每个 PDB 结构返回 `share_url` —— 公开 3D 查看页深链(`/public/highfold-viewer?taskId=...&filename=...`),无需登录即可直接打开该结构的 3D 视图。落地方式对齐 docking 的 `dockRes.share_url`(`base_url` 取 `FRONTEND_BASE_URL`,回退请求 host)。
 - **公开查看页支持结构深链**: `/public/highfold-viewer` 支持可选 `filename` 查询参数,加载后自动打开对应结构的 3D 视图。
-- **前端参数标签修复**: HighFold-C2C 任务详情页补齐 `total_peptide_length` 的显示标签(此前回退显示原始字段名)。该字段一直由 `/highfold/{task_id}/params` 返回(实时计算 = 核心序列长度 + span_len × 2,非数据库持久字段)。
+- **前端参数标签修复**: HighFold-C2C 任务详情页补齐 `total_peptide_length` 的显示标签(此前回退显示原始字段名)。该字段一直由 `/highfold/{task_id}/params` 返回(实时计算,非数据库持久字段;公式见 v2.6.2 更正,现为 核心序列长度 + span_len)。
 
 ### 🆕 HighFold-C2C 第三方接入 & 公开结果查看 (v2.6.0)
 
@@ -1206,7 +1214,7 @@ curl -X GET "http://your-server-url/sarm/{task_id}/download/Combine_Table/combin
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `core_sequence` | string | ✅ | - | 核心肽段氨基酸序列，仅允许标准 20 种氨基酸字母（A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y），如 `"NNN"`、`"CNNNC"` |
-| `span_len` | integer | ❌ | `5` | 每侧延伸的残基数。总环肽长度 = core_sequence长度 + span_len × 2。范围 1-15 |
+| `span_len` | integer | ❌ | `5` | 单侧延伸的残基数（C2C 在 core 一侧追加 span_len 个残基）。总环肽长度 = core_sequence长度 + span_len。范围 1-15 |
 | `num_sample` | integer | ❌ | `20` | 生成的候选环肽序列数量。第一条为贪心解码，其余为采样。范围 1-100 |
 | `disulfide_bond_pairs` | string | ❌ | `null` | 二硫键位置对（0基索引）。格式：`"0,4"` 表示一对，`"0,4:2,7"` 表示两对。仅当核心序列含半胱氨酸(C)时需要 |
 | `temperature` | number | ❌ | `1.0` | 采样温度，范围 0.1-2.0。较高值产生更多样化的序列 |
@@ -1243,7 +1251,7 @@ curl -X GET "http://your-server-url/sarm/{task_id}/download/Combine_Table/combin
 
 | 规则 | 条件 | 错误码 |
 |------|------|--------|
-| 总长度限制 | core_sequence长度 + span_len × 2 ≤ 20 | `total_length_exceeded` |
+| 总长度限制 | core_sequence长度 + span_len ≤ 20 | `total_length_exceeded` |
 | 核心比例 | core_sequence长度 / 总长度 ≥ 0.3 (30%) | `core_ratio_too_low` |
 | 序列合法性 | 仅含标准20种氨基酸字母 | `invalid_amino_acids` |
 | 序列非空 | core_sequence 不能为空 | `empty_core_sequence` |
@@ -1292,8 +1300,8 @@ curl -X POST "http://your-server-url/highfold/predict" \
     "job_id": "string (UUID)",
     "storage_prefix": "jobs/highfold_c2c/{job_id}",
     "core_sequence": "NNN",
-    "total_peptide_length": 13,
-    "core_ratio": 0.231,
+    "total_peptide_length": 8,
+    "core_ratio": 0.375,
     "parameters": {
       "span_len": 5,
       "num_sample": 20,
@@ -1372,7 +1380,7 @@ curl -X POST "http://your-server-url/highfold/predict" \
   "core_sequence": "NNN",
   "span_len": 5,
   "num_sample": 20,
-  "total_peptide_length": 13,
+  "total_peptide_length": 8,
   "temperature": 1.0,
   "top_p": 0.9,
   "seed": 42,
@@ -1409,33 +1417,35 @@ curl -X POST "http://your-server-url/highfold/predict" \
   "total_sequences": 20,
   "results": [
     {
-      "Index": 0,
-      "Cyclic sequence": "ANNNVLKFPAWQRT",
-      "pLDDT": 72.5,
-      "Molecular weight": 1580.3,
-      "Isoelectric point": 8.2,
-      "Aromaticity": 0.071,
-      "Instability index": 32.1,
-      "Hydrophobicity": -0.45,
-      "Hydrophilicity": 0.32
+      "index": 0,
+      "sequence": "ANNNVLKFPAWQRT",
+      "plddt": 72.5,
+      "molecular_weight": 1580.3,
+      "isoelectric_point": 8.2,
+      "aromaticity": 0.071,
+      "instability_index": 32.1,
+      "hydrophobicity": -0.45,
+      "hydrophilicity": 0.32
     }
   ]
 }
 ```
 
-**结果字段说明**:
+**结果字段说明**（JSON 键，自 v2.6.2 起为 snake_case；括号内为对应的原始 CSV 列名）:
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `Index` | number | 序列编号（0-based） |
-| `Cyclic sequence` | string | 环肽氨基酸序列 |
-| `pLDDT` | number | AlphaFold2 预测的局部置信度评分 (0-100)，≥70 为高质量 |
-| `Molecular weight` | number | 分子量 (Da) |
-| `Isoelectric point` | number | 等电点 (pH) |
-| `Aromaticity` | number | 芳香性 |
-| `Instability index` | number | 不稳定指数，<40 通常认为稳定 |
-| `Hydrophobicity` | number | GRAVY 疏水性指数 |
-| `Hydrophilicity` | number | 亲水性 |
+| `index` | number | 序列编号（0-based）（CSV: `Index`） |
+| `sequence` | string | 环肽氨基酸序列（CSV: `Cyclic sequence`） |
+| `plddt` | number | AlphaFold2 预测的局部置信度评分 (0-100)，≥70 为高质量（CSV: `pLDDT`） |
+| `molecular_weight` | number | 分子量 (Da)（CSV: `Molecular weight`） |
+| `isoelectric_point` | number | 等电点 (pH)（CSV: `Isoelectric point`） |
+| `aromaticity` | number | 芳香性（CSV: `Aromaticity`） |
+| `instability_index` | number | 不稳定指数，<40 通常认为稳定（CSV: `Instability index`） |
+| `hydrophobicity` | number | GRAVY 疏水性指数（CSV: `Hydrophobicity`） |
+| `hydrophilicity` | number | 亲水性（CSV: `Hydrophilicity`） |
+
+> ⚠️ **v2.6.2 破坏性变更**：`GET /highfold/{task_id}/results` 与公开版 `GET /public/highfold/{task_id}/results` 的 JSON 键已从原始 CSV 表头（`Cyclic sequence`、`pLDDT` …）改为上表的 snake_case。**原始 CSV 下载接口 `GET /highfold/{task_id}/results/csv` 不受影响，仍保留原始列名表头。** 依赖旧键的第三方代码需相应更新。
 
 **错误响应**:
 - `400`: 任务类型不是 highfold_c2c
@@ -1673,7 +1683,7 @@ while True:
 results = requests.get(f"{BASE_URL}/highfold/{task_id}/results", headers=HEADERS).json()
 print(f"Total sequences: {results['total_sequences']}")
 for r in results["results"]:
-    print(f"  Sequence: {r.get('Cyclic sequence', 'N/A')}, pLDDT: {r.get('pLDDT', 'N/A')}")
+    print(f"  Sequence: {r.get('sequence', 'N/A')}, pLDDT: {r.get('plddt', 'N/A')}")
 
 # 序列列表
 sequences = requests.get(f"{BASE_URL}/highfold/{task_id}/sequences", headers=HEADERS).json()
@@ -1786,17 +1796,29 @@ curl -X POST https://api.genionaitech.com/highfold/predict \
 
 #### GET /public/highfold/{task_id}/params
 
-**描述**: 获取任务提交时的参数。
+**描述**: 获取任务提交时的参数。返回与认证版 `GET /highfold/{task_id}/params` 完全相同的投影（同一个 `build_public_params`），仅去掉认证与归属校验。`total_peptide_length` 为实时计算字段（= `len(core_sequence) + span_len`），非数据库持久列。
 
 **认证要求**: 无
 
 **返回示例**:
 ```json
 {
+  "task_id": "b8a6d34a-7260-407e-82e4-964cc3774b71",
+  "core_sequence": "NNN",
+  "span_len": 5,
+  "num_sample": 20,
+  "total_peptide_length": 8,
+  "temperature": 1.0,
+  "top_p": 0.9,
+  "seed": 42,
   "model_type": "alphafold2",
-  "num_models": 5,
   "msa_mode": "single_sequence",
-  "use_amber": false
+  "disulfide_bond_pairs": null,
+  "num_models": 5,
+  "num_recycle": null,
+  "use_templates": false,
+  "amber": false,
+  "num_relax": 0
 }
 ```
 
@@ -1813,14 +1835,14 @@ curl -X POST https://api.genionaitech.com/highfold/predict \
   "total_sequences": 3,
   "results": [
     {
-      "Index": 1,
-      "Cyclic sequence": "MNFGAPPIFP",
-      "pLDDT": 71.33,
-      "Molecular weight": 1090.29,
-      "Isoelectric point": 5.28,
-      "Aromaticity": 0.2,
-      "Instability index": 43.26,
-      "Hydrophobicity": 0.51
+      "index": 1,
+      "sequence": "MNFGAPPIFP",
+      "plddt": 71.33,
+      "molecular_weight": 1090.29,
+      "isoelectric_point": 5.28,
+      "aromaticity": 0.2,
+      "instability_index": 43.26,
+      "hydrophobicity": 0.51
     }
   ]
 }
@@ -1957,11 +1979,18 @@ while True:
     time.sleep(30)
 
 # ============================
+# 获取任务参数（无需认证）—— total_peptide_length 在这里，不在 /results
+# ============================
+params = requests.get(f"{PUBLIC_BASE}/public/highfold/{task_id}/params").json()
+print(f"Core: {params['core_sequence']}  Span: {params['span_len']}  "
+      f"Total peptide length: {params['total_peptide_length']}")
+
+# ============================
 # 获取结果（无需认证）
 # ============================
 results = requests.get(f"{PUBLIC_BASE}/public/highfold/{task_id}/results").json()
 for r in results["results"]:
-    print(f"{r['Cyclic sequence']}  pLDDT={r['pLDDT']}")
+    print(f"{r['sequence']}  pLDDT={r['plddt']}")
 
 # 下载全部结构 PDB
 structures = requests.get(f"{PUBLIC_BASE}/public/highfold/{task_id}/structures").json()
@@ -3461,7 +3490,7 @@ curl -X GET "/tasks/{task_id}/peptide/results/csv?indices=2,4,6" \
 }
 ```
 
-**说明**: `task_type` 为 `highfold_c2c`。约束：总长度(core长度 + span_len×2) ≤ 20，核心比例 ≥ 30%。
+**说明**: `task_type` 为 `highfold_c2c`。约束：总长度(core长度 + span_len) ≤ 20，核心比例 ≥ 30%。
 
 ### PaymentRequest
 ```json

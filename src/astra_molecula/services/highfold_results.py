@@ -23,6 +23,30 @@ from astra_molecula.services.storage import get_storage
 
 HIGHFOLD_TASK_TYPE = "highfold_c2c"
 
+# output.csv 列名 → 前端消费的稳定 snake_case 键。
+# 这是后端与 HighFold_C2C worker CSV 表头之间的**唯一契约点**：worker 若改列名，
+# 只需更新此处映射，前端不再硬编码原始表头字符串（消除静默漂移）。
+RESULT_COLUMN_MAP = {
+    "Index": "index",
+    "Cyclic sequence": "sequence",
+    "pLDDT": "plddt",
+    "Molecular weight": "molecular_weight",
+    "Isoelectric point": "isoelectric_point",
+    "Aromaticity": "aromaticity",
+    "Instability index": "instability_index",
+    "Hydrophobicity": "hydrophobicity",
+    "Hydrophilicity": "hydrophilicity",
+}
+
+
+def _normalize_column_key(raw_key: Optional[str]) -> Optional[str]:
+    """将 CSV 列名映射为稳定的 snake_case 键；未知列回退为通用 snake_case 规则。"""
+    if raw_key is None:
+        return None
+    if raw_key in RESULT_COLUMN_MAP:
+        return RESULT_COLUMN_MAP[raw_key]
+    return raw_key.strip().lower().replace(' ', '_').replace('-', '_')
+
 
 def normalize_storage_prefix(job_dir: str) -> str:
     """标准化 job_dir 为 SeaweedFS 存储前缀"""
@@ -65,7 +89,12 @@ async def fetch_results_csv_bytes(task) -> bytes:
 
 
 async def fetch_results_parsed(task) -> Dict[str, Any]:
-    """读取 output.csv 并解析为 JSON 行列表（数值字段尝试转 float）"""
+    """读取 output.csv 并解析为 JSON 行列表。
+
+    列名按 ``RESULT_COLUMN_MAP`` 归一化为稳定的 snake_case 键
+    （如 ``Cyclic sequence`` → ``sequence``、``pLDDT`` → ``plddt``），
+    数值字段尝试转 float。前端直接消费这些键，无需再感知 worker 的原始表头。
+    """
     content = await fetch_results_csv_bytes(task)
     text = content.decode('utf-8')
 
@@ -74,10 +103,13 @@ async def fetch_results_parsed(task) -> Dict[str, Any]:
     for row in reader:
         parsed_row = {}
         for key, value in row.items():
+            norm_key = _normalize_column_key(key)
+            if norm_key is None:
+                continue  # 跳过表头之外的多余列（DictReader 的 restkey=None）
             try:
-                parsed_row[key] = float(value)
+                parsed_row[norm_key] = float(value)
             except (ValueError, TypeError):
-                parsed_row[key] = value
+                parsed_row[norm_key] = value
         rows.append(parsed_row)
 
     return {
@@ -231,8 +263,9 @@ def build_public_params(params) -> Dict[str, Any]:
     if not params:
         raise HTTPException(status_code=404, detail="HighFold-C2C task parameters not found")
 
+    # 真实环肽长度 = 核心序列 + 单侧延伸 span_len（与 worker 实际生成的 `core + span` 一致）
     total_length = (
-        len(params.core_sequence) + params.span_len * 2
+        len(params.core_sequence) + params.span_len
         if params.core_sequence else None
     )
 

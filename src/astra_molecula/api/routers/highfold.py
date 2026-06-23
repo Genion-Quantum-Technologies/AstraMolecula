@@ -44,6 +44,17 @@ def _public_viewer_base(request: Request) -> str:
     base_url = FRONTEND_BASE_URL or f"{request.url.scheme}://{request.url.hostname}"
     return f"{base_url}/public/highfold-viewer"
 
+# ==== 参数约束常量（单一来源）====
+# 后端是约束的权威来源；前端通过 GET /highfold/constraints 拉取这些值做预校验回显，
+# 不再各自硬编码魔法数字。MAX_TOTAL_LENGTH 与 worker c2c/config.py 的同名常量对齐。
+MAX_TOTAL_LENGTH = 20          # 环肽总长上限 (aa)，total = len(core) + span_len
+MIN_CORE_RATIO = 0.3           # 核心序列最小占比
+SPAN_LEN_MIN, SPAN_LEN_MAX = 1, 15
+NUM_SAMPLE_MIN, NUM_SAMPLE_MAX = 1, 100
+NUM_MODELS_MIN, NUM_MODELS_MAX = 1, 5
+TEMPERATURE_MIN, TEMPERATURE_MAX = 0.1, 2.0
+TOP_P_MIN, TOP_P_MAX = 0.1, 1.0
+
 # 有效的氨基酸字母
 VALID_AA = set("ACDEFGHIKLMNPQRSTVWY")
 VALID_AA_PATTERN = re.compile(r'^[ACDEFGHIKLMNPQRSTVWY]+$', re.IGNORECASE)
@@ -99,58 +110,60 @@ def _validate_highfold_request(req: HighFoldC2CRequest):
         )
 
     # 3. 总长度限制
-    total_length = len(core) + req.span_len * 2
-    if total_length > 20:
+    # 真实环肽长度 = 核心序列 + 单侧延伸 span_len（C2C 只在 core 一侧追加 span_len 个残基，
+    # 见 HighFold_C2C/c2c/generate.py: `core + span`），与 worker 的 MAX_TOTAL_LENGTH 校验一致。
+    total_length = len(core) + req.span_len
+    if total_length > MAX_TOTAL_LENGTH:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "total_length_exceeded",
-                "message": f"总环肽长度 ({total_length} aa) 超过上限 20。请缩短核心序列或减小延伸长度。",
+                "message": f"总环肽长度 ({total_length} aa) 超过上限 {MAX_TOTAL_LENGTH}。请缩短核心序列或减小延伸长度。",
                 "details": {
                     "core_length": len(core),
                     "span_len": req.span_len,
                     "total_length": total_length,
-                    "max_total_length": 20
+                    "max_total_length": MAX_TOTAL_LENGTH
                 }
             }
         )
 
     # 4. 核心比例检查
     core_ratio = len(core) / total_length
-    if core_ratio < 0.3:
+    if core_ratio < MIN_CORE_RATIO:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "core_ratio_too_low",
-                "message": f"核心序列占比 ({core_ratio * 100:.0f}%) 低于 30%。请增加核心长度或减小延伸长度。",
+                "message": f"核心序列占比 ({core_ratio * 100:.0f}%) 低于 {MIN_CORE_RATIO * 100:.0f}%。请增加核心长度或减小延伸长度。",
                 "details": {
                     "core_length": len(core),
                     "total_length": total_length,
                     "core_ratio": round(core_ratio, 3),
-                    "min_core_ratio": 0.3
+                    "min_core_ratio": MIN_CORE_RATIO
                 }
             }
         )
 
     # 5. span_len 范围
-    if req.span_len < 1 or req.span_len > 15:
+    if req.span_len < SPAN_LEN_MIN or req.span_len > SPAN_LEN_MAX:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "invalid_span_len",
-                "message": f"延伸长度应在 1~15 之间，当前值: {req.span_len}",
-                "details": {"min": 1, "max": 15}
+                "message": f"延伸长度应在 {SPAN_LEN_MIN}~{SPAN_LEN_MAX} 之间，当前值: {req.span_len}",
+                "details": {"min": SPAN_LEN_MIN, "max": SPAN_LEN_MAX}
             }
         )
 
     # 6. num_sample 范围
-    if req.num_sample < 1 or req.num_sample > 100:
+    if req.num_sample < NUM_SAMPLE_MIN or req.num_sample > NUM_SAMPLE_MAX:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "invalid_num_sample",
-                "message": f"采样数量应在 1~100 之间，当前值: {req.num_sample}",
-                "details": {"min": 1, "max": 100}
+                "message": f"采样数量应在 {NUM_SAMPLE_MIN}~{NUM_SAMPLE_MAX} 之间，当前值: {req.num_sample}",
+                "details": {"min": NUM_SAMPLE_MIN, "max": NUM_SAMPLE_MAX}
             }
         )
 
@@ -177,37 +190,59 @@ def _validate_highfold_request(req: HighFoldC2CRequest):
         )
 
     # 9. num_models 范围
-    if req.num_models < 1 or req.num_models > 5:
+    if req.num_models < NUM_MODELS_MIN or req.num_models > NUM_MODELS_MAX:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "invalid_num_models",
-                "message": f"预测模型数量应在 1~5 之间，当前值: {req.num_models}",
-                "details": {"min": 1, "max": 5}
+                "message": f"预测模型数量应在 {NUM_MODELS_MIN}~{NUM_MODELS_MAX} 之间，当前值: {req.num_models}",
+                "details": {"min": NUM_MODELS_MIN, "max": NUM_MODELS_MAX}
             }
         )
 
     # 10. temperature 范围
-    if req.temperature < 0.1 or req.temperature > 2.0:
+    if req.temperature < TEMPERATURE_MIN or req.temperature > TEMPERATURE_MAX:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "invalid_temperature",
-                "message": f"采样温度应在 0.1~2.0 之间，当前值: {req.temperature}",
-                "details": {"min": 0.1, "max": 2.0}
+                "message": f"采样温度应在 {TEMPERATURE_MIN}~{TEMPERATURE_MAX} 之间，当前值: {req.temperature}",
+                "details": {"min": TEMPERATURE_MIN, "max": TEMPERATURE_MAX}
             }
         )
 
     # 11. top_p 范围
-    if req.top_p < 0.1 or req.top_p > 1.0:
+    if req.top_p < TOP_P_MIN or req.top_p > TOP_P_MAX:
         raise HTTPException(
             status_code=400,
             detail={
                 "error": "invalid_top_p",
-                "message": f"核采样阈值应在 0.1~1.0 之间，当前值: {req.top_p}",
-                "details": {"min": 0.1, "max": 1.0}
+                "message": f"核采样阈值应在 {TOP_P_MIN}~{TOP_P_MAX} 之间，当前值: {req.top_p}",
+                "details": {"min": TOP_P_MIN, "max": TOP_P_MAX}
             }
         )
+
+
+# ==== 参数约束接口 ====
+# 注意：必须在 GET /{task_id} 之前注册，否则会被路径参数路由吞掉。
+
+@router.get("/constraints",
+            summary="获取 HighFold-C2C 参数约束",
+            description="返回后端权威的参数取值范围与枚举，供前端预校验回显，避免前后端魔法数字漂移。")
+async def get_highfold_constraints():
+    """HighFold-C2C 提交参数的约束（单一来源，与 _validate_highfold_request 共用常量）。"""
+    return {
+        "max_total_length": MAX_TOTAL_LENGTH,
+        "min_core_ratio": MIN_CORE_RATIO,
+        "span_len": {"min": SPAN_LEN_MIN, "max": SPAN_LEN_MAX},
+        "num_sample": {"min": NUM_SAMPLE_MIN, "max": NUM_SAMPLE_MAX},
+        "num_models": {"min": NUM_MODELS_MIN, "max": NUM_MODELS_MAX},
+        "temperature": {"min": TEMPERATURE_MIN, "max": TEMPERATURE_MAX},
+        "top_p": {"min": TOP_P_MIN, "max": TOP_P_MAX},
+        "valid_amino_acids": sorted(VALID_AA),
+        "valid_model_types": sorted(VALID_MODEL_TYPES),
+        "valid_msa_modes": sorted(VALID_MSA_MODES),
+    }
 
 
 # ==== 任务创建接口 ====
@@ -304,7 +339,7 @@ async def create_highfold_task(request: Request, highfold_request: HighFoldC2CRe
             # 参数记录失败不影响任务执行（worker 也会从 input.json 读取）
 
         # —— 5) 返回响应 —— #
-        total_length = len(core) + highfold_request.span_len * 2
+        total_length = len(core) + highfold_request.span_len
         response_data = {
             "task_id": task_id,
             "status": "submitted",
