@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   task_type VARCHAR(50) NOT NULL,
   job_dir VARCHAR(1024) NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  info TEXT DEFAULT NULL,                       -- 任务进度/失败原因（worker 失败时写入异常摘要，便于直接从 DB 排查）
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   started_at TIMESTAMP DEFAULT NULL,
   finished_at TIMESTAMP DEFAULT NULL,
@@ -60,6 +61,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- 幂等迁移：为既有部署补上 info 列（CREATE TABLE IF NOT EXISTS 不会改动已存在的表）
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS info TEXT DEFAULT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
