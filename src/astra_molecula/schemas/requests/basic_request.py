@@ -142,7 +142,11 @@ class HighFoldC2CRequest(BaseModel):
     seed: int = 42                          # 随机种子
     model_type: str = "alphafold2"          # 结构预测模型类型
     msa_mode: str = "single_sequence"       # MSA 搜索模式
-    num_models: int = 5                     # 预测模型数量 (1-5)
+    # ADR 0012 P0-4: 默认从 5 降到 2。
+    # GPU 成本 = num_sample × num_models 次 AF2 前向；旧默认 20×5 = 100 次前向，
+    # 而全平台只有一张 RTX 5070。筛选阶段 2 个模型足够做排序，终选再显式传 5。
+    # 这是零代码风险的 2.5× GPU 吞吐提升（调用方仍可显式覆盖）。
+    num_models: int = 2                     # 预测模型数量 (1-5)；筛选用 2，终选可传 5
     num_recycle: Optional[int] = None       # 循环次数
     use_templates: bool = False             # 是否使用 PDB 模板
     amber: bool = False                     # AMBER 力场精修

@@ -3,7 +3,15 @@
 > 定位：**AstraMolecula 独占"任务的一切"** —— 调度、领取、重试、超时、取消、进度、失败原因、GPU 排队、配额。
 > 对外（aidd-agent 及任何消费方）只暴露一个稳定契约：**下单 → 查状态 → 取结果**。消费方不感知 `tasks` 表、SeaweedFS、`FOR UPDATE SKIP LOCKED`、GPU 拓扑。
 >
-> **决策的权威副本在 ADR** —— 协议选型与**职责边界**见 workspace ADR [`0008-agent-compute-tools-no-mcp.md`](../../../../docs/adr/0008-agent-compute-tools-no-mcp.md)（含 2026-07-14 修订记录）。本文只写**提供侧的实现细节**，不复述决策。
+> **决策的权威副本在 ADR** —— 职责边界见 [`ADR 0008`](../../../../docs/adr/0008-agent-compute-tools-no-mcp.md)（含 2026-07-14 修订记录）；**调度平面的选型见 [`ADR 0012`](../../../../docs/adr/0012-compute-scheduling-plane-argo.md)**。本文只写**提供侧的实现细节**，不复述决策。
+>
+> 🚧 **本文的缺陷清单现在有了主人。** [ADR 0012](../../../../docs/adr/0012-compute-scheduling-plane-argo.md) 决定新建 [`compute_foundry`](../../compute_foundry/) —— 用 **Argo Workflows + ephemeral pod-per-stage** 取代 DB-as-queue。下面 P0–P2 的**大部分缺陷会随之消失，而不是被逐条手工修复**：
+> - **P1-1（2/4 worker 无行锁）、P1-2（无取消）、P1-3（无僵尸回收）、P1-4（无重试）、P1-7（DAG）** → Argo 免费提供，**worker 的轮询/领活代码整体删除**。
+> - **P1-5（GPU 争抢）** → ✅ **撤销 time-slicing 已于 2026-07-14 完成**（ADR 0012 P0：整卡独占给 `highfold-c2c`、`peptide-opt` 转纯 CPU）；剩下的**阶段级 GPU 释放 / 队列可见性**仍待 Argo。
+> - **P0-2（progress 恒 0）、P0-1（失败原因不可读）** → 由 Argo 的生命周期 hook 写回 `tasks` 投影表。
+>
+> **→ 因此：不要再去"就地硬化"这些缺陷**（那正是 ADR 0012 否决的方案）。仍然必须单独修的是那些**与调度器无关**的：**P0-4（生产跑占位符密钥）、P0-5（autoSARM 未部署）、P1-8（PDB→PDBQT 无人认领）、P2-2/P2-3（对外契约不一致）**。完整设计见 [`compute_foundry/docs/design.md`](../../compute_foundry/docs/design.md)。
+>
 > 配套的消费侧文档：[`aidd-agent-backend/docs/astramolecula-compute-integration.md`](../../../aidd-agent/aidd-agent-backend/docs/astramolecula-compute-integration.md)。
 >
 > 核查日期 2026-07-14。以下每条缺陷均附 `file:line` 或 `kubectl` 实测证据；未确证的一律标注。
@@ -138,19 +146,23 @@ worker 的状态词表是分裂的：
 
 #### P1-5 GPU 串行化与排队 —— **这是调度职责，不是 agent 的**
 
-5070 节点（`genion-computing`）只有**单张物理 RTX 5070 12GB**；k8s 的 `nvidia.com/gpu=2` 是 device-plugin 的 **time-slice 逻辑数**，不是两张卡。time-slice **无显存/算力隔离**。而 HighFold 与 peptide_opt 两个 GPU worker 同时挂在这张卡上。
+> ✅ **本条的"共卡争抢"部分已于 2026-07-14 解决（ADR 0012 P0，已实施并用真实任务验证）**：`nvidia-device-plugin.yaml` 的 `sharing:` 块**整块删除**，5070 现以**整卡 `nvidia.com/gpu: 1`** 通告并由 **`highfold-c2c` 独占**；**`peptide-opt` 已改纯 CPU**（8 个阶段只有 Stage 1 OmegaFold 用 GPU，实测无卡时自动回落 CPU、11-mer 仅 26.5s）。
+> 🚨 **绝不要写 `timeSlicing.replicas: 1`** —— device-plugin v0.17.0 拒绝启动（`number of replicas must be >= 2`），节点 GPU allocatable 直接归 0。要整卡必须删掉整个 `sharing:` 块。
+> **但调度层面仍未解决**（下文依然成立）：GPU 作业仍跑在长驻 Deployment 里、串行化靠 `replicas: 1` 隐式保证而非调度器、对外无 `queue_position`/`eta`。
+
+5070 节点（`genion-computing`）只有**单张物理 RTX 5070 12GB** —— 这是 AstraMolecula 的**全部 GPU 预算**（2×5090 是 agent 业务线预留，不可占用）。**历史背景**：该卡曾被 device-plugin time-slice 成 `nvidia.com/gpu=2` 两个逻辑 slot，由 HighFold 与 peptide_opt 两个长驻 GPU worker 共用，而 time-slice **只切算力、不隔离显存**（消费级卡无 MIG）—— 这是 HighFold 反复丢 GPU 句柄的使能条件。
 
 ADR 0008 把这个问题的处理压给了 agent 侧（"工具须回传 ETA/队列位置，并避免同时投递多个 GPU 任务"）。**按现在的职责划分，这是错的** —— 消费方不该知道 GPU 拓扑，更不该靠"自觉不并发提交"来维持集群稳定。任何一个消费方（前端、第三方、另一个 agent）不自觉，防线就破了。
 
 **修复方向**：由 AstraMolecula 侧保证 GPU 作业的串行化 —— 最简单的做法是 GPU 类任务共用一个"GPU 槽位"（全局并发上限 1），排队等待，并在状态里暴露 `queue_position` / `eta`。**消费方只管下单，排队是调度器的事。**
 
-> 未复验：本次核查只跑了 `kubectl get pods/deploy/svc`，未复查 GPU 分配与 HighFold 近期日志。GPU 掉卡问题的现象记录见 workspace memory `highfold-c2c-gpu-loss-recurring`。
+> ✅ 已复验（2026-07-14）：GPU 分配实测确认 —— 整卡 `nvidia.com/gpu: 1` 独占给 `highfold-c2c`；ColabFold 日志 `Running on GPU`；AF2 结构 pLDDT 69–73；容器内 `nvidia-smi` 正常。历史现象记录见 workspace memory `highfold-c2c-gpu-loss-recurring`（其根因已随 time-slicing 移除而消除）。
 
 #### P1-6 提交没有幂等键 —— 重试即双跑
 
 全仓 `grep -i idempoten` **只在 `payments.py` 命中**，四个计算提交端点都没有幂等键。
 
-消费方（agent）的 HTTP 客户端自带 retry/backoff。**一次提交请求超时后重试 → 同一个作业被 INSERT 两次 → 单张 12GB 卡上同时跑两个 GPU 作业。** 这正是 P1-5 想防的事故，只是从另一条路进来的。
+消费方（agent）的 HTTP 客户端自带 retry/backoff。**一次提交请求超时后重试 → 同一个作业被 INSERT 两次 → 同一个作业被跑两遍。**（注：2026-07-14 整卡独占 + `replicas: 1` 之后，形态从"两个 GPU 作业同时打爆 12GB 显存"变成**串行重复执行** —— 浪费成倍 GPU 时间、产出重复结果。缺陷依旧，只是不再 OOM。）
 
 **修复**：四个 `POST` 接受 `Idempotency-Key` 头（或请求体内的 client-side dedup key），同键重复提交返回**同一个 `task_id`** 而非新建。
 
