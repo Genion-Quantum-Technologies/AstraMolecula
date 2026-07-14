@@ -1,24 +1,40 @@
 # 任务调度加固计划（AstraMolecula 侧）
 
 > 定位：**AstraMolecula 独占"任务的一切"** —— 调度、领取、重试、超时、取消、进度、失败原因、GPU 排队、配额。
-> 对外（aidd-agent 及任何消费方）只暴露一个稳定契约：**下单 → 查状态 → 取结果**。消费方不感知 `tasks` 表、SeaweedFS、`FOR UPDATE SKIP LOCKED`、GPU 拓扑。
+> 对外（aidd-agent 及任何消费方）只暴露一个稳定契约：**下单 → 查状态 → 取结果**。消费方不感知 `tasks` 表、SeaweedFS、GPU 拓扑。
 >
-> **决策的权威副本在 ADR** —— 职责边界见 [`ADR 0008`](../../../../docs/adr/0008-agent-compute-tools-no-mcp.md)（含 2026-07-14 修订记录）；**调度平面的选型见 [`ADR 0012`](../../../../docs/adr/0012-compute-scheduling-plane-argo.md)**。本文只写**提供侧的实现细节**，不复述决策。
->
-> 🚧 **本文的缺陷清单现在有了主人。** [ADR 0012](../../../../docs/adr/0012-compute-scheduling-plane-argo.md) 决定新建 [`compute_foundry`](../../compute_foundry/) —— 用 **Argo Workflows + ephemeral pod-per-stage** 取代 DB-as-queue。下面 P0–P2 的**大部分缺陷会随之消失，而不是被逐条手工修复**：
-> - **P1-1（2/4 worker 无行锁）、P1-2（无取消）、P1-3（无僵尸回收）、P1-4（无重试）、P1-7（DAG）** → Argo 免费提供，**worker 的轮询/领活代码整体删除**。
-> - **P1-5（GPU 争抢）** → ✅ **撤销 time-slicing 已于 2026-07-14 完成**（ADR 0012 P0：整卡独占给 `highfold-c2c`、`peptide-opt` 转纯 CPU）；剩下的**阶段级 GPU 释放 / 队列可见性**仍待 Argo。
-> - **P0-2（progress 恒 0）、P0-1（失败原因不可读）** → 由 Argo 的生命周期 hook 写回 `tasks` 投影表。
->
-> **→ 因此：不要再去"就地硬化"这些缺陷**（那正是 ADR 0012 否决的方案）。仍然必须单独修的是那些**与调度器无关**的：**P0-4（生产跑占位符密钥）、P0-5（autoSARM 未部署）、P1-8（PDB→PDBQT 无人认领）、P2-2/P2-3（对外契约不一致）**。完整设计见 [`compute_foundry/docs/design.md`](../../compute_foundry/docs/design.md)。
->
-> 配套的消费侧文档：[`aidd-agent-backend/docs/astramolecula-compute-integration.md`](../../../aidd-agent/aidd-agent-backend/docs/astramolecula-compute-integration.md)。
->
-> 核查日期 2026-07-14。以下每条缺陷均附 `file:line` 或 `kubectl` 实测证据；未确证的一律标注。
+> **决策的权威副本在 ADR** —— 职责边界见 [`ADR 0008`](../../../../docs/adr/0008-agent-compute-tools-no-mcp.md)；**调度平面的选型见 [`ADR 0012`](../../../../docs/adr/0012-compute-scheduling-plane-argo.md)**。本文只写**提供侧的实现细节**，不复述决策。
+
+## ✅ 状态：本文大部分内容已成历史（2026-07-14）
+
+**[ADR 0012](../../../../docs/adr/0012-compute-scheduling-plane-argo.md) P0–P3 已全部落地并在生产用真实任务验证。DB-as-queue 不存在了。** 下面的缺陷清单**保留原文**，因为它记录了这些 bug 曾经是什么样、以及为什么"就地硬化"是错的路 —— 但**每一条都已标注结论**。
+
+| | 缺陷 | 结论 |
+|---|---|---|
+| P0-1 | 失败原因对外不可见 | ✅ **已修**。`GET /tasks/{id}/status` 新增 `info`；operator 直接读失败 pod 的 stdout。实测：`[dock-score] RuntimeError: Command failed: agfr …` |
+| P0-2 | `progress` 恒为 0 | ✅ **已修**。新增 `tasks.progress` 列，由 Argo 步骤完成度投影。 |
+| P0-3 | `running` 导致消费方提前停轮 | ✅ **已修**。状态由 operator **一处**写入，统一成 `processing`。 |
+| P0-4 | 生产跑占位符服务密钥 | ⛔ **仍未修**（与调度器无关）。 |
+| P0-5 | autoSARM 在集群里根本不存在 | ⛔ **仍未修**。**镜像至今不存在**，这个 worker 从来没跑过。唯一变化：sarm 任务现在会**可见地失败**（原因写进 `info`），而不是永远静默 `pending`。 |
+| P1-1 | 一半 worker 无并发安全领活 | ✅ **整体消失**。轮询/领活代码全部成为死代码（三个 Deployment 已 `replicas: 0`）。Argo 领活，幂等靠确定性 Workflow 名 `t-{task_id}`。 |
+| P1-2 | 没有取消端点 | ✅ **已修**。`DELETE /tasks/{id}`。实测：跑到一半的 GPU 作业被终止，**卡当场释放**。 |
+| P1-3 | 无超时 / 心跳 / 僵尸回收 | ✅ **已修**。每个 step 都有 `activeDeadlineSeconds`；operator 会把"Workflow 已消失但未达终态"的行标 `failed`。 |
+| P1-4 | 无重试 / 退避 | ✅ **已修**。`retryStrategy` + 指数退避。⚠️ 用的是 `OnError`（**pod 级故障**）而**不是** `OnFailure` —— 科学代码非零退出几乎总是输入有问题，重跑只会再撞同一个错。只有 `fetch`/`publish` 用 `OnFailure`。 |
+| P1-5 | GPU 争抢 | ✅ **已修**。P0 撤销 time-slicing（整卡）；P1/P2 做到**阶段级 GPU 释放** —— 实测 HighFold 的 `evaluate` 运行期间，`nvidia.com/gpu` 的持有者是**没有人**。 |
+| P1-6 | 提交没有幂等键 | ⛔ **仍未修，且容易误判**。幂等性只到**执行层**（同一个 `task_id` 不会跑两遍）；但**HTTP 层重试会产生两个不同的 task_id**，于是两个 workflow、两个 GPU 作业。**确定性 Workflow 名对此完全无效。** |
+| P1-7 | 任务依赖（SARM 链）外包给消费方 | ⛔ **仍未修**。后端仍用 409 + 物理复制整个 `SAR_Results` 目录维持这条边；改成 Argo DAG 要动前端依赖的两段式公开 API。 |
+| P1-8 | PDB→PDBQT 转换无人认领 | ⛔ **仍未修**（与调度器无关）。docking 链路对 agent 仍然是断的。 |
+| P2-* | 契约一致性 / 代码卫生 | 多数仍在。**但 P2-1（状态词表分裂）已消失** —— 只有一个写入方了。 |
+
+**→ 新增的能力（清单里原本没敢要求的）**：真实进度、可读失败原因、取消、阶段级 GPU 释放、每步死线、CPU/RAM 配额，以及 `generate` 搬出 API 进程。
+
+**→ 完整设计**：[`compute_foundry/docs/design.md`](../../compute_foundry/docs/design.md)。**消费侧**：[`aidd-agent-backend/docs/astramolecula-compute-integration.md`](../../../aidd-agent/aidd-agent-backend/docs/astramolecula-compute-integration.md)。
 
 ---
 
-## 一、现状：这是 DB-as-queue，不是调度器
+## 一、迁移前的现状（**已成历史，2026-07-14 之前**）
+
+> 保留本节是因为它解释了**为什么**要换掉整个平面，而不是逐条打补丁。今天的执行模型见 ADR 0012。
 
 **没有 scheduler 组件。** 一张共享 Postgres `tasks` 表当队列：
 
@@ -30,12 +46,20 @@
 | 4. 回写 | worker 直接 UPDATE `tasks.status` | — |
 | 5. 取件 | 消费方轮询 `GET /tasks/{id}/status`，终态后取类型专属结果端点 | [`api/routers/tasks.py:741-777`](../src/astra_molecula/api/routers/tasks.py#L741-L777) |
 
-`tasks` 表（[`database/init_database_postgres.sql:50-63`](../database/init_database_postgres.sql#L50-L63)）：
+> **今天第 2 步不再是空的**：后端仍然只 INSERT 一行（这是**声明的意图**），但 **compute-foundry operator** 会把它 reconcile 成一个 Argo Workflow。第 3、4 步的四个轮询 worker 已全部下线。
+>
+> 后端**故意仍然没有任何 Kubernetes 权限** —— 让它直接提交 Workflow 是一次**双写**（INSERT 行 + 建 Workflow），第二步一失败行就永久卡 `pending`，那正是本文要消灭的 bug 类。
+
+`tasks` 表原本是（[`database/init_database_postgres.sql`](../database/init_database_postgres.sql)）：
 `id · user_id · task_type · job_dir · status · info · created_at · started_at · finished_at · updated_at`
 
-**没有 `priority` / `retry_count` / `worker_id` / `lease` / `heartbeat` / `progress` 列。** 这不是"配置没打开"，是这些能力从未存在。
+**当时没有 `priority` / `retry_count` / `worker_id` / `lease` / `heartbeat` / `progress` 列。** 这不是"配置没打开"，是这些能力从未存在。
 
-五个 `task_type`：`docking` · `sarm_analysis`（矩阵与树共用，靠 `sarm_task_params.task_subtype` 区分）· `peptide_optimization` · `highfold_c2c` · `generate`（唯一进程内消费，不走队列）。
+> **现在多了两列**：`progress SMALLINT` 和 `workflow_name VARCHAR(253)`。后者是一扇**单向门** —— operator 只为 `workflow_name IS NULL` 的 pending 行建 Workflow，且这一列永不清空。没有它的话，Argo 按 TTL 回收掉一个**已完成**的 Workflow 之后，那一行看起来和"从未提交过"一模一样，于是已完成的任务会被永远重跑。
+>
+> **仍然没有** `priority` / `lease` / `heartbeat` —— 而且**不需要**：租约和心跳是"多个 worker 抢一张表"才需要的东西，现在没有 worker 在抢了。
+
+五个 `task_type`：`docking` · `sarm_analysis`（矩阵与树共用，靠 `sarm_task_params.task_subtype` 区分）· `peptide_optimization` · `highfold_c2c` · `generate`（~~唯一进程内消费，不走队列~~ → **ADR 0012 P3：已搬出 API 进程，现在和其他四种一样走 Argo**）。
 
 ---
 
