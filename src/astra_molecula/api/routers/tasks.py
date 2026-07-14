@@ -770,17 +770,66 @@ async def get_task_status_simple(request: Request, task_id: str):
         
         return {
             "status": task.status,
+            # ADR 0012 P2: 这个 getattr 以前恒返回字面量 0（Task 模型没有 progress 属性，
+            # tasks 表也没有这一列）。现在两者都有了，且由 Argo 的步骤进度实时投影 —— 同一行
+            # 代码，现在说的是真话。响应体形状没变。
             "progress": getattr(task, 'progress', 0),
             "updated_at": getattr(task, 'updated_at', task.created_at),
             "poll_interval": poll_interval,
-            "can_download": task.status == "finished"
+            "can_download": task.status == "finished",
+            # 新增字段（纯增量，不破坏既有消费方）。失败时这里是**失败步骤自己的报错原文**，
+            # 由 Argo 的 onExit 钩子写入。在此之前，"任务为什么失败"通过任何 API 都读不出来。
+            "info": getattr(task, 'info', None),
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching task status %s for user %s (%s): %s", 
+        logger.error("Error fetching task status %s for user %s (%s): %s",
                     task_id, user.username, user_info['auth_type'], e)
         raise HTTPException(status_code=500, detail="Failed to fetch task status")
+
+
+@router.delete("/{task_id}",
+               status_code=202,
+               summary="取消任务",
+               description="请求取消一个仍在运行的任务（ADR 0012 P2）")
+async def cancel_task(request: Request, task_id: str):
+    """取消任务。
+
+    这个端点在 ADR 0012 之前**根本不存在** —— tasks 路由的 21 条路由全是 GET，
+    任务一旦提交就无法停止，哪怕它正霸占着全平台唯一一张 GPU。
+
+    实现上刻意**不直接调用 Kubernetes**：后端没有、也不应该有 k8s 凭证。它只是把意图
+    写进数据库（`status='cancelling'`），由 compute-foundry operator 去 terminate 对应的
+    Argo Workflow，然后回写 `cancelled`。
+
+    这么做不只是为了职责边界，更是为了**崩溃安全**：取消意图落在数据库里，
+    operator 中途重启也不会把它丢掉，重启后会幂等地把清理做完。
+    """
+    user_info = get_current_user_info(request)
+    user = user_info['user']
+
+    task = TaskService.get_task(task_id)
+    if not task or task.user_id != user.id:
+        raise HTTPException(status_code=404, detail="task not found")
+
+    if task.status in ("finished", "failed", "cancelled"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "task_already_terminal",
+                "message": f"任务已处于终态，无法取消：{task.status}",
+                "details": {"current_status": task.status},
+            },
+        )
+
+    TaskService.update_task_status(task_id, "cancelling")
+    logger.info("Task %s marked cancelling by user %s", task_id, user.username)
+    return {
+        "task_id": task_id,
+        "status": "cancelling",
+        "message": "取消请求已受理，正在终止计算作业",
+    }
 
 
 @router.get("/{task_id}/cost")

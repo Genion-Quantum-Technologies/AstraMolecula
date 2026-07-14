@@ -82,7 +82,7 @@ class TaskRepository:
     @staticmethod
     def get_pending(limit: int = 10) -> List[Task]:
         sql = """
-        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
+        SELECT id, user_id, task_type, job_dir, status, progress, info, created_at, started_at, finished_at, updated_at
           FROM tasks
          WHERE status = 'pending'
       ORDER BY created_at ASC
@@ -102,7 +102,7 @@ class TaskRepository:
     @staticmethod
     def get(task_id: str) -> Optional[Task]:
         sql = """
-        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
+        SELECT id, user_id, task_type, job_dir, status, progress, info, created_at, started_at, finished_at, updated_at
           FROM tasks
          WHERE id = %s
         """
@@ -123,7 +123,7 @@ class TaskRepository:
         按 user_id 查询该用户提交的所有任务，按创建时间倒序返回。
         """
         sql = """
-        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
+        SELECT id, user_id, task_type, job_dir, status, progress, info, created_at, started_at, finished_at, updated_at
           FROM tasks
          WHERE user_id = %s
       ORDER BY created_at DESC
@@ -163,7 +163,7 @@ class TaskRepository:
         where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
         sql = f"""
-        SELECT id, user_id, task_type, job_dir, status, created_at, started_at, finished_at, updated_at
+        SELECT id, user_id, task_type, job_dir, status, progress, info, created_at, started_at, finished_at, updated_at
           FROM tasks
          {where_clause}
       ORDER BY created_at DESC

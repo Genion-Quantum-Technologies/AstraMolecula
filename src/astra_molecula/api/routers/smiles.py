@@ -85,19 +85,21 @@ async def generate_molecules(
             job_dir=storage_prefix  # 存储逻辑路径而非本地路径
         )
 
-        # （3.5）启动异步处理
-        try:
-            from astra_molecula.task_processor import task_processor
-            task = TaskService.get_task(task_id)
-            if task:
-                # 在后台启动任务处理
-                import asyncio
-                asyncio.create_task(task_processor.process_task(task))
-                logger.info("Started async processing for generate task %s", task_id)
-            else:
-                logger.error("Failed to retrieve created generate task %s", task_id)
-        except Exception as e:
-            logger.error("Failed to start async processing for generate task %s: %s", task_id, e)
+        # （3.5）—— 这里以前是 `asyncio.create_task(task_processor.process_task(task))` ——
+        #
+        # ADR 0012 P3：`generate` 不再跑在 API 进程里。
+        #
+        # 它过去就在服务其它所有请求的那个 uvicorn worker 里做 PyTorch 前向。实测运行时间
+        # 跨度是 **0.1 秒 ~ 50 分钟**，且**无法从请求预判**，所以一个病态输入就能把整个
+        # AstraMolecula API 的 p99 拖死将近一小时。而且那个 Task 从不被 await、也不被持有 ——
+        # pod 一重启，计算就丢了，数据库那行永远卡在 running。
+        #
+        # 现在：这里只 INSERT 一行 `pending`（上面已经做完了），compute-foundry operator
+        # 会把它 reconcile 成一个 Argo Workflow —— 独立 pod、独立 CPU 配额，以及它从来
+        # 没有过的 `activeDeadlineSeconds`。
+        #
+        # 后端到此为止。**不要**在这里把异步调用加回来。
+        logger.info("Generate task %s queued; compute-foundry will reconcile it into a workflow", task_id)
             # 即使启动失败，也返回任务ID，让旧的轮询机制处理
 
         # （4）立即返回 task_id，让客户端稍后查询结果

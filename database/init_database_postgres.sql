@@ -65,6 +65,29 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- 幂等迁移：为既有部署补上 info 列（CREATE TABLE IF NOT EXISTS 不会改动已存在的表）
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS info TEXT DEFAULT NULL;
 
+-- ADR 0012 P2 —— tasks 表从"队列"退化为"投影"。两列都是纯增量，公开契约
+-- (GET /tasks/{id}/status) 的响应形状不变。
+--
+-- progress: 该端点本来就在返回 progress，但走的是 getattr(task,'progress',0) ——
+--   模型没这个属性、表没这一列，所以它**恒为字面量 0**。列补上之后，同一行代码开始说真话。
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS progress SMALLINT NOT NULL DEFAULT 0;
+
+-- workflow_name: 一扇**单向门**，也是整个调度设计里最微妙的一处。
+--   compute-foundry operator 只为 workflow_name IS NULL 的 pending 行创建 Argo Workflow，
+--   且这一列一旦写入**永不清空**。没有它的话：Argo 按 TTL 回收掉一个**已完成**的 Workflow 之后，
+--   那一行看起来和"从未提交过"**一模一样** —— 于是已完成的任务会被永远重跑。
+--   有 workflow_name 而 Workflow 不见了的行，不是"未提交"，是"丢了"（→ failed）。
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS workflow_name VARCHAR(253);
+
+-- operator 的两条扫描路径。
+CREATE INDEX IF NOT EXISTS idx_tasks_unsubmitted
+    ON tasks (created_at)
+    WHERE status = 'pending' AND workflow_name IS NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_inflight
+    ON tasks (workflow_name)
+    WHERE workflow_name IS NOT NULL
+      AND status NOT IN ('finished', 'failed', 'cancelled');
+
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_task_type ON tasks(task_type);
