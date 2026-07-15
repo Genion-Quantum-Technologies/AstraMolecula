@@ -52,8 +52,9 @@ uvicorn main:app
 # 以逗号分隔多组 key，并让服务在请求时携带 `X-API-Key` 头部
 export SERVICE_API_KEYS="service-key-1,service-key-2"
 # 后台任务
-# 应用启动时会自动在后台线程运行 `task_worker.main_loop` 以处理 pending 任务，
-# 也可以单独执行 `python task_worker.py` 以独立进程方式运行。
+# ⚠️ 过时（2026-07-14，ADR 0012）：没有 `task_worker.py`，`main_loop` 是死代码。
+#   自 ADR 0012 P3 起，`generate` 也不再在 API 进程内跑 —— 后端只 INSERT 一行 pending，
+#   由 compute-foundry operator 提交为 Argo Workflow。本后端不运行任何计算。
 
 pip install python-jose[cryptography]
 sudo brew install mysql-server

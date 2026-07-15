@@ -80,7 +80,7 @@ FQDN(≥2 个点)直接按**绝对名**解析,跳过 search 展开 → 8s 变 0s
 
 ## 6. 这是全集群隐患 + 尚未做的根治
 
-`ndots:2` 只修了 `astramolecula-backend` 这**一个** Deployment。泄漏的外部 `search` 域影响**全集群**:任何"按调用新建连接(非连接池)"的服务,只要用内部 FQDN,都会吃这 ~8s。
+`ndots:2` 最初只修了 `astramolecula-backend` 一个 Deployment；**2026-07-14 新增的 `compute-foundry` operator 也已带 `ndots:2`**（它按调用访问 SeaweedFS Filer + Postgres）。但泄漏的外部 `search` 域影响**全集群**:任何"按调用新建连接(非连接池)"的服务,只要用内部 FQDN,都会吃这 ~8s，仍未根治。
 
 - **建议同样加 `ndots:2`** 的对象:其它 astramolecula compute(`highfold-c2c`/`dockingvina`/`peptide-opt`/`autosarm`/`dmat`)、以及 aidd-agent 里按调用访问 SeaweedFS 的地方。
 - **彻底根治(未做)**:清掉节点 `/etc/resolv.conf` 里泄漏的外部 `search` 域,或给 k3s kubelet 配 `--resolv-conf` 指向一份干净的 resolv.conf。这会让全集群所有 pod 受益,但 blast radius 大,需谨慎验证。
